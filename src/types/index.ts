@@ -1,0 +1,177 @@
+// Core system types for CMMS
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  terminalId?: string;
+  regionId?: string;
+  status: 'active' | 'inactive';
+  avatar?: string;
+}
+
+export type UserRole = 'admin' | 'supervisor' | 'leader' | 'worker';
+
+export interface Terminal {
+  id: string;
+  name: string;
+  code: string;
+  location: string;
+  regionId: string;
+  status: 'active' | 'inactive';
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+}
+
+export interface Region {
+  id: string;
+  name: string;
+  code: string;
+  terminals: Terminal[];
+  manager?: User;
+}
+
+export interface WorkOrder {
+  id: string;
+  title: string;
+  description: string;
+  type: 'preventive' | 'corrective';
+  subType?: 'planned' | 'incidental';
+  status: WorkOrderStatus;
+  priority: Priority;
+  terminalId: string;
+  assignedWorkerId?: string;
+  createdBy: string;
+  approvedBy?: string;
+  startDate: string;
+  dueDate: string;
+  estimatedDuration: number; // in hours
+  completedAt?: string;
+  parentId?: string; // for hierarchy
+  children?: WorkOrder[];
+  checklist: ChecklistItem[];
+  beforePhotos: Photo[];
+  afterPhotos: Photo[];
+  beforeNotes?: string;
+  afterNotes?: string;
+  materials: MaterialRequirement[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type WorkOrderStatus = 
+  | 'draft' 
+  | 'pending_approval' 
+  | 'assigned' 
+  | 'in_progress' 
+  | 'submitted_for_review' 
+  | 'completed' 
+  | 'rejected' 
+  | 'revision_required';
+
+export type Priority = 'low' | 'normal' | 'high' | 'urgent';
+
+export interface ChecklistItem {
+  id: string;
+  label: string;
+  type: 'yes_no' | 'number' | 'text' | 'dropdown' | 'rating';
+  required: boolean;
+  beforeValue?: any;
+  afterValue?: any;
+  unit?: string;
+  options?: string[]; // for dropdown
+  minValue?: number;
+  maxValue?: number;
+}
+
+export interface Photo {
+  id: string;
+  url: string;
+  caption?: string;
+  timestamp: string;
+  workOrderId: string;
+  type: 'before' | 'after';
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  code: string;
+  category: string;
+  description?: string;
+  unitOfMeasure: string;
+  currentStock: number;
+  minThreshold: number;
+  unitPrice: number;
+  storageLocation?: string;
+  supplier?: string;
+  lastUpdated: string;
+  status: 'active' | 'inactive';
+}
+
+export interface MaterialRequirement {
+  itemId: string;
+  item?: InventoryItem;
+  plannedQuantity: number;
+  actualQuantity?: number;
+  notes?: string;
+}
+
+export interface StockMovement {
+  id: string;
+  itemId: string;
+  type: 'inbound' | 'outbound' | 'adjustment';
+  quantity: number;
+  reference?: string; // work order ID, purchase order ID, etc.
+  notes?: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  priority: Priority;
+  userId: string;
+  read: boolean;
+  actionUrl?: string;
+  relatedEntity?: {
+    type: 'work_order' | 'inventory' | 'user';
+    id: string;
+  };
+  createdAt: string;
+}
+
+// API Response types
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// Form types
+export interface CreateWorkOrderForm {
+  title: string;
+  description: string;
+  type: 'preventive' | 'corrective';
+  subType?: 'planned' | 'incidental';
+  priority: Priority;
+  terminalId: string;
+  assignedWorkerId?: string;
+  startDate: string;
+  dueDate: string;
+  estimatedDuration: number;
+  parentId?: string;
+  materials: MaterialRequirement[];
+}
