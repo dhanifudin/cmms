@@ -8,7 +8,9 @@
 
 ## Business Context
 - **Scope**: 116 Terminals across 8 Regions
-- **Integration**: Talenta HRIS (mocked) for worker and team management
+- **Integration**: 
+  - Talenta HRIS (mocked) for worker and admin authentication
+  - Idaman SSO (mocked) for supervisor and leader authentication
 - **Primary Output**: Automated invoice generation from maintenance activities
 - **Secondary Functions**: Inventory tracking, penalty management, activity notifications
 
@@ -31,7 +33,8 @@
 **Notes**:
 - Admin & Supervisor can both assign workers to Work Orders
 - Supervisor (PertaMC) and Supervisor (PatraNiaga) have identical permissions
-- Workers synced from Talenta HRIS
+- Workers and Admin authenticated via Talenta HRIS
+- Supervisors and Leaders authenticated via Idaman SSO
 
 ### 3. Work Order Hierarchy
 **Structure**: 
@@ -40,15 +43,20 @@
 
 **Example**:
 ```
-Pipe Maintenance (Category)
-  └─ Water Pipe System (Sub-category)
-      ├─ Main Line Inspection (Task)
-      └─ Valve Replacement (Task)
+Pipeline Maintenance (Category)
+  └─ Gas Pipeline System (Sub-category)
+      ├─ Pipeline Pressure Test (Task)
+      └─ Gas Leak Detection (Task)
 
-Machine Maintenance (Category)
-  └─ Generator (Equipment)
-      ├─ Monthly Generator Check (Task)
-      └─ Oil Change (Task)
+Pump & Compressor Maintenance (Category)
+  └─ Gas Compressor Unit (Equipment)
+      ├─ Monthly Compressor Inspection (Task)
+      └─ Lubrication System Service (Task)
+
+Safety System Maintenance (Category)
+  └─ Fire & Gas Detection (Sub-category)
+      ├─ Gas Detector Calibration (Task)
+      └─ Emergency Valve Test (Task)
 ```
 
 **Assignment Rules**:
@@ -217,19 +225,23 @@ Rework approach: Depends on supervisor instruction
 
 **Example**:
 ```
-Checklist: "AC Preventive Maintenance"
+Checklist: "Gas Compressor Preventive Maintenance"
 
 BEFORE submission:
-  □ Temperature: 75°F
-  □ Filter Condition: Dirty
-  □ Refrigerant Level: Normal
+  □ Suction Pressure: 15 PSI
+  □ Discharge Pressure: 45 PSI
+  □ Oil Level: Low
+  □ Vibration Level: Normal
+  □ Gas Leak Detection: No leaks
 
 (Worker performs maintenance)
 
 AFTER submission:
-  ☑ Temperature: 68°F
-  ☑ Filter Condition: Clean (replaced)
-  ☑ Refrigerant Level: Normal
+  ☑ Suction Pressure: 16 PSI
+  ☑ Discharge Pressure: 48 PSI
+  ☑ Oil Level: Normal (topped up)
+  ☑ Vibration Level: Normal
+  ☑ Gas Leak Detection: No leaks
 ```
 
 ### Management
@@ -409,10 +421,137 @@ Work Order #002 - Generator Check (OVERDUE)
 
 ---
 
+## Inbox & Communication System
+
+### Inbox Features
+**Purpose**: Central communication hub for users to receive and manage work-related messages, notifications, and updates
+
+**Core Functionality**:
+- Unified inbox for all system communications
+- Message categorization and filtering
+- Read/unread status tracking
+- Message priority levels
+- Reply and forward capabilities
+- Attachment support
+
+**Message Types**:
+- Work Order assignments and updates
+- Supervisor feedback and approvals
+- System notifications and alerts
+- Administrative announcements
+- Inventory alerts
+- Invoice notifications
+
+### Inter-User Communication
+**Communication Channels**:
+- Direct messaging between users
+- Work Order comment threads
+- Supervisor-Worker communication
+- Admin broadcasts
+- Regional team messaging
+
+**Message Features**:
+- Real-time delivery
+- Message history retention
+- File attachment support
+- Message status (sent, delivered, read)
+- Emergency/urgent message flagging
+
+---
+
+## Dashboard System
+
+### Role-Based Dashboard Structure
+
+**Main Navigation**:
+- Inbox (universal access)
+- Dashboard (role-specific views)
+
+### Terminal Level Dashboards
+
+**Worker (Pekerja) Dashboard**:
+- My Assigned Work Orders
+- Work Orders Completed (recent history)
+- Pending Tasks
+- Upcoming Deadlines
+- Personal Performance Metrics
+
+**Terminal Admin Dashboard**:
+- Worker Status Overview
+  - Active workers
+  - Worker availability
+  - Performance metrics per worker
+- Material/Inventory Status
+  - Current stock levels
+  - Low inventory alerts
+  - Recent material usage
+- Work Assignment (Surat Tugas) Management
+  - Pending assignments
+  - Active work orders
+  - Completion rates
+
+### Regional Level Dashboards
+
+**PertaMC Regional Dashboard**:
+- KPI Overview per Terminal
+  - Work order completion rates
+  - On-time completion percentage
+  - Material usage efficiency
+  - Worker productivity metrics
+  - Cost analysis per terminal
+- Regional Summary Metrics
+- Cross-terminal comparisons
+- Escalation alerts
+
+**PertaMC Director Dashboard**:
+- KPI Overview per Region
+  - Regional performance comparison
+  - Aggregate completion rates
+  - Regional cost analysis
+  - Resource allocation efficiency
+- Strategic metrics
+- Executive summary reports
+
+**PatraNiaga Regional Dashboard**:
+- KPI Overview per Region (PatraNiaga territories)
+  - Regional work order metrics
+  - PatraNiaga-specific KPIs
+  - Cost and billing summaries
+  - Regional compliance metrics
+
+**Leader Dashboard**:
+- TBD - Role permissions and dashboard content not yet defined
+
+### Key Performance Indicators (KPIs)
+
+**Terminal Level KPIs**:
+- Work Order completion rate
+- Average completion time
+- On-time completion percentage
+- Material cost efficiency
+- Worker utilization rate
+- Quality metrics (rework rate)
+
+**Regional Level KPIs**:
+- Aggregate terminal performance
+- Regional cost analysis
+- Resource optimization metrics
+- Inter-terminal efficiency comparison
+- Regional compliance scores
+
+**System-Wide Metrics**:
+- Total Work Orders by status
+- Overdue count and trending
+- Monthly completion rates
+- Total penalties incurred
+- Inventory turnover rates
+- System utilization metrics
+
+---
+
 ## Reporting & Analytics
 
-### Key Reports (TBD - specific requirements not defined)
-Potential reports:
+### Key Reports
 - Work Order completion rate by Terminal/Region
 - Overdue Work Orders list
 - Worker performance/productivity
@@ -420,16 +559,8 @@ Potential reports:
 - Preventive vs Corrective maintenance ratio
 - Penalty summary
 - Cost analysis (Labor vs Materials vs Penalties)
-
-### Dashboard KPIs (TBD)
-Suggested metrics:
-- Total Work Orders by status
-- Overdue count
-- Completion rate (current month)
-- Total penalties (current month)
-- Low stock items count
-- Active workers
-- Invoice amount (current month)
+- KPI trend analysis
+- Cross-regional performance comparison
 
 ---
 
