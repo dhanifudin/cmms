@@ -463,8 +463,8 @@ const setQuickRange = (event: Event) => {
   
   try {
     reportsStore.updateDateRange(
-      start.toISOString().split('T')[0],
-      now.toISOString().split('T')[0]
+      start.toISOString().split('T')?.[0] ?? '',
+      now.toISOString().split('T')?.[0] ?? ''
     );
   } catch (error) {
     console.error('Error updating date range:', error);
