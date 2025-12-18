@@ -178,36 +178,7 @@
         </div>
 
         <!-- Quick Actions -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div class="p-6 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900">Quick Actions</h2>
-          </div>
-          <div class="p-4 space-y-2">
-            <router-link
-              v-if="hasPermission('create_work_orders')"
-              to="/work-orders/create"
-              class="flex items-center w-full p-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
-            >
-              <Plus class="h-4 w-4 mr-3 text-blue-600" />
-              Create Work Order
-            </router-link>
-            <router-link
-              v-if="hasPermission('manage_inventory')"
-              to="/inventory/create"
-              class="flex items-center w-full p-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
-            >
-              <Package class="h-4 w-4 mr-3 text-green-600" />
-              Add Inventory Item
-            </router-link>
-            <router-link
-              to="/work-orders"
-              class="flex items-center w-full p-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
-            >
-              <Search class="h-4 w-4 mr-3 text-purple-600" />
-              Search Work Orders
-            </router-link>
-          </div>
-        </div>
+        <QuickActionsPanel />
         
         <!-- Recent Activity -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -248,6 +219,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useWorkOrderStore } from '@/stores/workorder';
 import { useInventoryStore } from '@/stores/inventory';
+import { useDashboardStore } from '@/stores/dashboard';
 import { 
   ClipboardList, 
   AlertTriangle, 
@@ -258,10 +230,12 @@ import {
   Search
 } from 'lucide-vue-next';
 import type { WorkOrder } from '@/types';
+import QuickActionsPanel from '@/components/dashboard/QuickActionsPanel.vue';
 
 const authStore = useAuthStore();
 const workOrderStore = useWorkOrderStore();
 const inventoryStore = useInventoryStore();
+const dashboardStore = useDashboardStore();
 
 const currentDateTime = ref('');
 
@@ -281,96 +255,18 @@ const pendingApprovals = computed(() => workOrderStore.pendingApproval.slice(0, 
 const lowStockItems = computed(() => inventoryStore.lowStockItems.slice(0, 3));
 
 const dashboardStats = computed(() => {
-  const stats = [];
-  
-  if (isWorker.value) {
-    stats.push(
-      {
-        title: 'My Active Tasks',
-        value: workOrderStore.myWorkOrders.filter(wo => ['assigned', 'in_progress'].includes(wo.status)).length,
-        change: 'Updated today',
-        changeColor: 'text-gray-500',
-        icon: ClipboardList,
-        iconColor: 'text-blue-500'
-      },
-      {
-        title: 'Completed This Week',
-        value: workOrderStore.myWorkOrders.filter(wo => wo.status === 'completed').length,
-        change: '+2 from last week',
-        changeColor: 'text-green-600',
-        icon: CheckCircle,
-        iconColor: 'text-green-500'
-      },
-      {
-        title: 'Overdue',
-        value: workOrderStore.myWorkOrders.filter(wo => {
-          const dueDate = new Date(wo.dueDate);
-          return dueDate < new Date() && !['completed', 'rejected'].includes(wo.status);
-        }).length,
-        change: 'Needs attention',
-        changeColor: 'text-red-600',
-        icon: AlertTriangle,
-        iconColor: 'text-red-500'
-      },
-      {
-        title: 'In Progress',
-        value: workOrderStore.myWorkOrders.filter(wo => wo.status === 'in_progress').length,
-        change: 'Active work',
-        changeColor: 'text-blue-600',
-        icon: Clock,
-        iconColor: 'text-blue-500'
-      }
-    );
-  } else {
-    stats.push(
-      {
-        title: 'Total Work Orders',
-        value: workOrderStore.workOrders.length,
-        change: '+3 this week',
-        changeColor: 'text-green-600',
-        icon: ClipboardList,
-        iconColor: 'text-blue-500'
-      },
-      {
-        title: 'Pending Approval',
-        value: workOrderStore.pendingApproval.length,
-        change: 'Needs review',
-        changeColor: 'text-orange-600',
-        icon: Clock,
-        iconColor: 'text-orange-500'
-      },
-      {
-        title: 'Completed',
-        value: workOrderStore.workOrders.filter(wo => wo.status === 'completed').length,
-        change: '+5 this week',
-        changeColor: 'text-green-600',
-        icon: CheckCircle,
-        iconColor: 'text-green-500'
-      }
-    );
-    
-    if (isAdmin.value) {
-      stats.push({
-        title: 'Low Stock Items',
-        value: lowStockItems.value.length,
-        change: 'Requires attention',
-        changeColor: 'text-red-600',
-        icon: AlertTriangle,
-        iconColor: 'text-red-500'
-      });
-    } else {
-      stats.push({
-        title: 'Overdue',
-        value: workOrderStore.overdue.length,
-        change: 'Needs attention',
-        changeColor: 'text-red-600',
-        icon: AlertTriangle,
-        iconColor: 'text-red-500'
-      });
-    }
-  }
-  
-  return stats;
+  return dashboardStore.currentUserKPIs.map(kpi => ({
+    title: kpi.title,
+    value: kpi.value,
+    change: kpi.period,
+    changeColor: kpi.changeType === 'increase' ? 'text-green-600' : 
+                kpi.changeType === 'decrease' ? 'text-red-600' : 'text-gray-500',
+    icon: kpi.icon === 'ClipboardList' ? ClipboardList :
+          kpi.icon === 'CheckCircle' ? CheckCircle :
+          kpi.icon === 'AlertTriangle' ? AlertTriangle :
+          kpi.icon === 'Clock' ? Clock : ClipboardList,
+    iconColor: `text-${kpi.color}-500`
+  }));
 });
 
 const roleColors = {
@@ -441,7 +337,8 @@ onMounted(async () => {
   // Load data
   await Promise.all([
     workOrderStore.fetchWorkOrders(),
-    inventoryStore.fetchInventoryItems()
+    inventoryStore.fetchInventoryItems(),
+    dashboardStore.refreshDashboard()
   ]);
 });
 </script>

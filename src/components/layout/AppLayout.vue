@@ -112,7 +112,8 @@ import {
   Users, 
   Settings,
   Menu,
-  Bell 
+  Bell,
+  BarChart
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -126,12 +127,15 @@ const currentPageTitle = computed(() => {
   const route = router.currentRoute.value;
   switch (route.name) {
     case 'Dashboard': return 'Dashboard';
+    case 'Analytics': return 'Analytics';
     case 'WorkOrders': return 'Work Orders';
     case 'CreateWorkOrder': return 'Create Work Order';
     case 'WorkOrderDetail': return 'Work Order Details';
     case 'Inventory': return 'Inventory';
     case 'CreateInventoryItem': return 'Add Inventory Item';
     case 'InventoryItemDetail': return 'Inventory Details';
+    case 'Invoices': return 'Invoices';
+    case 'InvoiceDetail': return 'Invoice Details';
     default: return 'CMMS';
   }
 });
@@ -141,12 +145,20 @@ const navigationItems = computed(() => {
     { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard }
   ];
   
+  // Analytics - available for all authenticated users
+  baseItems.push({ name: 'Analytics', to: '/analytics', icon: BarChart });
+  
   // Work Orders - all roles can view, but permissions differ
   baseItems.push({ name: 'Work Orders', to: '/work-orders', icon: ClipboardList });
   
   // Inventory - admin and workers can view, admin can manage
   if (authStore.hasPermission('manage_inventory') || authStore.hasPermission('access_personal_data')) {
     baseItems.push({ name: 'Inventory', to: '/inventory', icon: Package });
+  }
+  
+  // Invoices - admins and supervisors can access
+  if (authStore.hasPermission('view_invoices')) {
+    baseItems.push({ name: 'Invoices', to: '/invoices', icon: FileText });
   }
   
   // Admin-only sections
@@ -163,10 +175,10 @@ const navigationItems = computed(() => {
 
 // Demo user switching
 const demoUsers = [
-  { id: 'admin1', name: 'Ahmad Sutrisno', role: 'admin', email: 'admin@terminal1.com', terminalId: 'terminal1', regionId: 'region1', status: 'active' as const },
-  { id: 'supervisor1', name: 'Budi Santoso', role: 'supervisor', email: 'supervisor@pertamc.com', regionId: 'region1', status: 'active' as const },
-  { id: 'worker1', name: 'Candra Wijaya', role: 'worker', email: 'worker@terminal1.com', terminalId: 'terminal1', regionId: 'region1', status: 'active' as const },
-  { id: 'leader1', name: 'Diana Sari', role: 'leader', email: 'leader@pertamc.com', regionId: 'region1', status: 'active' as const }
+  { id: 'admin1', name: 'Ahmad Sutrisno', role: 'admin' as const, email: 'admin@terminal1.com', terminalId: 'terminal1', regionId: 'region1', status: 'active' as const },
+  { id: 'supervisor1', name: 'Budi Santoso', role: 'supervisor' as const, email: 'supervisor@pertamc.com', regionId: 'region1', status: 'active' as const },
+  { id: 'worker1', name: 'Candra Wijaya', role: 'worker' as const, email: 'worker@terminal1.com', terminalId: 'terminal1', regionId: 'region1', status: 'active' as const },
+  { id: 'leader1', name: 'Diana Sari', role: 'leader' as const, email: 'leader@pertamc.com', regionId: 'region1', status: 'active' as const }
 ];
 
 const switchDemoUser = () => {

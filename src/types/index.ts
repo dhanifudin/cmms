@@ -160,6 +160,49 @@ export interface ApiResponse<T> {
   };
 }
 
+// Invoice types
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  workOrderIds: string[];
+  terminalId?: string;
+  regionId?: string;
+  recipientType: 'terminal' | 'region' | 'external_client' | 'contractor';
+  recipientDetails: {
+    name: string;
+    email: string;
+    address?: string;
+    company?: string;
+  };
+  items: InvoiceItem[];
+  summary: {
+    laborCost: number;
+    materialCost: number;
+    penalties: number;
+    subtotal: number;
+    total: number;
+  };
+  status: 'draft' | 'pending' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  generatedAt: string;
+  sentAt?: string;
+  dueDate: string;
+  paidAt?: string;
+  generatedBy: string;
+  notes?: string;
+}
+
+export interface InvoiceItem {
+  id: string;
+  workOrderId: string;
+  type: 'labor' | 'material' | 'penalty';
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  totalPrice: number;
+  category: string;
+}
+
 // Form types
 export interface CreateWorkOrderForm {
   title: string;
