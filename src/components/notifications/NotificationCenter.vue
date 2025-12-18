@@ -130,13 +130,38 @@
                     </span>
                     
                     <div class="flex items-center space-x-1">
+                      <!-- Action Buttons -->
                       <button
-                        v-if="notification.actionUrl"
+                        v-for="action in notification.actionButtons?.slice(0, 2)"
+                        :key="action.id"
+                        @click.stop="handleActionClick(notification.id, action.id)"
+                        class="text-xs px-2 py-1 rounded transition-colors"
+                        :class="{
+                          'bg-blue-600 text-white hover:bg-blue-700': action.type === 'primary',
+                          'bg-gray-100 text-gray-700 hover:bg-gray-200': action.type === 'secondary',
+                          'bg-red-100 text-red-700 hover:bg-red-200': action.type === 'danger'
+                        }"
+                      >
+                        {{ action.label }}
+                      </button>
+                      
+                      <!-- Default view action if no action buttons -->
+                      <button
+                        v-if="!notification.actionButtons?.length && notification.actionUrl"
                         @click.stop="navigateToAction(notification)"
                         class="text-xs text-blue-600 hover:text-blue-800"
                       >
                         View
                       </button>
+                      
+                      <!-- Escalation indicator -->
+                      <span
+                        v-if="notification.escalationLevel && notification.escalationLevel > 0"
+                        class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800"
+                        :title="`Escalated ${notification.escalationLevel} times`"
+                      >
+                        ⚡{{ notification.escalationLevel }}
+                      </span>
                       
                       <button
                         @click.stop="dismissNotification(notification.id)"
@@ -284,6 +309,21 @@ const markAllAsRead = () => {
 
 const clearAllRead = () => {
   notificationStore.clearRead();
+};
+
+const handleActionClick = async (notificationId: string, actionId: string) => {
+  try {
+    const result = await notificationStore.executeNotificationAction(notificationId, actionId);
+    if (result?.success) {
+      // Action executed successfully - notification should be marked as read automatically
+      // Optionally close dropdown for certain actions
+      if (actionId === 'view_assignment' || actionId === 'view_urgent') {
+        closeDropdown();
+      }
+    }
+  } catch (error) {
+    console.error('Failed to execute action:', error);
+  }
 };
 
 const getIcon = (type: string) => {

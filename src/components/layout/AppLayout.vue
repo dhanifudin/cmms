@@ -146,6 +146,7 @@ const currentPageTitle = computed(() => {
     case 'Invoices': return 'Invoices';
     case 'InvoiceDetail': return 'Invoice Details';
     case 'Inbox': return 'Inbox';
+    case 'Reports': return 'Reports & Analytics';
     default: return 'CMMS';
   }
 });
@@ -221,10 +222,10 @@ const logout = () => {
   router.push('/login');
 };
 
-onMounted(() => {
+onMounted(async () => {
   // Initialize stores
   messageStore.initializeInbox();
-  notificationStore.initializeNotifications();
+  await notificationStore.initializeNotifications();
   
   // Close sidebar on large screens by default
   if (window.innerWidth >= 1024) {

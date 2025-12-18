@@ -144,6 +144,9 @@
 
       <!-- Sidebar -->
       <div class="space-y-6">
+        <!-- Priority Notifications -->
+        <NotificationAlerts />
+        
         <!-- Low Stock Alert (Admin only) -->
         <div v-if="isAdmin && lowStockItems.length > 0" 
              class="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -227,6 +230,7 @@ import {
   Clock
 } from 'lucide-vue-next';
 import QuickActionsPanel from '@/components/dashboard/QuickActionsPanel.vue';
+import NotificationAlerts from '@/components/dashboard/NotificationAlerts.vue';
 
 const authStore = useAuthStore();
 const workOrderStore = useWorkOrderStore();

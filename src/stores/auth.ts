@@ -118,6 +118,7 @@ export const useAuthStore = defineStore('auth', () => {
         'generate_invoices',
         'manage_invoices',
         'view_invoices',
+        'view_reports',
         'access_all_terminals'
       ],
       supervisor: [
@@ -129,6 +130,7 @@ export const useAuthStore = defineStore('auth', () => {
         'generate_invoices',
         'manage_invoices',
         'view_invoices',
+        'view_reports',
         'access_regional_data'
       ],
       worker: [

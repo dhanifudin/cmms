@@ -79,6 +79,18 @@ const router = createRouter({
       name: 'Inbox',
       component: () => import('@/views/inbox/Inbox.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/reports',
+      name: 'Reports',
+      component: () => import('@/views/reports/Reports.vue'),
+      meta: { requiresAuth: true, permission: 'view_reports' }
+    },
+    {
+      path: '/settings',
+      name: 'Settings',
+      component: () => import('@/views/settings/Settings.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 });

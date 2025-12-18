@@ -136,15 +136,68 @@ export interface Notification {
   title: string;
   message: string;
   type: 'info' | 'warning' | 'error' | 'success';
+  category: NotificationCategory;
   priority: Priority;
   userId: string;
   read: boolean;
   actionUrl?: string;
+  actionButtons?: NotificationAction[];
   relatedEntity?: {
     type: 'work_order' | 'inventory' | 'user' | 'invoice';
     id: string;
   };
+  metadata?: Record<string, any>;
+  escalationLevel?: number;
+  escalatedAt?: string;
+  expiresAt?: string;
   createdAt: string;
+  readAt?: string;
+}
+
+export type NotificationCategory = 
+  | 'work_order'
+  | 'inventory' 
+  | 'invoice'
+  | 'communication'
+  | 'system'
+  | 'emergency';
+
+export interface NotificationAction {
+  id: string;
+  label: string;
+  type: 'primary' | 'secondary' | 'danger';
+  actionType: 'route' | 'api' | 'modal';
+  target?: string; // URL for route, API endpoint, or modal identifier
+  requireConfirmation?: boolean;
+  confirmationMessage?: string;
+}
+
+export interface NotificationSettings {
+  userId: string;
+  categories: Record<NotificationCategory, boolean>;
+  priorities: Record<Priority, boolean>;
+  deliveryChannels: {
+    inApp: boolean;
+    inbox: boolean;
+    push?: boolean;
+    email?: boolean;
+  };
+  quietHours?: {
+    enabled: boolean;
+    startTime: string; // HH:MM
+    endTime: string; // HH:MM
+    timezone: string;
+  };
+  escalationSettings: {
+    enabled: boolean;
+    delayMinutes: number; // Escalate after X minutes if unread
+    maxLevel: number;
+  };
+  sounds: {
+    enabled: boolean;
+    highPriorityOnly: boolean;
+  };
+  updatedAt: string;
 }
 
 // Message and Communication types
