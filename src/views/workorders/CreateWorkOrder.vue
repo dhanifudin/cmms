@@ -10,210 +10,216 @@
 
     <!-- Form -->
     <form @submit.prevent="handleSubmit" class="space-y-6">
-      <div class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
-        <h2 class="text-lg font-medium text-gray-900 mb-6">Work Order Details</h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
-            <input
-              v-model="form.title"
-              type="text"
-              required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g. Gas Pipeline Pressure Test - Main Line A"
-            />
+      <Card>
+        <CardHeader>
+          <CardTitle>Work Order Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2 space-y-2">
+              <Label for="title">Title</Label>
+              <Input
+                id="title"
+                v-model="form.title"
+                type="text"
+                required
+                placeholder="e.g. Gas Pipeline Pressure Test - Main Line A"
+              />
+            </div>
+
+            <div class="md:col-span-2 space-y-2">
+              <Label for="description">Description</Label>
+              <Textarea
+                id="description"
+                v-model="form.description"
+                rows="3"
+                required
+                placeholder="Detailed description of the maintenance work required..."
+              />
+            </div>
+          
+          <div class="space-y-2">
+            <Label for="type">Type</Label>
+            <Select v-model="form.type" required>
+              <SelectTrigger id="type">
+                <SelectValue placeholder="Select Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="preventive">Preventive Maintenance</SelectItem>
+                <SelectItem value="corrective">Corrective Maintenance</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div v-if="form.type === 'corrective'" class="space-y-2">
+            <Label for="subType">Sub Type</Label>
+            <Select v-model="form.subType">
+              <SelectTrigger id="subType">
+                <SelectValue placeholder="Select Sub Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="planned">Planned</SelectItem>
+                <SelectItem value="incidental">Incidental</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="priority">Priority</Label>
+            <Select v-model="form.priority" required>
+              <SelectTrigger id="priority">
+                <SelectValue placeholder="Select Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="terminal">Terminal</Label>
+            <Select v-model="form.terminalId" required>
+              <SelectTrigger id="terminal">
+                <SelectValue placeholder="Select Terminal" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="terminal1">Terminal 1 - Jakarta</SelectItem>
+                <SelectItem value="terminal2">Terminal 2 - Surabaya</SelectItem>
+                <SelectItem value="terminal3">Terminal 3 - Medan</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-            <textarea
-              v-model="form.description"
-              rows="3"
-              required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Detailed description of the maintenance work required..."
-            ></textarea>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
-            <select
-              v-model="form.type"
-              required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select Type</option>
-              <option value="preventive">Preventive Maintenance</option>
-              <option value="corrective">Corrective Maintenance</option>
-            </select>
-          </div>
-          
-          <div v-if="form.type === 'corrective'">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Sub Type</label>
-            <select
-              v-model="form.subType"
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select Sub Type</option>
-              <option value="planned">Planned</option>
-              <option value="incidental">Incidental</option>
-            </select>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-            <select
-              v-model="form.priority"
-              required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select Priority</option>
-              <option value="low">Low</option>
-              <option value="normal">Normal</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Terminal</label>
-            <select
-              v-model="form.terminalId"
-              required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select Terminal</option>
-              <option value="terminal1">Terminal 1 - Jakarta</option>
-              <option value="terminal2">Terminal 2 - Surabaya</option>
-              <option value="terminal3">Terminal 3 - Medan</option>
-            </select>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-            <input
+          <div class="space-y-2">
+            <Label for="startDate">Start Date</Label>
+            <Input
+              id="startDate"
               v-model="form.startDate"
               type="datetime-local"
               required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
-            <input
+
+          <div class="space-y-2">
+            <Label for="dueDate">Due Date</Label>
+            <Input
+              id="dueDate"
               v-model="form.dueDate"
               type="datetime-local"
               required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Duration (hours)</label>
-            <input
+
+          <div class="space-y-2">
+            <Label for="estimatedDuration">Estimated Duration (hours)</Label>
+            <Input
+              id="estimatedDuration"
               v-model.number="form.estimatedDuration"
               type="number"
               min="1"
               required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          
-          <div v-if="hasPermission('assign_workers')">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Assigned Worker</label>
-            <select
-              v-model="form.assignedWorkerId"
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Assign Later</option>
-              <option value="worker1">Candra Wijaya</option>
-              <option value="worker2">Eko Pratama</option>
-              <option value="worker3">Farid Rahman</option>
-            </select>
+
+          <div v-if="hasPermission('assign_workers')" class="space-y-2">
+            <Label for="assignedWorker">Assigned Worker</Label>
+            <Select v-model="form.assignedWorkerId">
+              <SelectTrigger id="assignedWorker">
+                <SelectValue placeholder="Assign Later" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="worker1">Candra Wijaya</SelectItem>
+                <SelectItem value="worker2">Eko Pratama</SelectItem>
+                <SelectItem value="worker3">Farid Rahman</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </div>
+      </CardContent>
+      </Card>
 
       <!-- Materials Section -->
-      <div class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-medium text-gray-900">Required Materials</h2>
-          <button
+      <Card>
+        <CardHeader class="flex flex-row items-center justify-between space-y-0">
+          <CardTitle>Required Materials</CardTitle>
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             @click="addMaterial"
-            class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            <Plus class="w-4 h-4 mr-1" />
+            <Plus class="w-4 h-4 mr-2" />
             Add Material
-          </button>
-        </div>
-        
-        <div v-if="form.materials.length === 0" class="text-center py-6 text-gray-500">
-          <Package class="mx-auto h-8 w-8 text-gray-300 mb-2" />
-          <p>No materials added yet</p>
-        </div>
-        
-        <div v-else class="space-y-4">
-          <div
-            v-for="(material, index) in form.materials"
-            :key="index"
-            class="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg"
-          >
-            <div class="flex-1">
-              <select
-                v-model="material.itemId"
-                required
-                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-              >
-                <option value="">Select Material</option>
-                <option
-                  v-for="item in availableItems"
-                  :key="item.id"
-                  :value="item.id"
-                >
-                  {{ item.name }} ({{ item.currentStock }} {{ item.unitOfMeasure }})
-                </option>
-              </select>
-            </div>
-            <div class="w-32">
-              <input
-                v-model.number="material.plannedQuantity"
-                type="number"
-                min="1"
-                required
-                placeholder="Qty"
-                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
-            </div>
-            <button
-              type="button"
-              @click="removeMaterial(index)"
-              class="p-2 text-red-600 hover:text-red-800"
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <Alert v-if="form.materials.length === 0">
+            <Package class="h-4 w-4" />
+            <AlertTitle>No materials added</AlertTitle>
+            <AlertDescription>Click "Add Material" to include required materials for this work order.</AlertDescription>
+          </Alert>
+
+          <div v-else class="space-y-4">
+            <div
+              v-for="(material, index) in form.materials"
+              :key="index"
+              class="flex items-center space-x-4 p-4 border border-border rounded-lg"
             >
-              <Trash2 class="w-4 h-4" />
-            </button>
+              <div class="flex-1">
+                <Select v-model="material.itemId" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Material" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="item in availableItems"
+                      :key="item.id"
+                      :value="item.id"
+                    >
+                      {{ item.name }} ({{ item.currentStock }} {{ item.unitOfMeasure }})
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="w-32">
+                <Input
+                  v-model.number="material.plannedQuantity"
+                  type="number"
+                  min="1"
+                  required
+                  placeholder="Qty"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                @click="removeMaterial(index)"
+                class="text-destructive hover:text-destructive"
+              >
+                <Trash2 class="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <!-- Form Actions -->
       <div class="flex justify-end space-x-4">
-        <router-link
-          to="/work-orders"
-          class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          Cancel
-        </router-link>
-        <button
+        <Button variant="outline" as-child>
+          <router-link to="/work-orders">
+            Cancel
+          </router-link>
+        </Button>
+        <Button
           type="submit"
           :disabled="isSubmitting"
-          class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
         >
-          <span v-if="isSubmitting">Creating...</span>
-          <span v-else>Create Work Order</span>
-        </button>
+          {{ isSubmitting ? 'Creating...' : 'Create Work Order' }}
+        </Button>
       </div>
     </form>
   </div>
@@ -225,6 +231,13 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useWorkOrderStore } from '@/stores/workorder';
 import { useInventoryStore } from '@/stores/inventory';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Plus, Package, Trash2 } from 'lucide-vue-next';
 import type { CreateWorkOrderForm } from '@/types';
 

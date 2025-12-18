@@ -11,58 +11,63 @@
       
       <!-- Navigation -->
       <nav class="mt-8 px-4 space-y-2">
-        <router-link
+        <Button
           v-for="item in navigationItems"
           :key="item.name"
-          :to="item.to"
-          class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors relative"
-          :class="$route.path === item.to 
-            ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600' 
-            : 'text-gray-700 hover:bg-gray-50'"
+          as-child
+          :variant="$route.path === item.to ? 'secondary' : 'ghost'"
+          class="w-full justify-start relative"
         >
-          <component :is="item.icon" class="w-5 h-5 mr-3" />
-          {{ item.name }}
-          <span
-            v-if="item.badge"
-            class="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full"
-          >
-            {{ item.badge > 99 ? '99+' : item.badge }}
-          </span>
-        </router-link>
+          <router-link :to="item.to" class="flex items-center">
+            <component :is="item.icon" class="w-5 h-5 mr-3" />
+            {{ item.name }}
+            <Badge
+              v-if="item.badge"
+              variant="destructive"
+              class="ml-auto"
+            >
+              {{ item.badge > 99 ? '99+' : item.badge }}
+            </Badge>
+          </router-link>
+        </Button>
       </nav>
       
       <!-- User section -->
       <div class="absolute bottom-0 left-0 right-0 p-4 border-t">
         <div class="flex items-center mb-3">
-          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-            <span class="text-sm font-medium text-blue-600">
+          <Avatar class="mr-3">
+            <AvatarFallback class="bg-blue-100 text-blue-600">
               {{ currentUser?.name.charAt(0).toUpperCase() }}
-            </span>
-          </div>
+            </AvatarFallback>
+          </Avatar>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-gray-900 truncate">{{ currentUser?.name }}</p>
-            <p class="text-xs text-gray-500 capitalize">{{ currentUser?.role }}</p>
+            <Badge variant="secondary" class="text-xs capitalize">{{ currentUser?.role }}</Badge>
           </div>
         </div>
-        
+
+        <Separator class="my-2" />
+
         <!-- Role switcher for demo -->
-        <select 
-          v-model="selectedDemoUser"
-          @change="switchDemoUser"
-          class="w-full mb-2 px-2 py-1 text-xs border border-gray-300 rounded"
-        >
-          <option value="">Switch User (Demo)</option>
-          <option v-for="user in demoUsers" :key="user.id" :value="user.id">
-            {{ user.name }} ({{ user.role }})
-          </option>
-        </select>
-        
-        <button
+        <Select v-model="selectedDemoUser" @update:model-value="switchDemoUser">
+          <SelectTrigger class="w-full mb-2">
+            <SelectValue placeholder="Switch User (Demo)" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="user in demoUsers" :key="user.id" :value="user.id">
+              {{ user.name }} ({{ user.role }})
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Button
+          variant="ghost"
+          class="w-full justify-start"
           @click="logout"
-          class="w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
         >
+          <LogOut class="w-4 h-4 mr-2" />
           Sign out
-        </button>
+        </Button>
       </div>
     </div>
     
@@ -76,12 +81,14 @@
       <!-- Top bar -->
       <div class="sticky top-0 z-30 bg-white border-b border-gray-200">
         <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
+            class="lg:hidden"
             @click="sidebarOpen = !sidebarOpen"
-            class="lg:hidden p-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
           >
             <Menu class="w-6 h-6" />
-          </button>
+          </Button>
           
           <div class="flex-1">
             <h1 class="text-lg font-semibold text-gray-900 lg:ml-0 ml-4">
@@ -111,16 +118,22 @@ import { useAuthStore } from '@/stores/auth';
 import { useMessageStore } from '@/stores/message';
 import { useNotificationStore } from '@/stores/notification';
 import NotificationCenter from '@/components/notifications/NotificationCenter.vue';
-import { 
-  LayoutDashboard, 
-  ClipboardList, 
-  Package, 
-  FileText, 
-  Users, 
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import {
+  LayoutDashboard,
+  ClipboardList,
+  Package,
+  FileText,
+  Users,
   Settings,
   Menu,
   BarChart,
-  Inbox as InboxIcon
+  Inbox as InboxIcon,
+  LogOut
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -208,8 +221,10 @@ const demoUsers = [
   { id: 'leader1', name: 'Diana Sari', role: 'leader' as const, email: 'leader@pertamc.com', regionId: 'region1', status: 'active' as const }
 ];
 
-const switchDemoUser = () => {
-  const user = demoUsers.find(u => u.id === selectedDemoUser.value);
+const switchDemoUser = (value: any) => {
+  const userId = typeof value === 'string' ? value : String(value);
+  if (!userId) return;
+  const user = demoUsers.find(u => u.id === userId);
   if (user) {
     authStore.switchUser(user);
     router.push('/dashboard');

@@ -1,96 +1,84 @@
 <template>
-  <div class="fixed inset-0 z-50 overflow-y-auto">
-    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <!-- Background overlay -->
-      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="closeModal"></div>
+  <Dialog :open="true" @update:open="(open: boolean) => !open && closeModal()">
+    <DialogContent class="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>
+          {{ isBeforeSubmission ? 'Submit Before Documentation' : 'Submit After Documentation' }}
+        </DialogTitle>
+      </DialogHeader>
 
-      <!-- Modal -->
-      <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full sm:p-6">
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-medium text-gray-900">
-            {{ isBeforeSubmission ? 'Submit Before Documentation' : 'Submit After Documentation' }}
-          </h3>
-          <button
-            @click="closeModal"
-            class="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <XIcon class="h-6 w-6" />
-          </button>
-        </div>
-
-        <form @submit.prevent="handleSubmit" class="space-y-6">
+      <form @submit.prevent="handleSubmit" class="space-y-6">
           <!-- Checklist Section (for before documentation) -->
           <div v-if="isBeforeSubmission && checklist.length > 0">
-            <h4 class="text-sm font-medium text-gray-900 mb-4">Complete Checklist (Before State)</h4>
-            <div class="space-y-4 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-4">
+            <h4 class="text-sm font-medium mb-4">Complete Checklist (Before State)</h4>
+            <div class="space-y-4 max-h-64 overflow-y-auto border border-border rounded-lg p-4">
               <div
                 v-for="item in checklist"
                 :key="item.id"
-                class="border-b border-gray-100 pb-3 last:border-b-0"
+                class="border-b border-border pb-3 last:border-b-0"
               >
                 <div class="flex items-start justify-between">
                   <div class="flex-1">
-                    <label class="text-sm font-medium text-gray-700">
+                    <Label class="text-sm font-medium">
                       {{ item.label }}
-                      <span v-if="item.required" class="text-red-500 ml-1">*</span>
-                    </label>
-                    <p v-if="item.unit" class="text-xs text-gray-500">Unit: {{ item.unit }}</p>
+                      <span v-if="item.required" class="text-destructive ml-1">*</span>
+                    </Label>
+                    <p v-if="item.unit" class="text-xs text-muted-foreground">Unit: {{ item.unit }}</p>
                   </div>
-                  
+
                   <div class="ml-4 min-w-32">
                     <!-- Yes/No type -->
                     <template v-if="item.type === 'yes_no'">
-                      <select
-                        v-model="checklistValues[item.id]"
-                        class="w-full px-3 py-1 border border-gray-300 rounded text-sm"
-                        :required="item.required"
-                      >
-                        <option value="">Select...</option>
-                        <option :value="true">Yes</option>
-                        <option :value="false">No</option>
-                      </select>
+                      <Select v-model="checklistValues[item.id]" :required="item.required">
+                        <SelectTrigger class="h-8">
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">Yes</SelectItem>
+                          <SelectItem value="false">No</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </template>
-                    
+
                     <!-- Number type -->
                     <template v-else-if="item.type === 'number'">
-                      <input
+                      <Input
                         v-model.number="checklistValues[item.id]"
                         type="number"
                         :step="0.01"
                         :min="item.minValue"
                         :max="item.maxValue"
-                        class="w-full px-3 py-1 border border-gray-300 rounded text-sm"
+                        class="h-8"
                         :required="item.required"
                       />
                     </template>
-                    
+
                     <!-- Text type -->
                     <template v-else-if="item.type === 'text'">
-                      <input
+                      <Input
                         v-model="checklistValues[item.id]"
                         type="text"
-                        class="w-full px-3 py-1 border border-gray-300 rounded text-sm"
+                        class="h-8"
                         :required="item.required"
                       />
                     </template>
-                    
+
                     <!-- Dropdown type -->
                     <template v-else-if="item.type === 'dropdown'">
-                      <select
-                        v-model="checklistValues[item.id]"
-                        class="w-full px-3 py-1 border border-gray-300 rounded text-sm"
-                        :required="item.required"
-                      >
-                        <option value="">Select...</option>
-                        <option
-                          v-for="option in item.options"
-                          :key="option"
-                          :value="option"
-                        >
-                          {{ option }}
-                        </option>
-                      </select>
+                      <Select v-model="checklistValues[item.id]" :required="item.required">
+                        <SelectTrigger class="h-8">
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem
+                            v-for="option in item.options"
+                            :key="option"
+                            :value="option"
+                          >
+                            {{ option }}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </template>
                     
                     <!-- Rating type -->
@@ -118,12 +106,12 @@
 
           <!-- Photos Section -->
           <div>
-            <h4 class="text-sm font-medium text-gray-900 mb-4">
+            <h4 class="text-sm font-medium mb-4">
               {{ isBeforeSubmission ? 'Before Photos' : 'After Photos' }}
             </h4>
-            
+
             <!-- Photo Upload Area -->
-            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+            <div class="border-2 border-dashed border-border rounded-lg p-6">
               <input
                 ref="photoInput"
                 @change="handlePhotoSelect"
@@ -133,19 +121,19 @@
                 capture="environment"
                 class="hidden"
               />
-              
+
               <div v-if="selectedPhotos.length === 0" class="text-center">
-                <CameraIcon class="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <CameraIcon class="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <div class="space-y-2">
-                  <button
-                    @click="($refs.photoInput as HTMLInputElement).click()"
+                  <Button
                     type="button"
-                    class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    variant="outline"
+                    @click="($refs.photoInput as HTMLInputElement).click()"
                   >
                     <CameraIcon class="h-4 w-4 mr-2" />
                     Take Photos
-                  </button>
-                  <p class="text-xs text-gray-500">
+                  </Button>
+                  <p class="text-xs text-muted-foreground">
                     Take photos of the equipment before{{ isBeforeSubmission ? '' : '/after' }} maintenance
                   </p>
                 </div>
@@ -169,120 +157,122 @@
                     
                     <!-- Photo overlay -->
                     <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-lg transition-all duration-200 flex items-center justify-center">
-                      <button
-                        @click="removePhoto(index)"
+                      <Button
                         type="button"
-                        class="opacity-0 group-hover:opacity-100 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all duration-200"
+                        variant="destructive"
+                        size="icon"
+                        class="opacity-0 group-hover:opacity-100 rounded-full"
+                        @click="removePhoto(index)"
                       >
                         <TrashIcon class="h-4 w-4" />
-                      </button>
+                      </Button>
                     </div>
-                    
+
                     <!-- Photo caption -->
                     <div class="mt-2">
-                      <input
+                      <Input
                         v-model="photo.caption"
                         type="text"
                         placeholder="Add caption..."
-                        class="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                        class="h-7 text-xs"
                       />
                     </div>
                   </div>
                 </div>
-                
-                <button
-                  @click="($refs.photoInput as HTMLInputElement).click()"
+
+                <Button
                   type="button"
-                  class="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                  variant="outline"
+                  class="w-full border-2 border-dashed"
+                  @click="($refs.photoInput as HTMLInputElement).click()"
                 >
-                  <CameraIcon class="h-4 w-4 mx-auto mb-1" />
+                  <CameraIcon class="h-4 w-4 mr-2" />
                   Add More Photos
-                </button>
+                </Button>
               </div>
             </div>
           </div>
 
           <!-- Notes Section -->
           <div>
-            <label class="block text-sm font-medium text-gray-900 mb-2">
+            <Label for="notes" class="block text-sm font-medium mb-2">
               {{ isBeforeSubmission ? 'Before Notes' : 'After Notes' }}
-            </label>
-            <textarea
+            </Label>
+            <Textarea
+              id="notes"
               v-model="notes"
               rows="4"
               placeholder="Add any additional notes or observations..."
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            ></textarea>
+            />
           </div>
 
           <!-- Material Usage (for after documentation) -->
           <div v-if="!isBeforeSubmission && materials.length > 0">
-            <h4 class="text-sm font-medium text-gray-900 mb-4">Material Usage</h4>
+            <h4 class="text-sm font-medium mb-4">Material Usage</h4>
             <div class="space-y-3">
               <div
                 v-for="material in materials"
                 :key="material.itemId"
-                class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                class="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
               >
                 <div class="flex-1">
-                  <p class="text-sm font-medium text-gray-900">
+                  <p class="text-sm font-medium">
                     {{ getInventoryItemName(material.itemId) }}
                   </p>
-                  <p class="text-xs text-gray-500">Planned: {{ material.plannedQuantity }}</p>
+                  <p class="text-xs text-muted-foreground">Planned: {{ material.plannedQuantity }}</p>
                 </div>
                 <div class="w-24">
-                  <input
+                  <Input
                     v-model.number="materialUsage[material.itemId]"
                     type="number"
                     :min="0"
                     :step="0.01"
                     :placeholder="material.plannedQuantity.toString()"
-                    class="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                    class="h-8 text-sm"
                   />
-                  <p class="text-xs text-gray-500 mt-1">Actual Used</p>
+                  <p class="text-xs text-muted-foreground mt-1">Actual Used</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Action Buttons -->
-          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-            <button
-              @click="closeModal"
-              type="button"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              :disabled="isSubmitting || !canSubmit"
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span v-if="isSubmitting" class="inline-flex items-center">
-                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Submitting...
-              </span>
-              <span v-else>
-                {{ isBeforeSubmission ? 'Start Work' : 'Submit for Review' }}
-              </span>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+        <DialogFooter class="pt-6">
+          <Button
+            type="button"
+            variant="outline"
+            @click="closeModal"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            :disabled="isSubmitting || !canSubmit"
+          >
+            {{ isSubmitting ? 'Submitting...' : (isBeforeSubmission ? 'Start Work' : 'Submit for Review') }}
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useInventoryStore } from '@/stores/inventory';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import type { ChecklistItem, MaterialRequirement } from '@/types';
 import {
-  X as XIcon,
   Camera as CameraIcon,
   Trash2 as TrashIcon,
   Star as StarIcon

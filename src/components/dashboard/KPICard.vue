@@ -1,46 +1,48 @@
 <template>
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <div class="flex items-center">
-      <div class="flex-shrink-0">
-        <div 
-          class="w-12 h-12 rounded-lg flex items-center justify-center"
-          :class="iconBackground"
+  <Card>
+    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle class="text-sm font-medium text-muted-foreground">
+        {{ title }}
+      </CardTitle>
+      <div
+        class="w-10 h-10 rounded-lg flex items-center justify-center"
+        :class="iconBackground"
+      >
+        <component
+          :is="iconComponent"
+          class="w-5 h-5"
+          :class="iconColor"
+        />
+      </div>
+    </CardHeader>
+    <CardContent>
+      <div class="flex items-baseline">
+        <div class="text-2xl font-bold">{{ value }}</div>
+        <Badge
+          :variant="changeVariant"
+          class="ml-2"
         >
-          <component 
-            :is="iconComponent" 
-            class="w-6 h-6"
-            :class="iconColor"
-          />
-        </div>
+          <span v-if="change > 0">+</span>{{ change }}{{ changeType === 'neutral' ? '' : '%' }}
+        </Badge>
       </div>
-      <div class="ml-4 flex-1">
-        <p class="text-sm font-medium text-gray-500">{{ title }}</p>
-        <div class="flex items-baseline">
-          <p class="text-2xl font-semibold text-gray-900">{{ value }}</p>
-          <p 
-            class="ml-2 text-sm font-medium"
-            :class="changeColorClass"
-          >
-            <span v-if="change > 0">+</span>{{ change }}{{ changeType === 'neutral' ? '' : '%' }}
-          </p>
-        </div>
-        <p class="text-xs text-gray-500 mt-1">{{ period }}</p>
-      </div>
-    </div>
-    <div v-if="description" class="mt-3 text-xs text-gray-600">
-      {{ description }}
-    </div>
-  </div>
+      <p class="text-xs text-muted-foreground mt-1">{{ period }}</p>
+      <p v-if="description" class="text-xs text-muted-foreground mt-2">
+        {{ description }}
+      </p>
+    </CardContent>
+  </Card>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { 
-  ClipboardList, 
-  CheckCircle, 
-  AlertTriangle, 
-  Clock, 
-  DollarSign, 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  ClipboardList,
+  CheckCircle,
+  AlertTriangle,
+  Clock,
+  DollarSign,
   TrendingUp,
   FileText,
   Package,
@@ -105,11 +107,11 @@ const colorConfig = {
 const iconBackground = computed(() => colorConfig[props.color as keyof typeof colorConfig]?.background || 'bg-gray-100');
 const iconColor = computed(() => colorConfig[props.color as keyof typeof colorConfig]?.icon || 'text-gray-600');
 
-const changeColorClass = computed(() => {
-  if (props.changeType === 'neutral') return 'text-gray-500';
+const changeVariant = computed(() => {
+  if (props.changeType === 'neutral') return 'secondary';
   if (props.changeType === 'increase') {
-    return props.icon === 'AlertTriangle' ? 'text-red-600' : 'text-green-600';
+    return props.icon === 'AlertTriangle' ? 'destructive' : 'default';
   }
-  return props.icon === 'AlertTriangle' ? 'text-green-600' : 'text-red-600';
+  return props.icon === 'AlertTriangle' ? 'default' : 'destructive';
 });
 </script>

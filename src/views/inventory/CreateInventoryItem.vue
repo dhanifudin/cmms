@@ -10,152 +10,152 @@
 
     <!-- Form -->
     <form @submit.prevent="handleSubmit" class="space-y-6">
-      <div class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
-        <h2 class="text-lg font-medium text-gray-900 mb-6">Item Details</h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Item Name</label>
-            <input
-              v-model="form.name"
-              type="text"
-              required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g. Gas Pipeline Gasket - High Pressure"
-            />
-          </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Item Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2 space-y-2">
+              <Label for="name">Item Name</Label>
+              <Input
+                id="name"
+                v-model="form.name"
+                type="text"
+                required
+                placeholder="e.g. Gas Pipeline Gasket - High Pressure"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="code">Item Code</Label>
+              <Input
+                id="code"
+                v-model="form.code"
+                type="text"
+                required
+                placeholder="e.g. GPG-HP-001"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="category">Category</Label>
+              <Select v-model="form.category" required>
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Select Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pipeline Components">Pipeline Components</SelectItem>
+                  <SelectItem value="Pump & Compressor Parts">Pump & Compressor Parts</SelectItem>
+                  <SelectItem value="Safety & Emergency Equipment">Safety & Emergency Equipment</SelectItem>
+                  <SelectItem value="Filtration Systems">Filtration Systems</SelectItem>
+                  <SelectItem value="Instrumentation">Instrumentation</SelectItem>
+                  <SelectItem value="Electrical & Control">Electrical & Control</SelectItem>
+                  <SelectItem value="Consumables">Consumables</SelectItem>
+                  <SelectItem value="Tools & Maintenance">Tools & Maintenance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div class="md:col-span-2 space-y-2">
+              <Label for="description">Description</Label>
+              <Textarea
+                id="description"
+                v-model="form.description"
+                rows="3"
+                placeholder="Detailed description of the item..."
+              />
+            </div>
           
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Item Code</label>
-            <input
-              v-model="form.code"
-              type="text"
-              required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g. GPG-HP-001"
-            />
+          <div class="space-y-2">
+            <Label for="unitOfMeasure">Unit of Measure</Label>
+            <Select v-model="form.unitOfMeasure" required>
+              <SelectTrigger id="unitOfMeasure">
+                <SelectValue placeholder="Select Unit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pieces">Pieces</SelectItem>
+                <SelectItem value="liters">Liters</SelectItem>
+                <SelectItem value="kilograms">Kilograms</SelectItem>
+                <SelectItem value="meters">Meters</SelectItem>
+                <SelectItem value="kits">Kits</SelectItem>
+                <SelectItem value="containers">Containers</SelectItem>
+                <SelectItem value="bottles">Bottles</SelectItem>
+                <SelectItem value="rolls">Rolls</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
-            <select
-              v-model="form.category"
-              required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select Category</option>
-              <option value="Pipeline Components">Pipeline Components</option>
-              <option value="Pump & Compressor Parts">Pump & Compressor Parts</option>
-              <option value="Safety & Emergency Equipment">Safety & Emergency Equipment</option>
-              <option value="Filtration Systems">Filtration Systems</option>
-              <option value="Instrumentation">Instrumentation</option>
-              <option value="Electrical & Control">Electrical & Control</option>
-              <option value="Consumables">Consumables</option>
-              <option value="Tools & Maintenance">Tools & Maintenance</option>
-            </select>
-          </div>
-          
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-            <textarea
-              v-model="form.description"
-              rows="3"
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Detailed description of the item..."
-            ></textarea>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Unit of Measure</label>
-            <select
-              v-model="form.unitOfMeasure"
-              required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select Unit</option>
-              <option value="pieces">Pieces</option>
-              <option value="liters">Liters</option>
-              <option value="kilograms">Kilograms</option>
-              <option value="meters">Meters</option>
-              <option value="kits">Kits</option>
-              <option value="containers">Containers</option>
-              <option value="bottles">Bottles</option>
-              <option value="rolls">Rolls</option>
-            </select>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Current Stock</label>
-            <input
+
+          <div class="space-y-2">
+            <Label for="currentStock">Current Stock</Label>
+            <Input
+              id="currentStock"
               v-model.number="form.currentStock"
               type="number"
               min="0"
               required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Threshold</label>
-            <input
+
+          <div class="space-y-2">
+            <Label for="minThreshold">Minimum Threshold</Label>
+            <Input
+              id="minThreshold"
               v-model.number="form.minThreshold"
               type="number"
               min="0"
               required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Unit Price ($)</label>
-            <input
+
+          <div class="space-y-2">
+            <Label for="unitPrice">Unit Price ($)</Label>
+            <Input
+              id="unitPrice"
               v-model.number="form.unitPrice"
               type="number"
               min="0"
               step="0.01"
               required
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Storage Location</label>
-            <input
+
+          <div class="space-y-2">
+            <Label for="storageLocation">Storage Location</Label>
+            <Input
+              id="storageLocation"
               v-model="form.storageLocation"
               type="text"
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="e.g. Warehouse A - Shelf 1A"
             />
           </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Supplier</label>
-            <input
+
+          <div class="space-y-2">
+            <Label for="supplier">Supplier</Label>
+            <Input
+              id="supplier"
               v-model="form.supplier"
               type="text"
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="e.g. Industrial Sealing Solutions"
             />
           </div>
-        </div>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <!-- Form Actions -->
       <div class="flex justify-end space-x-4">
-        <router-link
-          to="/inventory"
-          class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          Cancel
-        </router-link>
-        <button
+        <Button variant="outline" as-child>
+          <router-link to="/inventory">
+            Cancel
+          </router-link>
+        </Button>
+        <Button
           type="submit"
           :disabled="isSubmitting"
-          class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
         >
-          <span v-if="isSubmitting">Adding...</span>
-          <span v-else>Add Item</span>
-        </button>
+          {{ isSubmitting ? 'Adding...' : 'Add Item' }}
+        </Button>
       </div>
     </form>
   </div>
@@ -165,6 +165,12 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useInventoryStore } from '@/stores/inventory';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const router = useRouter();
 const inventoryStore = useInventoryStore();

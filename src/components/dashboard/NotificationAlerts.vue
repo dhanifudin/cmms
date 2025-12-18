@@ -1,135 +1,104 @@
 <template>
   <div v-if="priorityAlerts.length > 0" class="space-y-3">
-    <h3 class="text-sm font-medium text-gray-900 flex items-center">
+    <div class="flex items-center">
       <AlertTriangleIcon class="h-4 w-4 mr-2 text-orange-500" />
-      Priority Alerts
-      <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+      <h3 class="text-sm font-medium">Priority Alerts</h3>
+      <Badge variant="destructive" class="ml-2">
         {{ priorityAlerts.length }}
-      </span>
-    </h3>
-    
+      </Badge>
+    </div>
+
     <div class="space-y-2">
-      <div
+      <Alert
         v-for="alert in priorityAlerts.slice(0, 3)"
         :key="alert.id"
-        class="p-3 rounded-lg border-l-4 cursor-pointer transition-colors"
-        :class="{
-          'border-l-orange-500 bg-orange-50 hover:bg-orange-100': alert.priority === 'high',
-          'border-l-red-500 bg-red-50 hover:bg-red-100': alert.priority === 'urgent'
-        }"
+        :variant="alert.priority === 'urgent' ? 'destructive' : 'default'"
+        class="cursor-pointer transition-colors hover:bg-accent"
         @click="handleAlertClick(alert)"
       >
-        <div class="flex items-start justify-between">
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center">
-              <h4 class="text-sm font-medium text-gray-900 truncate">
-                {{ alert.title }}
-              </h4>
-              <span
-                v-if="alert.escalationLevel && alert.escalationLevel > 0"
-                class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800"
-                :title="`Escalated ${alert.escalationLevel} times`"
-              >
-                ⚡{{ alert.escalationLevel }}
-              </span>
-            </div>
-            <p class="text-xs text-gray-600 mt-1 line-clamp-2">
-              {{ alert.message }}
-            </p>
-            <div class="flex items-center justify-between mt-2">
-              <span class="text-xs text-gray-500">
-                {{ formatTime(alert.createdAt) }}
-              </span>
-              <span
-                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                :class="getCategoryColor(alert.category)"
-              >
-                {{ formatCategory(alert.category) }}
-              </span>
-            </div>
-          </div>
-          
-          <div class="ml-3 flex-shrink-0">
-            <component
-              :is="getAlertIcon(alert.type)"
-              class="h-4 w-4"
-              :class="getIconColor(alert.type)"
-            />
-          </div>
-        </div>
-        
-        <!-- Quick Actions -->
-        <div v-if="alert.actionButtons && alert.actionButtons.length > 0" class="mt-3 flex space-x-2">
-          <button
-            v-for="action in alert.actionButtons.slice(0, 2)"
-            :key="action.id"
-            @click.stop="handleActionClick(alert.id, action.id)"
-            class="text-xs px-2 py-1 rounded transition-colors"
-            :class="{
-              'bg-blue-600 text-white hover:bg-blue-700': action.type === 'primary',
-              'bg-gray-100 text-gray-700 hover:bg-gray-200': action.type === 'secondary',
-              'bg-red-100 text-red-700 hover:bg-red-200': action.type === 'danger'
-            }"
+        <component :is="getAlertIcon(alert.type)" class="h-4 w-4" />
+        <AlertTitle class="flex items-center">
+          {{ alert.title }}
+          <Badge
+            v-if="alert.escalationLevel && alert.escalationLevel > 0"
+            variant="outline"
+            class="ml-2"
+            :title="`Escalated ${alert.escalationLevel} times`"
           >
-            {{ action.label }}
-          </button>
-        </div>
-      </div>
+            ⚡{{ alert.escalationLevel }}
+          </Badge>
+        </AlertTitle>
+        <AlertDescription class="space-y-2">
+          <p class="line-clamp-2">{{ alert.message }}</p>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-muted-foreground">{{ formatTime(alert.createdAt) }}</span>
+            <Badge variant="secondary">{{ formatCategory(alert.category) }}</Badge>
+          </div>
+
+          <!-- Quick Actions -->
+          <div v-if="alert.actionButtons && alert.actionButtons.length > 0" class="flex gap-2 pt-2">
+            <Button
+              v-for="action in alert.actionButtons.slice(0, 2)"
+              :key="action.id"
+              size="sm"
+              :variant="action.type === 'primary' ? 'default' : action.type === 'danger' ? 'destructive' : 'secondary'"
+              @click.stop="handleActionClick(alert.id, action.id)"
+            >
+              {{ action.label }}
+            </Button>
+          </div>
+        </AlertDescription>
+      </Alert>
       
       <!-- Show more alerts indicator -->
       <div v-if="priorityAlerts.length > 3" class="text-center">
-        <router-link
-          to="/inbox"
-          class="text-xs text-blue-600 hover:text-blue-800 font-medium"
-        >
-          {{ priorityAlerts.length - 3 }} more priority alert{{ priorityAlerts.length - 3 !== 1 ? 's' : '' }}
-        </router-link>
+        <Button variant="link" as-child size="sm">
+          <router-link to="/inbox">
+            {{ priorityAlerts.length - 3 }} more priority alert{{ priorityAlerts.length - 3 !== 1 ? 's' : '' }}
+          </router-link>
+        </Button>
       </div>
     </div>
   </div>
-  
+
   <!-- Recent Activity -->
   <div v-else-if="recentNotifications.length > 0" class="space-y-3">
-    <h3 class="text-sm font-medium text-gray-900 flex items-center">
+    <div class="flex items-center">
       <ClockIcon class="h-4 w-4 mr-2 text-blue-500" />
-      Recent Activity
-    </h3>
-    
+      <h3 class="text-sm font-medium">Recent Activity</h3>
+    </div>
+
     <div class="space-y-2">
-      <div
+      <Card
         v-for="notification in recentNotifications.slice(0, 3)"
         :key="notification.id"
-        class="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+        class="cursor-pointer transition-colors hover:bg-accent"
         @click="handleAlertClick(notification)"
       >
-        <div class="flex items-start justify-between">
-          <div class="flex-1 min-w-0">
-            <h4 class="text-sm font-medium text-gray-900 truncate">
-              {{ notification.title }}
-            </h4>
-            <p class="text-xs text-gray-600 mt-1 truncate">
-              {{ notification.message }}
-            </p>
-            <span class="text-xs text-gray-500">
-              {{ formatTime(notification.createdAt) }}
-            </span>
+        <CardContent class="p-3">
+          <div class="flex items-start justify-between">
+            <div class="flex-1 min-w-0">
+              <h4 class="text-sm font-medium truncate">{{ notification.title }}</h4>
+              <p class="text-xs text-muted-foreground mt-1 truncate">{{ notification.message }}</p>
+              <span class="text-xs text-muted-foreground">{{ formatTime(notification.createdAt) }}</span>
+            </div>
+            <component
+              :is="getAlertIcon(notification.type)"
+              class="h-4 w-4 ml-3 flex-shrink-0"
+              :class="getIconColor(notification.type)"
+            />
           </div>
-          <component
-            :is="getAlertIcon(notification.type)"
-            class="h-4 w-4 ml-3 flex-shrink-0"
-            :class="getIconColor(notification.type)"
-          />
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   </div>
-  
+
   <!-- No notifications -->
-  <div v-else class="text-center py-6">
-    <CheckCircleIcon class="h-8 w-8 text-green-500 mx-auto mb-2" />
-    <p class="text-sm text-gray-600">All caught up!</p>
-    <p class="text-xs text-gray-500">No pending notifications</p>
-  </div>
+  <Alert v-else>
+    <CheckCircleIcon class="h-4 w-4" />
+    <AlertTitle>All caught up!</AlertTitle>
+    <AlertDescription>No pending notifications</AlertDescription>
+  </Alert>
 </template>
 
 <script setup lang="ts">
@@ -137,6 +106,10 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useNotificationStore } from '@/stores/notification';
 import type { Notification } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
   AlertTriangle as AlertTriangleIcon,
   Clock as ClockIcon,
@@ -178,18 +151,6 @@ const formatTime = (dateString: string) => {
 
 const formatCategory = (category: string) => {
   return category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-};
-
-const getCategoryColor = (category: string) => {
-  const colors = {
-    work_order: 'bg-blue-100 text-blue-800',
-    inventory: 'bg-green-100 text-green-800',
-    invoice: 'bg-purple-100 text-purple-800',
-    communication: 'bg-indigo-100 text-indigo-800',
-    system: 'bg-gray-100 text-gray-800',
-    emergency: 'bg-red-100 text-red-800'
-  };
-  return colors[category as keyof typeof colors] || colors.system;
 };
 
 const getAlertIcon = (type: string) => {

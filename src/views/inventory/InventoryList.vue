@@ -9,239 +9,234 @@
         </p>
       </div>
       <div class="mt-4 sm:mt-0">
-        <router-link
+        <Button
           v-if="hasPermission('manage_inventory')"
-          to="/inventory/create"
-          class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          as-child
         >
-          <Plus class="w-4 h-4 mr-2" />
-          Add Item
-        </router-link>
+          <router-link to="/inventory/create">
+            <Plus class="w-4 h-4 mr-2" />
+            Add Item
+          </router-link>
+        </Button>
       </div>
     </div>
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <Package class="h-6 w-6 text-blue-500" />
+      <Card>
+        <CardContent class="p-6">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <Package class="h-6 w-6 text-blue-500" />
+            </div>
+            <div class="ml-4 flex-1">
+              <p class="text-sm font-medium text-muted-foreground">Total Items</p>
+              <p class="text-2xl font-semibold">{{ activeItems.length }}</p>
+            </div>
           </div>
-          <div class="ml-4 flex-1">
-            <p class="text-sm font-medium text-gray-500">Total Items</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ activeItems.length }}</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent class="p-6">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <AlertTriangle class="h-6 w-6 text-orange-500" />
+            </div>
+            <div class="ml-4 flex-1">
+              <p class="text-sm font-medium text-muted-foreground">Low Stock</p>
+              <p class="text-2xl font-semibold">{{ lowStockItems.length }}</p>
+            </div>
           </div>
-        </div>
-      </div>
-      
-      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <AlertTriangle class="h-6 w-6 text-orange-500" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent class="p-6">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <DollarSign class="h-6 w-6 text-green-500" />
+            </div>
+            <div class="ml-4 flex-1">
+              <p class="text-sm font-medium text-muted-foreground">Total Value</p>
+              <p class="text-2xl font-semibold">${{ formatCurrency(totalValue) }}</p>
+            </div>
           </div>
-          <div class="ml-4 flex-1">
-            <p class="text-sm font-medium text-gray-500">Low Stock</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ lowStockItems.length }}</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent class="p-6">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <TrendingUp class="h-6 w-6 text-purple-500" />
+            </div>
+            <div class="ml-4 flex-1">
+              <p class="text-sm font-medium text-muted-foreground">Categories</p>
+              <p class="text-2xl font-semibold">{{ Object.keys(itemsByCategory).length }}</p>
+            </div>
           </div>
-        </div>
-      </div>
-      
-      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <DollarSign class="h-6 w-6 text-green-500" />
-          </div>
-          <div class="ml-4 flex-1">
-            <p class="text-sm font-medium text-gray-500">Total Value</p>
-            <p class="text-2xl font-semibold text-gray-900">${{ formatCurrency(totalValue) }}</p>
-          </div>
-        </div>
-      </div>
-      
-      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <TrendingUp class="h-6 w-6 text-purple-500" />
-          </div>
-          <div class="ml-4 flex-1">
-            <p class="text-sm font-medium text-gray-500">Categories</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ Object.keys(itemsByCategory).length }}</p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
 
     <!-- Filters and Search -->
-    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-          <select
-            v-model="filters.category"
-            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-          >
-            <option value="">All Categories</option>
-            <option v-for="category in categories" :key="category" :value="category">
-              {{ category }}
-            </option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Stock Status</label>
-          <select
-            v-model="filters.stockStatus"
-            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-          >
-            <option value="">All Items</option>
-            <option value="low">Low Stock</option>
-            <option value="normal">Normal Stock</option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-          <div class="relative">
-            <Search class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-            <input
-              v-model="filters.search"
-              type="text"
-              placeholder="Search items..."
-              class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-            />
+    <Card>
+      <CardContent class="p-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="space-y-2">
+            <Label>Category</Label>
+            <Select v-model="filters.category">
+              <SelectTrigger>
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="category in categories" :key="category" :value="category">
+                  {{ category }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div class="space-y-2">
+            <Label>Stock Status</Label>
+            <Select v-model="filters.stockStatus">
+              <SelectTrigger>
+                <SelectValue placeholder="All Items" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low Stock</SelectItem>
+                <SelectItem value="normal">Normal Stock</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div class="space-y-2">
+            <Label>Search</Label>
+            <div class="relative">
+              <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                v-model="filters.search"
+                type="text"
+                placeholder="Search items..."
+                class="pl-10"
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- Inventory Table -->
-    <div class="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
-      <div v-if="isLoading" class="p-8 text-center">
-        <div class="inline-flex items-center">
-          <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          Loading inventory...
+    <Card>
+      <CardContent class="p-0">
+        <div v-if="isLoading" class="p-8">
+          <div class="space-y-4">
+            <Skeleton class="h-12 w-full" />
+            <Skeleton class="h-12 w-full" />
+            <Skeleton class="h-12 w-full" />
+          </div>
         </div>
-      </div>
 
-      <div v-else-if="filteredItems.length === 0" class="p-8 text-center text-gray-500">
-        <Package class="mx-auto h-12 w-12 text-gray-300 mb-4" />
-        <p class="text-lg font-medium">No items found</p>
-        <p class="mt-1">Try adjusting your filters or add a new item.</p>
-      </div>
+        <Alert v-else-if="filteredItems.length === 0" class="m-6">
+          <Package class="h-4 w-4" />
+          <AlertTitle>No items found</AlertTitle>
+          <AlertDescription>Try adjusting your filters or add a new item.</AlertDescription>
+        </Alert>
 
-      <div v-else class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Item
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Stock
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Unit Price
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total Value
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <tr
-              v-for="item in filteredItems"
-              :key="item.id"
-              class="hover:bg-gray-50 cursor-pointer"
-              @click="$router.push(`/inventory/${item.id}`)"
-            >
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div class="flex-shrink-0 h-10 w-10">
-                    <div class="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <Package class="h-6 w-6 text-gray-400" />
+        <div v-else class="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Item</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Stock</TableHead>
+                <TableHead>Unit Price</TableHead>
+                <TableHead>Total Value</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow
+                v-for="item in filteredItems"
+                :key="item.id"
+                class="cursor-pointer"
+                @click="$router.push(`/inventory/${item.id}`)"
+              >
+                <TableCell>
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10">
+                      <div class="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                        <Package class="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    </div>
+                    <div class="ml-4">
+                      <div class="text-sm font-medium">{{ item.name }}</div>
+                      <div class="text-sm text-muted-foreground">{{ item.code }}</div>
                     </div>
                   </div>
-                  <div class="ml-4">
-                    <div class="text-sm font-medium text-gray-900">{{ item.name }}</div>
-                    <div class="text-sm text-gray-500">{{ item.code }}</div>
-                  </div>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {{ item.category }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div class="flex-1">
-                    <div class="text-sm font-medium text-gray-900">
-                      {{ item.currentStock }} {{ item.unitOfMeasure }}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline">{{ item.category }}</Badge>
+                </TableCell>
+                <TableCell>
+                  <div class="flex items-center">
+                    <div class="flex-1">
+                      <div class="text-sm font-medium">
+                        {{ item.currentStock }} {{ item.unitOfMeasure }}
+                      </div>
+                      <div class="text-xs text-muted-foreground">
+                        Min: {{ item.minThreshold }} {{ item.unitOfMeasure }}
+                      </div>
                     </div>
-                    <div class="text-xs text-gray-500">
-                      Min: {{ item.minThreshold }} {{ item.unitOfMeasure }}
+                    <div class="ml-2">
+                      <div class="h-2 w-16 bg-secondary rounded-full">
+                        <div
+                          class="h-2 rounded-full"
+                          :class="getStockLevelColor(item)"
+                          :style="{ width: getStockPercentage(item) + '%' }"
+                        ></div>
+                      </div>
                     </div>
                   </div>
-                  <div class="ml-2">
-                    <div 
-                      class="h-2 w-16 bg-gray-200 rounded-full"
-                      :class="getStockLevelColor(item)"
+                </TableCell>
+                <TableCell class="text-sm">
+                  ${{ item.unitPrice.toFixed(2) }}
+                </TableCell>
+                <TableCell class="text-sm font-medium">
+                  ${{ (item.currentStock * item.unitPrice).toFixed(2) }}
+                </TableCell>
+                <TableCell>
+                  <Badge :variant="item.currentStock <= item.minThreshold ? 'destructive' : 'default'">
+                    {{ item.currentStock <= item.minThreshold ? 'Low Stock' : 'In Stock' }}
+                  </Badge>
+                </TableCell>
+                <TableCell class="text-right">
+                  <div class="flex justify-end gap-2">
+                    <Button
+                      v-if="hasPermission('manage_inventory')"
+                      variant="ghost"
+                      size="sm"
+                      @click.stop="adjustStock(item)"
                     >
-                      <div 
-                        class="h-2 rounded-full"
-                        :class="getStockLevelColor(item)"
-                        :style="{ width: getStockPercentage(item) + '%' }"
-                      ></div>
-                    </div>
+                      Adjust Stock
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      @click.stop="$router.push(`/inventory/${item.id}`)"
+                    >
+                      View
+                    </Button>
                   </div>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                ${{ item.unitPrice.toFixed(2) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                ${{ (item.currentStock * item.unitPrice).toFixed(2) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span 
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  :class="item.currentStock <= item.minThreshold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'"
-                >
-                  {{ item.currentStock <= item.minThreshold ? 'Low Stock' : 'In Stock' }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button
-                  v-if="hasPermission('manage_inventory')"
-                  @click.stop="adjustStock(item)"
-                  class="text-blue-600 hover:text-blue-900 mr-4"
-                >
-                  Adjust Stock
-                </button>
-                <button
-                  @click.stop="$router.push(`/inventory/${item.id}`)"
-                  class="text-gray-600 hover:text-gray-900"
-                >
-                  View
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   </div>
 </template>
 
@@ -249,13 +244,22 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useInventoryStore } from '@/stores/inventory';
-import { 
-  Plus, 
-  Search, 
-  Package, 
-  AlertTriangle, 
-  DollarSign, 
-  TrendingUp 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Plus,
+  Search,
+  Package,
+  AlertTriangle,
+  DollarSign,
+  TrendingUp
 } from 'lucide-vue-next';
 
 const authStore = useAuthStore();

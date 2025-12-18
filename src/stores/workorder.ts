@@ -13,20 +13,23 @@ export const useWorkOrderStore = defineStore('workorder', () => {
   // Computed getters
   const myWorkOrders = computed(() => {
     if (!authStore.currentUser) return [];
-    
-    return workOrders.value.filter(wo => {
-      if (authStore.isWorker) {
-        return wo.assignedWorkerId === authStore.currentUser?.id;
-      }
-      if (authStore.isAdmin && authStore.currentUser?.terminalId) {
-        return wo.terminalId === authStore.currentUser.terminalId;
-      }
-      if (authStore.isSupervisor && authStore.currentUser?.regionId) {
-        // Get work orders from terminals in the supervisor's region
-        return true; // TODO: filter by region
-      }
+
+    if (authStore.isWorker) {
+      return workOrders.value.filter(wo => wo.assignedWorkerId === authStore.currentUser?.id);
+    }
+
+    if (authStore.isAdmin && authStore.currentUser?.terminalId) {
+      return workOrders.value.filter(wo => wo.terminalId === authStore.currentUser?.terminalId);
+    }
+
+    if (authStore.isSupervisor && authStore.currentUser?.regionId) {
+      // Get work orders from terminals in the supervisor's region
+      // TODO: implement proper region-based filtering
       return workOrders.value;
-    });
+    }
+
+    // Default: return all work orders
+    return workOrders.value;
   });
 
   const pendingApproval = computed(() => 
