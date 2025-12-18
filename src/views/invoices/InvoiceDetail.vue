@@ -3,43 +3,40 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-4">
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           @click="$router.back()"
-          class="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
         >
           <ArrowLeft class="w-5 h-5" />
-        </button>
+        </Button>
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">{{ invoice.invoiceNumber }}</h1>
-          <p class="text-sm text-gray-600">
+          <h1 class="text-2xl font-bold">{{ invoice.invoiceNumber }}</h1>
+          <p class="text-sm text-muted-foreground">
             Generated {{ formatDate(invoice.generatedAt) }} • Due {{ formatDate(invoice.dueDate) }}
           </p>
         </div>
       </div>
-      <div class="flex items-center space-x-3">
-        <span
-          class="inline-flex px-3 py-1 text-sm font-semibold rounded-full"
-          :class="getStatusColor(invoice.status)"
-        >
+      <div class="flex items-center gap-3">
+        <Badge :variant="getStatusVariant(invoice.status)">
           {{ formatStatus(invoice.status) }}
-        </span>
-        <div class="flex space-x-2">
-          <button
+        </Badge>
+        <div class="flex gap-2">
+          <Button
             v-if="hasPermission('manage_invoices')"
+            variant="outline"
             @click="downloadPDF"
-            class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
           >
-            <Download class="w-4 h-4 mr-2 inline" />
+            <Download class="w-4 h-4 mr-2" />
             Download PDF
-          </button>
-          <button
+          </Button>
+          <Button
             v-if="invoice.status === 'pending' && hasPermission('manage_invoices')"
             @click="sendInvoice"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            <Send class="w-4 h-4 mr-2 inline" />
+            <Send class="w-4 h-4 mr-2" />
             Send Invoice
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -47,190 +44,191 @@
     <!-- Invoice Overview -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Recipient Information -->
-      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Recipient Details</h3>
-        <div class="space-y-3">
+      <Card>
+        <CardHeader>
+          <CardTitle>Recipient Details</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-3">
           <div>
-            <p class="text-sm text-gray-500">Name</p>
-            <p class="font-medium text-gray-900">{{ invoice.recipientDetails.name }}</p>
+            <p class="text-sm text-muted-foreground">Name</p>
+            <p class="font-medium">{{ invoice.recipientDetails.name }}</p>
           </div>
           <div v-if="invoice.recipientDetails.company">
-            <p class="text-sm text-gray-500">Company</p>
-            <p class="font-medium text-gray-900">{{ invoice.recipientDetails.company }}</p>
+            <p class="text-sm text-muted-foreground">Company</p>
+            <p class="font-medium">{{ invoice.recipientDetails.company }}</p>
           </div>
           <div>
-            <p class="text-sm text-gray-500">Email</p>
-            <p class="font-medium text-gray-900">{{ invoice.recipientDetails.email }}</p>
+            <p class="text-sm text-muted-foreground">Email</p>
+            <p class="font-medium">{{ invoice.recipientDetails.email }}</p>
           </div>
           <div v-if="invoice.recipientDetails.address">
-            <p class="text-sm text-gray-500">Address</p>
-            <p class="font-medium text-gray-900">{{ invoice.recipientDetails.address }}</p>
+            <p class="text-sm text-muted-foreground">Address</p>
+            <p class="font-medium">{{ invoice.recipientDetails.address }}</p>
           </div>
           <div>
-            <p class="text-sm text-gray-500">Type</p>
-            <p class="font-medium text-gray-900">{{ formatRecipientType(invoice.recipientType) }}</p>
+            <p class="text-sm text-muted-foreground">Type</p>
+            <p class="font-medium">{{ formatRecipientType(invoice.recipientType) }}</p>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <!-- Invoice Summary -->
-      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Invoice Summary</h3>
-        <div class="space-y-3">
+      <Card>
+        <CardHeader>
+          <CardTitle>Invoice Summary</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-3">
           <div class="flex justify-between">
-            <span class="text-gray-600">Labor Cost</span>
+            <span class="text-muted-foreground">Labor Cost</span>
             <span class="font-medium">{{ formatCurrency(invoice.summary.laborCost) }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600">Material Cost</span>
+            <span class="text-muted-foreground">Material Cost</span>
             <span class="font-medium">{{ formatCurrency(invoice.summary.materialCost) }}</span>
           </div>
-          <div class="flex justify-between border-t pt-3">
-            <span class="text-gray-600">Subtotal</span>
+          <Separator />
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Subtotal</span>
             <span class="font-medium">{{ formatCurrency(invoice.summary.subtotal) }}</span>
           </div>
           <div v-if="invoice.summary.penalties > 0" class="flex justify-between text-red-600">
             <span>Penalties</span>
             <span class="font-medium">{{ formatCurrency(invoice.summary.penalties) }}</span>
           </div>
-          <div class="flex justify-between border-t pt-3 text-lg font-semibold">
+          <Separator />
+          <div class="flex justify-between text-lg font-semibold">
             <span>Total</span>
             <span>{{ formatCurrency(invoice.summary.total) }}</span>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <!-- Payment Information -->
-      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Payment Information</h3>
-        <div class="space-y-3">
+      <Card>
+        <CardHeader>
+          <CardTitle>Payment Information</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-3">
           <div>
-            <p class="text-sm text-gray-500">Status</p>
+            <p class="text-sm text-muted-foreground">Status</p>
             <p class="font-medium" :class="getStatusTextColor(invoice.status)">
               {{ formatStatus(invoice.status) }}
             </p>
           </div>
           <div>
-            <p class="text-sm text-gray-500">Due Date</p>
-            <p class="font-medium text-gray-900">{{ formatDate(invoice.dueDate) }}</p>
+            <p class="text-sm text-muted-foreground">Due Date</p>
+            <p class="font-medium">{{ formatDate(invoice.dueDate) }}</p>
           </div>
           <div v-if="invoice.sentAt">
-            <p class="text-sm text-gray-500">Sent Date</p>
-            <p class="font-medium text-gray-900">{{ formatDate(invoice.sentAt) }}</p>
+            <p class="text-sm text-muted-foreground">Sent Date</p>
+            <p class="font-medium">{{ formatDate(invoice.sentAt) }}</p>
           </div>
           <div v-if="invoice.paidAt">
-            <p class="text-sm text-gray-500">Paid Date</p>
+            <p class="text-sm text-muted-foreground">Paid Date</p>
             <p class="font-medium text-green-600">{{ formatDate(invoice.paidAt) }}</p>
           </div>
-          <div v-if="invoice.status === 'overdue'" class="mt-4 p-3 bg-red-50 rounded-lg">
-            <div class="flex items-center">
-              <AlertTriangle class="w-5 h-5 text-red-500 mr-2" />
-              <p class="text-sm text-red-700 font-medium">Payment Overdue</p>
-            </div>
-            <p class="text-sm text-red-600 mt-1">
-              Payment is {{ getDaysOverdue(invoice.dueDate) }} days past due
-            </p>
-          </div>
-        </div>
-      </div>
+          <Card v-if="invoice.status === 'overdue'" class="mt-4 bg-red-50 border-red-200">
+            <CardContent class="p-3">
+              <div class="flex items-center">
+                <AlertTriangle class="w-5 h-5 text-red-500 mr-2" />
+                <p class="text-sm text-red-700 font-medium">Payment Overdue</p>
+              </div>
+              <p class="text-sm text-red-600 mt-1">
+                Payment is {{ getDaysOverdue(invoice.dueDate) }} days past due
+              </p>
+            </CardContent>
+          </Card>
+        </CardContent>
+      </Card>
     </div>
 
     <!-- Work Orders -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div class="p-6 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900">Related Work Orders</h3>
-      </div>
-      <div class="p-6">
+    <Card>
+      <CardHeader>
+        <CardTitle>Related Work Orders</CardTitle>
+      </CardHeader>
+      <CardContent>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div
+          <Card
             v-for="workOrderId in invoice.workOrderIds"
             :key="workOrderId"
-            class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors"
+            class="hover:border-primary transition-colors cursor-pointer"
           >
-            <router-link
-              :to="`/work-orders/${workOrderId}`"
-              class="block"
-            >
-              <div class="text-sm font-medium text-blue-600 hover:text-blue-800">
-                Work Order #{{ workOrderId.slice(-6).toUpperCase() }}
-              </div>
-              <div class="text-sm text-gray-500 mt-1">
-                View Details →
-              </div>
-            </router-link>
-          </div>
+            <CardContent class="p-4">
+              <router-link
+                :to="`/work-orders/${workOrderId}`"
+                class="block"
+              >
+                <div class="text-sm font-medium text-primary hover:underline">
+                  Work Order #{{ workOrderId.slice(-6).toUpperCase() }}
+                </div>
+                <div class="text-sm text-muted-foreground mt-1">
+                  View Details →
+                </div>
+              </router-link>
+            </CardContent>
+          </Card>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- Invoice Items -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div class="p-6 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900">Invoice Items</h3>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="border-b border-gray-200 bg-gray-50">
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Description
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Quantity
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Unit Price
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total
-              </th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <tr
-              v-for="item in invoice.items"
-              :key="item.id"
-              class="hover:bg-gray-50"
-            >
-              <td class="px-6 py-4">
-                <div class="text-sm font-medium text-gray-900">
-                  {{ item.description }}
-                </div>
-                <div class="text-sm text-gray-500">
-                  {{ item.category }}
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span
-                  class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                  :class="getTypeColor(item.type)"
-                >
-                  {{ formatType(item.type) }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ item.quantity }} {{ item.unit }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ formatCurrency(item.unitPrice) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                {{ formatCurrency(item.totalPrice) }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Invoice Items</CardTitle>
+      </CardHeader>
+      <CardContent class="p-0">
+        <div class="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Description</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Quantity</TableHead>
+                <TableHead>Unit Price</TableHead>
+                <TableHead>Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="item in invoice.items" :key="item.id">
+                <TableCell>
+                  <div class="text-sm font-medium">
+                    {{ item.description }}
+                  </div>
+                  <div class="text-sm text-muted-foreground">
+                    {{ item.category }}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge :variant="getTypeVariant(item.type)">
+                    {{ formatType(item.type) }}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {{ item.quantity }} {{ item.unit }}
+                </TableCell>
+                <TableCell>
+                  {{ formatCurrency(item.unitPrice) }}
+                </TableCell>
+                <TableCell class="font-medium">
+                  {{ formatCurrency(item.totalPrice) }}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
 
     <!-- Notes -->
-    <div v-if="invoice.notes" class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
-      <p class="text-gray-700">{{ invoice.notes }}</p>
-    </div>
+    <Card v-if="invoice.notes">
+      <CardHeader>
+        <CardTitle>Notes</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground">{{ invoice.notes }}</p>
+      </CardContent>
+    </Card>
 
     <!-- Status Update Modal -->
     <StatusUpdateModal
@@ -254,6 +252,11 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useInvoiceStore } from '@/stores/invoice';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   ArrowLeft,
   Download,
@@ -305,16 +308,16 @@ const formatRecipientType = (type: string) => {
   return type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ');
 };
 
-const getStatusColor = (status: Invoice['status']) => {
-  const colors = {
-    draft: 'bg-gray-100 text-gray-800',
-    pending: 'bg-yellow-100 text-yellow-800',
-    sent: 'bg-blue-100 text-blue-800',
-    paid: 'bg-green-100 text-green-800',
-    overdue: 'bg-red-100 text-red-800',
-    cancelled: 'bg-gray-100 text-gray-800'
+const getStatusVariant = (status: Invoice['status']): 'default' | 'destructive' | 'outline' | 'secondary' => {
+  const variants: Record<Invoice['status'], 'default' | 'destructive' | 'outline' | 'secondary'> = {
+    draft: 'secondary',
+    pending: 'outline',
+    sent: 'default',
+    paid: 'default',
+    overdue: 'destructive',
+    cancelled: 'secondary'
   };
-  return colors[status] || 'bg-gray-100 text-gray-800';
+  return variants[status] || 'secondary';
 };
 
 const getStatusTextColor = (status: Invoice['status']) => {
@@ -329,13 +332,13 @@ const getStatusTextColor = (status: Invoice['status']) => {
   return colors[status] || 'text-gray-700';
 };
 
-const getTypeColor = (type: InvoiceItem['type']) => {
-  const colors = {
-    labor: 'bg-blue-100 text-blue-800',
-    material: 'bg-green-100 text-green-800',
-    penalty: 'bg-red-100 text-red-800'
+const getTypeVariant = (type: InvoiceItem['type']): 'default' | 'secondary' | 'destructive' => {
+  const variants: Record<InvoiceItem['type'], 'default' | 'secondary' | 'destructive'> = {
+    labor: 'default',
+    material: 'secondary',
+    penalty: 'destructive'
   };
-  return colors[type];
+  return variants[type];
 };
 
 const getDaysOverdue = (dueDateString: string) => {

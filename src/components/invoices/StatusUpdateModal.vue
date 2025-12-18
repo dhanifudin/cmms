@@ -1,138 +1,112 @@
 <template>
-  <div
-    v-if="show"
-    class="fixed inset-0 z-50 overflow-y-auto"
-    aria-labelledby="modal-title"
-    role="dialog"
-    aria-modal="true"
-  >
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <!-- Background overlay -->
-      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="close"></div>
+  <Dialog :open="show" @update:open="(val) => emit('update:show', val)">
+    <DialogContent class="sm:max-w-lg">
+      <DialogHeader>
+        <DialogTitle>Update Invoice Status</DialogTitle>
+        <DialogDescription>
+          Change the status of invoice {{ invoice.invoiceNumber }}
+        </DialogDescription>
+      </DialogHeader>
 
-      <!-- Modal panel -->
-      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-          <div class="sm:flex sm:items-start">
-            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-              <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6" id="modal-title">
-                Update Invoice Status
-              </h3>
+      <div class="space-y-4 py-4">
+        <div class="space-y-2">
+          <Label>Current Status</Label>
+          <Badge :variant="getStatusVariant(invoice.status)">
+            {{ formatStatus(invoice.status) }}
+          </Badge>
+        </div>
 
-              <div class="space-y-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Current Status
-                  </label>
-                  <span
-                    class="inline-flex px-3 py-1 text-sm font-semibold rounded-full"
-                    :class="getStatusColor(invoice.status)"
-                  >
-                    {{ formatStatus(invoice.status) }}
-                  </span>
-                </div>
+        <div class="space-y-2">
+          <Label>New Status</Label>
+          <Select v-model="newStatus">
+            <SelectTrigger>
+              <SelectValue placeholder="Select new status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="status in availableStatuses"
+                :key="status.value"
+                :value="status.value"
+              >
+                {{ status.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    New Status
-                  </label>
-                  <select
-                    v-model="newStatus"
-                    class="w-full border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  >
-                    <option value="">Select new status</option>
-                    <option
-                      v-for="status in availableStatuses"
-                      :key="status.value"
-                      :value="status.value"
-                    >
-                      {{ status.label }}
-                    </option>
-                  </select>
-                </div>
+        <!-- Payment Date for paid status -->
+        <div v-if="newStatus === 'paid'" class="space-y-4">
+          <div class="space-y-2">
+            <Label>Payment Date</Label>
+            <Input
+              v-model="paymentDate"
+              type="date"
+            />
+          </div>
 
-                <!-- Payment Date for paid status -->
-                <div v-if="newStatus === 'paid'" class="space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                      Payment Date
-                    </label>
-                    <input
-                      v-model="paymentDate"
-                      type="date"
-                      class="w-full border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                      Payment Amount
-                    </label>
-                    <input
-                      v-model.number="paymentAmount"
-                      type="number"
-                      :placeholder="formatCurrency(invoice.summary.total)"
-                      class="w-full border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <!-- Notes -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Notes (Optional)
-                  </label>
-                  <textarea
-                    v-model="notes"
-                    rows="3"
-                    class="w-full border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    placeholder="Add any additional notes..."
-                  ></textarea>
-                </div>
-
-                <!-- Confirmation -->
-                <div v-if="newStatus" class="bg-blue-50 rounded-lg p-4">
-                  <h4 class="text-sm font-medium text-blue-900 mb-2">Confirm Status Change</h4>
-                  <p class="text-sm text-blue-700">
-                    Invoice {{ invoice.invoiceNumber }} will be updated from 
-                    <strong>{{ formatStatus(invoice.status) }}</strong> to 
-                    <strong>{{ formatStatus(newStatus) }}</strong>
-                  </p>
-                  <p v-if="newStatus === 'paid'" class="text-sm text-blue-700 mt-1">
-                    Payment of {{ formatCurrency(paymentAmount || invoice.summary.total) }} 
-                    will be recorded on {{ formatDate(paymentDate) }}
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div class="space-y-2">
+            <Label>Payment Amount</Label>
+            <Input
+              v-model="paymentAmount"
+              type="number"
+              :placeholder="formatCurrency(invoice.summary.total)"
+            />
           </div>
         </div>
 
-        <!-- Modal Footer -->
-        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-          <button
-            @click="updateStatus"
-            :disabled="!newStatus || isUpdating"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {{ isUpdating ? 'Updating...' : 'Update Status' }}
-          </button>
-          <button
-            @click="close"
-            type="button"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-          >
-            Cancel
-          </button>
+        <!-- Notes -->
+        <div class="space-y-2">
+          <Label>Notes (Optional)</Label>
+          <Textarea
+            v-model="notes"
+            rows="3"
+            placeholder="Add any additional notes..."
+          />
         </div>
+
+        <!-- Confirmation -->
+        <Card v-if="newStatus" class="bg-blue-50 border-blue-200">
+          <CardContent class="p-4">
+            <h4 class="text-sm font-medium text-blue-900 mb-2">Confirm Status Change</h4>
+            <p class="text-sm text-blue-700">
+              Invoice {{ invoice.invoiceNumber }} will be updated from
+              <strong>{{ formatStatus(invoice.status) }}</strong> to
+              <strong>{{ formatStatus(newStatus) }}</strong>
+            </p>
+            <p v-if="newStatus === 'paid'" class="text-sm text-blue-700 mt-1">
+              Payment of {{ formatCurrency(typeof paymentAmount === 'string' ? parseFloat(paymentAmount) || invoice.summary.total : paymentAmount || invoice.summary.total) }}
+              will be recorded on {{ formatDate(paymentDate) }}
+            </p>
+          </CardContent>
+        </Card>
       </div>
-    </div>
-  </div>
+
+      <DialogFooter>
+        <Button variant="outline" @click="close">
+          Cancel
+        </Button>
+        <Button
+          @click="updateStatus"
+          :disabled="!newStatus || isUpdating"
+        >
+          {{ isUpdating ? 'Updating...' : 'Update Status' }}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useInvoiceStore } from '@/stores/invoice';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { Invoice } from '@/types';
 
 interface Props {
@@ -152,7 +126,7 @@ const invoiceStore = useInvoiceStore();
 
 const newStatus = ref<Invoice['status'] | ''>('');
 const paymentDate = ref(new Date().toISOString().split('T')[0]);
-const paymentAmount = ref<number | null>(null);
+const paymentAmount = ref<string | number>('');
 const notes = ref('');
 const isUpdating = ref(false);
 
@@ -192,7 +166,7 @@ const close = () => {
 const resetForm = () => {
   newStatus.value = '';
   paymentDate.value = new Date().toISOString().split('T')[0];
-  paymentAmount.value = null;
+  paymentAmount.value = '';
   notes.value = '';
 };
 
@@ -219,16 +193,16 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-const getStatusColor = (status: Invoice['status']) => {
-  const colors = {
-    draft: 'bg-gray-100 text-gray-800',
-    pending: 'bg-yellow-100 text-yellow-800',
-    sent: 'bg-blue-100 text-blue-800',
-    paid: 'bg-green-100 text-green-800',
-    overdue: 'bg-red-100 text-red-800',
-    cancelled: 'bg-gray-100 text-gray-800'
+const getStatusVariant = (status: Invoice['status']): 'default' | 'destructive' | 'outline' | 'secondary' => {
+  const variants: Record<Invoice['status'], 'default' | 'destructive' | 'outline' | 'secondary'> = {
+    draft: 'secondary',
+    pending: 'outline',
+    sent: 'default',
+    paid: 'default',
+    overdue: 'destructive',
+    cancelled: 'secondary'
   };
-  return colors[status] || 'bg-gray-100 text-gray-800';
+  return variants[status] || 'secondary';
 };
 
 const updateStatus = async () => {
@@ -242,8 +216,11 @@ const updateStatus = async () => {
     // Additional handling for paid status
     if (newStatus.value === 'paid') {
       // In real implementation, would update payment details
+      const amount = typeof paymentAmount.value === 'string'
+        ? parseFloat(paymentAmount.value) || props.invoice.summary.total
+        : paymentAmount.value || props.invoice.summary.total;
       console.log('Payment recorded:', {
-        amount: paymentAmount.value || props.invoice.summary.total,
+        amount,
         date: paymentDate.value,
         notes: notes.value
       });
