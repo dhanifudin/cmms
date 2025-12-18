@@ -15,13 +15,19 @@
           v-for="item in navigationItems"
           :key="item.name"
           :to="item.to"
-          class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors"
+          class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors relative"
           :class="$route.path === item.to 
             ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600' 
             : 'text-gray-700 hover:bg-gray-50'"
         >
           <component :is="item.icon" class="w-5 h-5 mr-3" />
           {{ item.name }}
+          <span
+            v-if="item.badge"
+            class="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full"
+          >
+            {{ item.badge > 99 ? '99+' : item.badge }}
+          </span>
         </router-link>
       </nav>
       
@@ -84,9 +90,7 @@
           </div>
           
           <!-- Notifications -->
-          <button class="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-full">
-            <Bell class="w-5 h-5" />
-          </button>
+          <NotificationCenter />
         </div>
       </div>
       
@@ -104,6 +108,9 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { useMessageStore } from '@/stores/message';
+import { useNotificationStore } from '@/stores/notification';
+import NotificationCenter from '@/components/notifications/NotificationCenter.vue';
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -112,12 +119,14 @@ import {
   Users, 
   Settings,
   Menu,
-  Bell,
-  BarChart
+  BarChart,
+  Inbox as InboxIcon
 } from 'lucide-vue-next';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const messageStore = useMessageStore();
+const notificationStore = useNotificationStore();
 const sidebarOpen = ref(false);
 const selectedDemoUser = ref('');
 
@@ -136,14 +145,31 @@ const currentPageTitle = computed(() => {
     case 'InventoryItemDetail': return 'Inventory Details';
     case 'Invoices': return 'Invoices';
     case 'InvoiceDetail': return 'Invoice Details';
+    case 'Inbox': return 'Inbox';
     default: return 'CMMS';
   }
 });
 
-const navigationItems = computed(() => {
-  const baseItems = [
+interface NavigationItem {
+  name: string;
+  to: string;
+  icon: any;
+  badge?: number;
+}
+
+const navigationItems = computed((): NavigationItem[] => {
+  const baseItems: NavigationItem[] = [
     { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard }
   ];
+  
+  // Inbox - available for all authenticated users
+  const unreadCount = messageStore.unreadCount;
+  baseItems.push({ 
+    name: 'Inbox', 
+    to: '/inbox', 
+    icon: InboxIcon,
+    badge: unreadCount > 0 ? unreadCount : undefined
+  });
   
   // Analytics - available for all authenticated users
   baseItems.push({ name: 'Analytics', to: '/analytics', icon: BarChart });
@@ -196,6 +222,10 @@ const logout = () => {
 };
 
 onMounted(() => {
+  // Initialize stores
+  messageStore.initializeInbox();
+  notificationStore.initializeNotifications();
+  
   // Close sidebar on large screens by default
   if (window.innerWidth >= 1024) {
     sidebarOpen.value = false;

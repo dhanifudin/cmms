@@ -141,10 +141,83 @@ export interface Notification {
   read: boolean;
   actionUrl?: string;
   relatedEntity?: {
-    type: 'work_order' | 'inventory' | 'user';
+    type: 'work_order' | 'inventory' | 'user' | 'invoice';
     id: string;
   };
   createdAt: string;
+}
+
+// Message and Communication types
+export interface Message {
+  id: string;
+  subject?: string;
+  content: string;
+  type: MessageType;
+  priority: Priority;
+  senderId: string;
+  sender?: User;
+  recipientIds: string[];
+  recipients?: User[];
+  threadId?: string;
+  parentId?: string; // for replies
+  attachments: MessageAttachment[];
+  relatedEntity?: {
+    type: 'work_order' | 'inventory' | 'invoice' | 'user';
+    id: string;
+  };
+  status: 'sent' | 'delivered' | 'read';
+  readBy: MessageReadStatus[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type MessageType = 
+  | 'direct_message'
+  | 'work_order_comment' 
+  | 'system_notification'
+  | 'admin_broadcast'
+  | 'supervisor_feedback'
+  | 'automated_reminder';
+
+export interface MessageAttachment {
+  id: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  thumbnailUrl?: string;
+}
+
+export interface MessageReadStatus {
+  userId: string;
+  readAt: string;
+}
+
+export interface MessageThread {
+  id: string;
+  subject: string;
+  participants: User[];
+  lastMessage?: Message;
+  messageCount: number;
+  unreadCount: number;
+  type: MessageType;
+  relatedEntity?: {
+    type: 'work_order' | 'inventory' | 'invoice' | 'user';
+    id: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InboxFolder {
+  id: string;
+  name: string;
+  type: 'system' | 'custom';
+  messageCount: number;
+  unreadCount: number;
+  icon?: string;
+  color?: string;
 }
 
 // API Response types

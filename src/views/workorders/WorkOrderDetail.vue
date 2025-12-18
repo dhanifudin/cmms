@@ -164,9 +164,20 @@
             <div
               v-for="photo in workOrder.beforePhotos"
               :key="photo.id"
-              class="aspect-square bg-gray-100 rounded-lg flex items-center justify-center"
+              class="group cursor-pointer"
+              @click="openPhotoModal(photo)"
             >
-              <Camera class="w-8 h-8 text-gray-400" />
+              <div class="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                <img
+                  :src="photo.url"
+                  :alt="photo.caption || 'Before photo'"
+                  class="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  @error="handleImageError"
+                />
+              </div>
+              <p v-if="photo.caption" class="text-xs text-gray-600 mt-1 truncate">
+                {{ photo.caption }}
+              </p>
             </div>
           </div>
         </div>
@@ -192,9 +203,20 @@
             <div
               v-for="photo in workOrder.afterPhotos"
               :key="photo.id"
-              class="aspect-square bg-gray-100 rounded-lg flex items-center justify-center"
+              class="group cursor-pointer"
+              @click="openPhotoModal(photo)"
             >
-              <Camera class="w-8 h-8 text-gray-400" />
+              <div class="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                <img
+                  :src="photo.url"
+                  :alt="photo.caption || 'After photo'"
+                  class="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  @error="handleImageError"
+                />
+              </div>
+              <p v-if="photo.caption" class="text-xs text-gray-600 mt-1 truncate">
+                {{ photo.caption }}
+              </p>
             </div>
           </div>
         </div>
@@ -213,19 +235,20 @@
         <template v-if="isWorker && workOrder.assignedWorkerId === currentUser?.id">
           <button
             v-if="workOrder.status === 'assigned'"
-            @click="startWork"
+            @click="showBeforeDocumentationModal = true"
             class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           >
             <Play class="w-4 h-4 mr-2" />
-            Start Work
+            Start Work & Submit Before Documentation
           </button>
           
           <button
             v-if="workOrder.status === 'in_progress'"
+            @click="showAfterDocumentationModal = true"
             class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
           >
             <Upload class="w-4 h-4 mr-2" />
-            Submit Documentation
+            Submit After Documentation
           </button>
         </template>
 
@@ -271,6 +294,27 @@
         </template>
       </div>
     </div>
+
+    <!-- Documentation Modals -->
+    <DocumentationModal
+      v-if="showBeforeDocumentationModal"
+      :work-order-id="workOrder.id"
+      :is-before-submission="true"
+      :checklist="workOrder.checklist"
+      :materials="workOrder.materials"
+      @close="showBeforeDocumentationModal = false"
+      @submit="handleBeforeDocumentationSubmit"
+    />
+
+    <DocumentationModal
+      v-if="showAfterDocumentationModal"
+      :work-order-id="workOrder.id"
+      :is-before-submission="false"
+      :checklist="workOrder.checklist"
+      :materials="workOrder.materials"
+      @close="showAfterDocumentationModal = false"
+      @submit="handleAfterDocumentationSubmit"
+    />
   </div>
   
   <div v-else class="text-center py-12">
@@ -290,6 +334,8 @@ import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useWorkOrderStore } from '@/stores/workorder';
 import { useInventoryStore } from '@/stores/inventory';
+import { useNotificationStore } from '@/stores/notification';
+import DocumentationModal from '@/components/workorder/DocumentationModal.vue';
 import { 
   ArrowLeft, 
   Camera, 
@@ -299,14 +345,19 @@ import {
   XCircle, 
   Edit 
 } from 'lucide-vue-next';
-import type { WorkOrder } from '@/types';
+import type { WorkOrder, Photo } from '@/types';
 
 const route = useRoute();
 const authStore = useAuthStore();
 const workOrderStore = useWorkOrderStore();
 const inventoryStore = useInventoryStore();
+const notificationStore = useNotificationStore();
 
 const workOrder = ref<WorkOrder | null>(null);
+const showBeforeDocumentationModal = ref(false);
+const showAfterDocumentationModal = ref(false);
+const selectedPhoto = ref<Photo | null>(null);
+const showPhotoModal = ref(false);
 
 const currentUser = computed(() => authStore.currentUser);
 const isWorker = computed(() => authStore.isWorker);
@@ -369,15 +420,6 @@ const getInventoryItemName = (itemId: string) => {
   return item?.name || `Item ${itemId}`;
 };
 
-const startWork = async () => {
-  if (!workOrder.value) return;
-  try {
-    await workOrderStore.updateWorkOrderStatus(workOrder.value.id, 'in_progress');
-    workOrder.value.status = 'in_progress';
-  } catch (error) {
-    console.error('Failed to start work:', error);
-  }
-};
 
 const approveWorkOrder = async () => {
   if (!workOrder.value) return;
@@ -404,9 +446,119 @@ const completeWorkOrder = async () => {
   try {
     await workOrderStore.updateWorkOrderStatus(workOrder.value.id, 'completed');
     workOrder.value.status = 'completed';
+    
+    // Send notification
+    notificationStore.showSuccess('Work order completed successfully');
   } catch (error) {
     console.error('Failed to complete work order:', error);
+    notificationStore.showError('Failed to complete work order');
   }
+};
+
+const handleBeforeDocumentationSubmit = async (data: {
+  photos: File[];
+  photoCaptions: string[];
+  notes: string;
+  checklistValues?: Record<string, any>;
+}) => {
+  if (!workOrder.value) return;
+  
+  try {
+    // Create photo objects (simulate upload)
+    const photos: Photo[] = data.photos.map((file, index) => ({
+      id: `photo_${Date.now()}_${index}`,
+      url: URL.createObjectURL(file), // In real app, this would be uploaded URL
+      caption: data.photoCaptions[index],
+      timestamp: new Date().toISOString(),
+      workOrderId: workOrder.value!.id,
+      type: 'before'
+    }));
+    
+    // Update checklist with before values
+    if (data.checklistValues) {
+      workOrder.value.checklist.forEach(item => {
+        if (data.checklistValues![item.id] !== undefined) {
+          item.beforeValue = data.checklistValues![item.id];
+        }
+      });
+    }
+    
+    // Update work order with before documentation
+    workOrder.value.beforePhotos = photos;
+    workOrder.value.beforeNotes = data.notes;
+    workOrder.value.status = 'in_progress';
+    
+    // Simulate API call
+    await workOrderStore.updateWorkOrderStatus(workOrder.value.id, 'in_progress');
+    
+    showBeforeDocumentationModal.value = false;
+    
+    notificationStore.showSuccess('Before documentation submitted. You can now start the maintenance work.');
+    
+  } catch (error) {
+    console.error('Failed to submit before documentation:', error);
+    notificationStore.showError('Failed to submit before documentation');
+  }
+};
+
+const handleAfterDocumentationSubmit = async (data: {
+  photos: File[];
+  photoCaptions: string[];
+  notes: string;
+  materialUsage?: Record<string, number>;
+}) => {
+  if (!workOrder.value) return;
+  
+  try {
+    // Create photo objects (simulate upload)
+    const photos: Photo[] = data.photos.map((file, index) => ({
+      id: `photo_${Date.now()}_${index}`,
+      url: URL.createObjectURL(file), // In real app, this would be uploaded URL
+      caption: data.photoCaptions[index],
+      timestamp: new Date().toISOString(),
+      workOrderId: workOrder.value!.id,
+      type: 'after'
+    }));
+    
+    // Update material usage
+    if (data.materialUsage) {
+      workOrder.value.materials.forEach(material => {
+        if (data.materialUsage![material.itemId] !== undefined) {
+          material.actualQuantity = data.materialUsage![material.itemId];
+        }
+      });
+    }
+    
+    // Update work order with after documentation
+    workOrder.value.afterPhotos = photos;
+    workOrder.value.afterNotes = data.notes;
+    workOrder.value.status = 'submitted_for_review';
+    workOrder.value.completedAt = new Date().toISOString();
+    
+    // Simulate API call
+    await workOrderStore.updateWorkOrderStatus(workOrder.value.id, 'submitted_for_review');
+    
+    showAfterDocumentationModal.value = false;
+    
+    notificationStore.showSuccess('Work completed and submitted for supervisor review.');
+    
+    // Notify supervisor about completion
+    notificationStore.notifyWorkOrderCompleted(workOrder.value.id, workOrder.value.title);
+    
+  } catch (error) {
+    console.error('Failed to submit after documentation:', error);
+    notificationStore.showError('Failed to submit after documentation');
+  }
+};
+
+const openPhotoModal = (photo: Photo) => {
+  selectedPhoto.value = photo;
+  showPhotoModal.value = true;
+};
+
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement;
+  img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTkgMTJMMTEgMTRMMTUgMTBNMjEgMTJDMjEgMTYuOTcwNiAxNi45NzA2IDIxIDEyIDIxQzcuMDI5NDQgMjEgMyAxNi45NzA2IDMgMTJDMyA3LjAyOTQ0IDcuMDI5NDQgMyAxMiAzQzE2Ljk3MDYgMyAyMSA3LjAyOTQ0IDIxIDEyWiIgc3Ryb2tlPSIjOUNBM0FGIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K';
 };
 
 onMounted(async () => {

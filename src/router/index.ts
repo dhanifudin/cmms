@@ -73,6 +73,12 @@ const router = createRouter({
       name: 'InvoiceDetail',
       component: () => import('@/views/invoices/InvoiceDetail.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/inbox',
+      name: 'Inbox',
+      component: () => import('@/views/inbox/Inbox.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 });
