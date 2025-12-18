@@ -175,10 +175,24 @@ const sortedTerminals = computed(() => {
   }
   
   return filtered.sort((a, b) => {
-    if (selectedView.value === 'Need Attention') {
-      return a.efficiency - b.efficiency; // Ascending for worst first
+    const aValue = a[props.sortBy];
+    const bValue = b[props.sortBy];
+
+    if (typeof aValue === 'number' && typeof bValue === 'number') {
+      if (selectedView.value === 'Need Attention') {
+        return aValue - bValue; // Ascending for worst first
+      }
+      return bValue - aValue; // Descending for best first
     }
-    return b[props.sortBy] - a[props.sortBy]; // Descending for best first
+
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      if (selectedView.value === 'Need Attention') {
+        return aValue.localeCompare(bValue);
+      }
+      return bValue.localeCompare(aValue);
+    }
+
+    return 0;
   });
 });
 

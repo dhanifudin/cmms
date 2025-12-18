@@ -218,7 +218,10 @@ const roleBasedDescription = computed(() => {
 const topPerformer = computed(() => dashboardStore.getTopPerformingTerminals(1)[0]);
 const lowPerformer = computed(() => {
   const lowPerformers = dashboardStore.getLowPerformingTerminals(1);
-  return lowPerformers[0]?.efficiency < 85 ? lowPerformers[0] : null;
+  if (lowPerformers.length > 0) {
+    return lowPerformers[0]?.efficiency && lowPerformers[0].efficiency < 85 ? lowPerformers[0] : null;
+  }
+  return null;
 });
 
 // Mock recent activity for worker

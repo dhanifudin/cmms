@@ -113,7 +113,7 @@ export const useWorkOrderStore = defineStore('workorder', () => {
     }
   };
 
-  const updateWorkOrderStatus = async (id: string, status: WorkOrderStatus, notes?: string) => {
+  const updateWorkOrderStatus = async (id: string, status: WorkOrderStatus, _notes?: string) => {
     if (!authStore.currentUser) {
       throw new Error('User not authenticated');
     }

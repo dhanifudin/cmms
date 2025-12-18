@@ -226,7 +226,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useWorkOrderStore } from '@/stores/workorder';
 import { useInventoryStore } from '@/stores/inventory';
 import { Plus, Package, Trash2 } from 'lucide-vue-next';
-import type { CreateWorkOrderForm, MaterialRequirement } from '@/types';
+import type { CreateWorkOrderForm } from '@/types';
 
 const router = useRouter();
 const authStore = useAuthStore();

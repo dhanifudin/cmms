@@ -262,12 +262,13 @@ import {
   ArrowDown,
   RotateCcw
 } from 'lucide-vue-next';
+import type { InventoryItem } from '@/types';
 
 const route = useRoute();
 const authStore = useAuthStore();
 const inventoryStore = useInventoryStore();
 
-const item = ref(null);
+const item = ref<InventoryItem | null>(null);
 const showAdjustStockModal = ref(false);
 
 const stockMovements = computed(() => {
@@ -334,6 +335,6 @@ onMounted(async () => {
   await inventoryStore.fetchStockMovements();
   
   // Find the item
-  item.value = inventoryStore.getItemById(itemId);
+  item.value = inventoryStore.getItemById(itemId) ?? null;
 });
 </script>

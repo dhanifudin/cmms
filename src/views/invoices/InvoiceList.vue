@@ -346,7 +346,7 @@ const downloadInvoice = async (invoiceId: string) => {
   }
 };
 
-const onInvoiceGenerated = (invoice: Invoice) => {
+const onInvoiceGenerated = (_invoice: Invoice) => {
   showGenerateModal.value = false;
   // Optionally navigate to the new invoice
   // router.push(`/invoices/${invoice.id}`);

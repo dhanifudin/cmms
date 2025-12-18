@@ -26,7 +26,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (!categories[item.category]) {
         categories[item.category] = [];
       }
-      categories[item.category].push(item);
+      categories[item.category]!.push(item);
     });
     return categories;
   });
@@ -126,13 +126,15 @@ export const useInventoryStore = defineStore('inventory', () => {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       // Update stock based on movement type
-      if (type === 'inbound' || type === 'adjustment') {
+      if (type === 'inbound') {
         item.currentStock += quantity;
       } else if (type === 'outbound') {
         if (item.currentStock < quantity) {
           throw new Error('Insufficient stock');
         }
         item.currentStock -= quantity;
+      } else if (type === 'adjustment') {
+        item.currentStock = quantity;
       }
 
       item.lastUpdated = new Date().toISOString();

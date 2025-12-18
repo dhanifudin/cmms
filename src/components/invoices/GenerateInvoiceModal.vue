@@ -307,9 +307,9 @@ const previewData = ref<{
 
 // Mock data for terminals and regions
 const availableTerminals = ref([
-  { id: 'terminal1', name: 'Terminal Tanjung Priok' },
-  { id: 'terminal2', name: 'Terminal Cilacap' },
-  { id: 'terminal3', name: 'Terminal Dumai' }
+  { id: 'terminal1', name: 'Terminal Tanjung Priok', regionId: 'region1' },
+  { id: 'terminal2', name: 'Terminal Cilacap', regionId: 'region1' },
+  { id: 'terminal3', name: 'Terminal Dumai', regionId: 'region2' }
 ]);
 
 const availableRegions = ref([
@@ -428,7 +428,9 @@ const calculatePreview = () => {
       if (wo.status !== 'completed') return false;
       
       if (form.value.terminalId && wo.terminalId !== form.value.terminalId) return false;
-      if (form.value.regionId && wo.regionId !== form.value.regionId) return false;
+      
+      const terminal = availableTerminals.value.find(t => t.id === wo.terminalId);
+      if (form.value.regionId && terminal?.regionId !== form.value.regionId) return false;
       
       if (form.value.startDate && form.value.endDate) {
         const completedAt = new Date(wo.completedAt || wo.updatedAt);
@@ -480,7 +482,8 @@ const generateInvoice = async () => {
         if (wo.status !== 'completed') return false;
         
         if (form.value.terminalId && wo.terminalId !== form.value.terminalId) return false;
-        if (form.value.regionId && wo.regionId !== form.value.regionId) return false;
+        const terminal = availableTerminals.value.find(t => t.id === wo.terminalId);
+        if (form.value.regionId && terminal?.regionId !== form.value.regionId) return false;
         
         if (form.value.startDate && form.value.endDate) {
           const completedAt = new Date(wo.completedAt || wo.updatedAt);

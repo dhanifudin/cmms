@@ -1,4 +1,4 @@
-import type { Invoice, InvoiceItem } from '@/types';
+import type { Invoice } from '@/types';
 import type { PricingRule, PenaltyRule } from '@/stores/invoice';
 
 export const mockInvoices: Invoice[] = [

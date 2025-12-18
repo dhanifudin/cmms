@@ -136,9 +136,9 @@ export const useInvoiceStore = defineStore('invoice', () => {
   };
 
   const calculateMaterialCost = (workOrder: WorkOrder, inventory: InventoryItem[]): number => {
-    if (!workOrder.requiredMaterials) return 0;
+    if (!workOrder.materials) return 0;
 
-    return workOrder.requiredMaterials.reduce((total, material) => {
+    return workOrder.materials.reduce((total: number, material) => {
       const item = inventory.find(i => i.id === material.itemId);
       if (!item) return total;
 
@@ -152,7 +152,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
       }
 
       const basePrice = applicableRule ? applicableRule.baseRate : item.unitPrice;
-      return total + (material.quantity * basePrice);
+      return total + (material.plannedQuantity * basePrice);
     }, 0);
   };
 
@@ -176,14 +176,17 @@ export const useInvoiceStore = defineStore('invoice', () => {
     // Use the first applicable rule (in real system, might need priority logic)
     const rule = applicableRules[0];
     
+    if (!rule) return 0;
+    
     if (rule.calculationType === 'fixed') {
       return rule.amount * daysOverdue;
-    } else {
+    } else if (rule.baseType && rule.amount) {
       const baseAmount = rule.baseType === 'labor_cost' ? laborCost :
                        rule.baseType === 'total_cost' ? laborCost + materialCost :
                        rule.amount;
       return (baseAmount * rule.amount / 100) * daysOverdue;
     }
+    return 0;
   };
 
   const generateInvoice = async (config: InvoiceGeneration, workOrders: WorkOrder[], inventory: InventoryItem[], users: User[]): Promise<Invoice> => {
@@ -196,7 +199,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
       let totalPenalties = 0;
 
       for (const workOrder of workOrders) {
-        const worker = users.find(u => u.id === workOrder.assignedTo);
+        const worker = users.find(u => u.id === workOrder.assignedWorkerId);
         if (!worker) continue;
 
         const laborCost = calculateLaborCost(workOrder, worker);
@@ -220,18 +223,18 @@ export const useInvoiceStore = defineStore('invoice', () => {
         }
 
         // Material items
-        if (workOrder.requiredMaterials && materialCost > 0) {
-          workOrder.requiredMaterials.forEach(material => {
+        if (workOrder.materials && materialCost > 0) {
+          workOrder.materials.forEach(material => {
             const item = inventory.find(i => i.id === material.itemId);
             if (item) {
-              const itemCost = material.quantity * item.unitPrice;
+              const itemCost = material.plannedQuantity * item.unitPrice;
               invoiceItems.push({
                 id: `${workOrder.id}-${material.itemId}`,
                 workOrderId: workOrder.id,
                 type: 'material',
                 description: `Material - ${item.name}`,
-                quantity: material.quantity,
-                unit: item.unit,
+                quantity: material.plannedQuantity,
+                unit: item.unitOfMeasure,
                 unitPrice: item.unitPrice,
                 totalPrice: itemCost,
                 category: item.category
@@ -263,7 +266,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
         invoiceNumber: `INV-${new Date().getFullYear()}-${String(invoices.value.length + 1).padStart(4, '0')}`,
         workOrderIds: workOrders.map(wo => wo.id),
         terminalId: config.terminalId || workOrders[0]?.terminalId,
-        regionId: config.regionId || workOrders[0]?.regionId,
+        regionId: config.regionId,
         recipientType: config.recipientType,
         recipientDetails: config.recipientDetails,
         items: invoiceItems,
@@ -314,7 +317,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
   const updatePricingRule = async (ruleId: string, updates: Partial<PricingRule>): Promise<void> => {
     const ruleIndex = pricingRules.value.findIndex(r => r.id === ruleId);
     if (ruleIndex !== -1) {
-      pricingRules.value[ruleIndex] = { ...pricingRules.value[ruleIndex], ...updates };
+      pricingRules.value[ruleIndex] = { ...pricingRules.value[ruleIndex], ...updates } as PricingRule;
     }
   };
 
@@ -330,7 +333,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
   const updatePenaltyRule = async (ruleId: string, updates: Partial<PenaltyRule>): Promise<void> => {
     const ruleIndex = penaltyRules.value.findIndex(r => r.id === ruleId);
     if (ruleIndex !== -1) {
-      penaltyRules.value[ruleIndex] = { ...penaltyRules.value[ruleIndex], ...updates };
+      penaltyRules.value[ruleIndex] = { ...penaltyRules.value[ruleIndex], ...updates } as PenaltyRule;
     }
   };
 

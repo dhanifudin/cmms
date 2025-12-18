@@ -150,7 +150,7 @@ const emit = defineEmits<Emits>();
 
 const invoiceStore = useInvoiceStore();
 
-const newStatus = ref<Invoice['status']>('');
+const newStatus = ref<Invoice['status'] | ''>('');
 const paymentDate = ref(new Date().toISOString().split('T')[0]);
 const paymentAmount = ref<number | null>(null);
 const notes = ref('');
@@ -170,7 +170,7 @@ const availableStatuses = computed(() => {
   ] as const;
 
   // Define valid transitions
-  const validTransitions: Record<Invoice['status'], Invoice['status'][]> = {
+  const validTransitions: Record<Invoice['status'], (Invoice['status'])[]> = {
     draft: ['pending', 'cancelled'],
     pending: ['sent', 'cancelled'],
     sent: ['paid', 'overdue', 'cancelled'],
@@ -197,10 +197,12 @@ const resetForm = () => {
 };
 
 const formatStatus = (status: string) => {
+  if (!status) return '';
   return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ');
 };
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string | undefined) => {
+  if (!dateString) return '';
   return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',

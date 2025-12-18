@@ -299,13 +299,14 @@ import {
   XCircle, 
   Edit 
 } from 'lucide-vue-next';
+import type { WorkOrder } from '@/types';
 
 const route = useRoute();
 const authStore = useAuthStore();
 const workOrderStore = useWorkOrderStore();
 const inventoryStore = useInventoryStore();
 
-const workOrder = ref(null);
+const workOrder = ref<WorkOrder | null>(null);
 
 const currentUser = computed(() => authStore.currentUser);
 const isWorker = computed(() => authStore.isWorker);
@@ -319,7 +320,7 @@ const isOverdue = computed(() => {
   return dueDate < now && !['completed', 'rejected'].includes(workOrder.value.status);
 });
 
-const statusColors = {
+const statusColors: Record<WorkOrder['status'], string> = {
   draft: 'bg-gray-100 text-gray-800',
   pending_approval: 'bg-yellow-100 text-yellow-800',
   assigned: 'bg-blue-100 text-blue-800',
@@ -330,7 +331,7 @@ const statusColors = {
   revision_required: 'bg-red-100 text-red-800'
 };
 
-const priorityColors = {
+const priorityColors: Record<WorkOrder['priority'], string> = {
   low: 'bg-gray-100 text-gray-800',
   normal: 'bg-blue-100 text-blue-800',
   high: 'bg-orange-100 text-orange-800',
@@ -369,6 +370,7 @@ const getInventoryItemName = (itemId: string) => {
 };
 
 const startWork = async () => {
+  if (!workOrder.value) return;
   try {
     await workOrderStore.updateWorkOrderStatus(workOrder.value.id, 'in_progress');
     workOrder.value.status = 'in_progress';
@@ -378,6 +380,7 @@ const startWork = async () => {
 };
 
 const approveWorkOrder = async () => {
+  if (!workOrder.value) return;
   try {
     await workOrderStore.updateWorkOrderStatus(workOrder.value.id, 'assigned');
     workOrder.value.status = 'assigned';
@@ -387,6 +390,7 @@ const approveWorkOrder = async () => {
 };
 
 const rejectWorkOrder = async () => {
+  if (!workOrder.value) return;
   try {
     await workOrderStore.updateWorkOrderStatus(workOrder.value.id, 'rejected');
     workOrder.value.status = 'rejected';
@@ -396,6 +400,7 @@ const rejectWorkOrder = async () => {
 };
 
 const completeWorkOrder = async () => {
+  if (!workOrder.value) return;
   try {
     await workOrderStore.updateWorkOrderStatus(workOrder.value.id, 'completed');
     workOrder.value.status = 'completed';
@@ -416,6 +421,6 @@ onMounted(async () => {
   await inventoryStore.fetchInventoryItems();
   
   // Find the work order
-  workOrder.value = workOrderStore.getWorkOrderById(workOrderId);
+  workOrder.value = workOrderStore.getWorkOrderById(workOrderId) ?? null;
 });
 </script>

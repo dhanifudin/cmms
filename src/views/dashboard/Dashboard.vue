@@ -224,12 +224,8 @@ import {
   ClipboardList, 
   AlertTriangle, 
   CheckCircle, 
-  Clock,
-  Plus,
-  Package,
-  Search
+  Clock
 } from 'lucide-vue-next';
-import type { WorkOrder } from '@/types';
 import QuickActionsPanel from '@/components/dashboard/QuickActionsPanel.vue';
 
 const authStore = useAuthStore();
@@ -293,8 +289,6 @@ const statusColors = {
   rejected: 'bg-red-100 text-red-800',
   revision_required: 'bg-red-100 text-red-800'
 };
-
-const hasPermission = (permission: string) => authStore.hasPermission(permission);
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {

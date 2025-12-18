@@ -3,7 +3,6 @@ import { ref, computed } from 'vue';
 import { useAuthStore } from './auth';
 import { useWorkOrderStore } from './workorder';
 import { useInventoryStore } from './inventory';
-import type { User } from '@/types';
 
 interface KPI {
   id: string;
@@ -22,7 +21,7 @@ interface ChartData {
   datasets: {
     label: string;
     data: number[];
-    backgroundColor?: string;
+    backgroundColor?: string | string[];
     borderColor?: string;
   }[];
 }
@@ -255,7 +254,6 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const supervisorKPIs = computed((): KPI[] => {
     if (!authStore.isSupervisor) return [];
 
-    const allWorkOrders = workOrderStore.workOrders;
     const pendingApprovals = workOrderStore.pendingApproval;
     const forReview = workOrderStore.submitForReview;
     const overdue = workOrderStore.overdue;
