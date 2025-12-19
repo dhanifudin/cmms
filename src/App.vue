@@ -1,10 +1,9 @@
 <template>
   <div id="app">
     <router-view v-if="showLogin" />
-    <AppLayout v-else>
+    <AuthenticatedLayout v-else>
       <router-view />
-    </AppLayout>
-    
+    </AuthenticatedLayout>
   </div>
 </template>
 
@@ -12,7 +11,7 @@
 import { computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import AppLayout from '@/components/layout/AppLayout.vue';
+import AuthenticatedLayout from '@/components/layout/AuthenticatedLayout.vue';
 
 const route = useRoute();
 const authStore = useAuthStore();
