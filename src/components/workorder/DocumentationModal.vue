@@ -8,9 +8,11 @@
       </DialogHeader>
 
       <form @submit.prevent="handleSubmit" class="space-y-6">
-          <!-- Checklist Section (for before documentation) -->
-          <div v-if="isBeforeSubmission && checklist.length > 0">
-            <h4 class="text-sm font-medium mb-4">Complete Checklist (Before State)</h4>
+          <!-- Checklist Section -->
+          <div v-if="checklist.length > 0">
+            <h4 class="text-sm font-medium mb-4">
+              Complete Checklist ({{ isBeforeSubmission ? 'Before' : 'After' }} State)
+            </h4>
             <div class="space-y-4 max-h-64 overflow-y-auto border border-border rounded-lg p-4">
               <div
                 v-for="item in checklist"
@@ -236,6 +238,17 @@
             </div>
           </div>
 
+          <!-- Validation Errors -->
+          <div v-if="validationErrors.length > 0" class="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+            <h5 class="text-sm font-medium text-destructive mb-2">Please complete the following:</h5>
+            <ul class="text-sm text-destructive space-y-1">
+              <li v-for="error in validationErrors" :key="error" class="flex items-center">
+                <AlertCircle class="h-3 w-3 mr-2 flex-shrink-0" />
+                {{ error }}
+              </li>
+            </ul>
+          </div>
+
         <DialogFooter class="pt-6">
           <Button
             type="button"
@@ -275,7 +288,8 @@ import type { ChecklistItem, MaterialRequirement } from '@/types';
 import {
   Camera as CameraIcon,
   Trash2 as TrashIcon,
-  Star as StarIcon
+  Star as StarIcon,
+  AlertCircle
 } from 'lucide-vue-next';
 
 interface Props {
@@ -311,20 +325,36 @@ const checklistValues = ref<Record<string, any>>({});
 const materialUsage = ref<Record<string, number>>({});
 const isSubmitting = ref(false);
 
-const canSubmit = computed(() => {
-  // Must have at least one photo for both before and after
-  if (selectedPhotos.value.length === 0) return false;
+// Validation helpers
+const missingPhotos = computed(() => selectedPhotos.value.length === 0);
+
+const missingRequiredChecklistItems = computed(() => {
+  if (props.checklist.length === 0) return [];
   
-  // For before submission, required checklist items must be filled
-  if (props.isBeforeSubmission) {
-    const requiredItems = props.checklist.filter(item => item.required);
-    return requiredItems.every(item => 
-      checklistValues.value[item.id] !== undefined && 
-      checklistValues.value[item.id] !== ''
-    );
+  const requiredItems = props.checklist.filter(item => item.required);
+  return requiredItems.filter(item => 
+    checklistValues.value[item.id] === undefined || 
+    checklistValues.value[item.id] === ''
+  );
+});
+
+const validationErrors = computed(() => {
+  const errors: string[] = [];
+  
+  if (missingPhotos.value) {
+    errors.push(`Please add at least one ${props.isBeforeSubmission ? 'before' : 'after'} photo`);
   }
   
-  return true;
+  if (missingRequiredChecklistItems.value.length > 0) {
+    const itemLabels = missingRequiredChecklistItems.value.map(item => item.label);
+    errors.push(`Please complete required checklist items: ${itemLabels.join(', ')}`);
+  }
+  
+  return errors;
+});
+
+const canSubmit = computed(() => {
+  return validationErrors.value.length === 0;
 });
 
 onMounted(() => {
@@ -332,7 +362,12 @@ onMounted(() => {
   props.checklist.forEach(item => {
     const existingValue = props.isBeforeSubmission ? item.beforeValue : item.afterValue;
     if (existingValue !== undefined) {
-      checklistValues.value[item.id] = existingValue;
+      // Handle type conversion for display
+      if (item.type === 'yes_no' && typeof existingValue === 'boolean') {
+        checklistValues.value[item.id] = existingValue.toString();
+      } else {
+        checklistValues.value[item.id] = existingValue;
+      }
     }
   });
   
@@ -407,11 +442,37 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
   
   try {
+    // Convert checklist values with proper type handling
+    const processedChecklistValues: Record<string, any> = {};
+    
+    Object.entries(checklistValues.value).forEach(([key, value]) => {
+      const checklistItem = props.checklist.find(item => item.id === key);
+      
+      if (checklistItem) {
+        // Handle yes/no type - convert string to boolean
+        if (checklistItem.type === 'yes_no') {
+          processedChecklistValues[key] = value === 'true' || value === true;
+        }
+        // Handle number type - ensure it's a number
+        else if (checklistItem.type === 'number') {
+          processedChecklistValues[key] = typeof value === 'string' ? parseFloat(value) : value;
+        }
+        // Handle rating type - ensure it's a number
+        else if (checklistItem.type === 'rating') {
+          processedChecklistValues[key] = typeof value === 'string' ? parseInt(value) : value;
+        }
+        // Other types (text, dropdown) keep as is
+        else {
+          processedChecklistValues[key] = value;
+        }
+      }
+    });
+    
     const submissionData = {
       photos: selectedPhotos.value.map(photo => photo.file),
       photoCaptions: selectedPhotos.value.map(photo => photo.caption),
       notes: notes.value,
-      checklistValues: props.isBeforeSubmission ? checklistValues.value : undefined,
+      checklistValues: processedChecklistValues,
       materialUsage: !props.isBeforeSubmission ? materialUsage.value : undefined
     };
     

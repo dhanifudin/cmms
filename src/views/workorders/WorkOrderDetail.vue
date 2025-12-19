@@ -600,6 +600,7 @@ const handleAfterDocumentationSubmit = async (data: {
   photos: File[];
   photoCaptions: string[];
   notes: string;
+  checklistValues?: Record<string, any>;
   materialUsage?: Record<string, number>;
 }) => {
   if (!workOrder.value) return;
@@ -620,6 +621,15 @@ const handleAfterDocumentationSubmit = async (data: {
       workOrder.value.materials.forEach(material => {
         if (data.materialUsage![material.itemId] !== undefined) {
           material.actualQuantity = data.materialUsage![material.itemId];
+        }
+      });
+    }
+    
+    // Update checklist with after values
+    if (data.checklistValues) {
+      workOrder.value.checklist.forEach(item => {
+        if (data.checklistValues![item.id] !== undefined) {
+          item.afterValue = data.checklistValues![item.id];
         }
       });
     }

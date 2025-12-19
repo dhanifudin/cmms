@@ -155,8 +155,8 @@ export const mockWorkOrders: WorkOrder[] = [
     afterPhotos: [],
     beforeNotes: 'Initial inspection shows oil level is low, needs topping up. All other parameters within normal range.',
     materials: [
-      { itemId: 'item003', plannedQuantity: 5, actualQuantity: 5 }, // Compressor oil
-      { itemId: 'item007', plannedQuantity: 1, actualQuantity: 1 }  // Oil filter
+      { itemId: 'item003', plannedQuantity: 5 }, // Compressor oil
+      { itemId: 'item007', plannedQuantity: 1 }  // Oil filter
     ],
     createdAt: '2024-12-16T14:00:00Z',
     updatedAt: '2024-12-17T09:30:00Z'
@@ -353,5 +353,63 @@ export const mockWorkOrders: WorkOrder[] = [
     ],
     createdAt: '2024-12-17T16:00:00Z',
     updatedAt: '2024-12-17T16:00:00Z'
+  },
+  {
+    id: 'wo007',
+    title: 'Pipeline Valve Maintenance - Section A3',
+    description: 'Routine maintenance of pipeline valves in section A3, including lubrication, seal inspection, and operational testing.',
+    type: 'preventive',
+    status: 'in_progress',
+    priority: 'normal',
+    terminalId: 'terminal1',
+    assignedWorkerId: 'worker1',
+    createdBy: 'admin1',
+    approvedBy: 'supervisor1',
+    startDate: '2024-12-18T10:00:00Z',
+    dueDate: '2024-12-20T15:00:00Z',
+    estimatedDuration: 4,
+    checklist: [
+      {
+        id: 'valve_pressure_before',
+        label: 'Valve Inlet Pressure (PSI)',
+        type: 'number',
+        required: true,
+        unit: 'PSI',
+        minValue: 0,
+        maxValue: 100,
+        beforeValue: 32
+      },
+      {
+        id: 'valve_operation',
+        label: 'Valve Operation Test',
+        type: 'yes_no',
+        required: true,
+        beforeValue: false
+      },
+      {
+        id: 'seal_condition',
+        label: 'Seal Condition',
+        type: 'dropdown',
+        required: true,
+        options: ['Good', 'Fair', 'Poor', 'Replaced'],
+        beforeValue: 'Poor'
+      },
+      {
+        id: 'lubrication_status',
+        label: 'Lubrication Applied',
+        type: 'yes_no',
+        required: true,
+        beforeValue: false
+      }
+    ],
+    beforePhotos: [],
+    afterPhotos: [],
+    beforeNotes: 'Valve shows signs of wear, seal appears damaged and needs replacement. Lubrication required.',
+    materials: [
+      { itemId: 'item001', plannedQuantity: 2 }, // Pipeline gaskets  
+      { itemId: 'item009', plannedQuantity: 1 }  // Pump seals (valve seals)
+    ],
+    createdAt: '2024-12-18T08:00:00Z',
+    updatedAt: '2024-12-18T10:30:00Z'
   }
 ];
