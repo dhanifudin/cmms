@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 via-white to-gray-50 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8">
-      <div>
+      <div class="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-gray-200">
         <h2 class="mt-6 text-center text-3xl font-bold text-gray-900">
           Sign in to CMMS
         </h2>
@@ -10,48 +10,44 @@
         </p>
       </div>
 
-      <div class="mt-8 space-y-6">
+      <div class="mt-8 space-y-6 bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-gray-200">
         <!-- SSO Provider Buttons -->
         <div class="space-y-4">
           <button
             @click="handleSSOClick('talenta')"
             :disabled="isLoading"
-            class="group w-full rounded-lg border-2 border-talenta bg-talenta hover:bg-talenta-hover transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-xl"
+            class="group w-full rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           >
-            <div class="flex items-center justify-between p-5">
-              <div class="flex items-center space-x-4">
-                <div class="flex-shrink-0 bg-white rounded-lg p-2 shadow-sm">
-                  <img src="/logos/talenta-logo.svg" alt="Talenta" class="h-8 w-auto" />
+            <div class="flex items-center justify-between px-4 py-3">
+              <div class="flex items-center space-x-3">
+                <div class="flex-shrink-0">
+                  <img src="/logos/talenta-logo.svg" alt="Talenta" class="h-5 w-auto" />
                 </div>
                 <div class="text-left">
-                  <div class="text-lg font-bold text-white">Sign in with Talenta</div>
-                  <div class="text-sm text-white/90 mt-0.5">For Workers and Admin</div>
+                  <div class="text-sm font-medium text-gray-900">Sign in with Talenta</div>
+                  <div class="text-xs text-gray-500">For Workers and Admin</div>
                 </div>
               </div>
-              <svg class="w-6 h-6 text-white/80 group-hover:text-white group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
+              <div class="w-1 h-8 bg-talenta rounded-full"></div>
             </div>
           </button>
 
           <button
             @click="handleSSOClick('idaman')"
             :disabled="isLoading"
-            class="group w-full rounded-lg border-2 border-idaman bg-idaman hover:bg-idaman-hover transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-xl"
+            class="group w-full rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           >
-            <div class="flex items-center justify-between p-5">
-              <div class="flex items-center space-x-4">
-                <div class="flex-shrink-0 bg-white rounded-lg p-2 shadow-sm">
-                  <img src="/logos/idaman-logo.svg" alt="IdAMan" class="h-8 w-auto" />
+            <div class="flex items-center justify-between px-4 py-3">
+              <div class="flex items-center space-x-3">
+                <div class="flex-shrink-0">
+                  <img src="/logos/idaman-logo.svg" alt="IdAMan" class="h-5 w-auto" />
                 </div>
                 <div class="text-left">
-                  <div class="text-lg font-bold text-white">Sign in with Idaman</div>
-                  <div class="text-sm text-white/90 mt-0.5">For Supervisors and Leaders</div>
+                  <div class="text-sm font-medium text-gray-900">Sign in with Idaman</div>
+                  <div class="text-xs text-gray-500">For Supervisors and Leaders</div>
                 </div>
               </div>
-              <svg class="w-6 h-6 text-white/80 group-hover:text-white group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
+              <div class="w-1 h-8 bg-idaman rounded-full"></div>
             </div>
           </button>
         </div>
@@ -63,18 +59,18 @@
         </Alert>
 
         <!-- Demo Information -->
-        <Alert class="mt-6">
+        <Alert class="mt-6 bg-white/95 border-gray-300">
           <Info class="h-4 w-4" />
           <AlertTitle>SSO Provider Information</AlertTitle>
           <AlertDescription>
-            <div class="space-y-2 text-xs mt-2">
+            <div class="space-y-2 text-sm mt-2">
               <div>
                 <strong class="text-[#E31E24]">Talenta (Mekari):</strong>
-                <p class="ml-2 mt-1">Workers and Admin users</p>
+                <p class="ml-2 mt-1 text-gray-700">Workers and Admin users</p>
               </div>
               <div>
                 <strong class="text-[#0066CC]">Idaman SSO:</strong>
-                <p class="ml-2 mt-1">Supervisors and Leaders</p>
+                <p class="ml-2 mt-1 text-gray-700">Supervisors and Leaders</p>
               </div>
             </div>
           </AlertDescription>

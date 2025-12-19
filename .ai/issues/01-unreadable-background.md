@@ -1,0 +1,7 @@
+# Login Page
+
+Unreadable background for light theme Operating System from this element
+
+```html
+<button class="group w-full rounded-lg border-2 border-talenta bg-talenta hover:bg-talenta-hover transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-xl"><div class="flex items-center justify-between p-5"><div class="flex items-center space-x-4"><div class="flex-shrink-0 bg-white rounded-lg p-2 shadow-sm"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTIwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDwhLS0gTWVrYXJpL1RhbGVudGEgTG9nbyBpbiBSZWQgLS0+CiAgPHJlY3QgeD0iMiIgeT0iOCIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iI0UzMUUyNCIvPgogIDxwYXRoIGQ9Ik0xNCAxNEwxNCAyNk0xMCAxOEwxOCAxOCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KCiAgPCEtLSBUYWxlbnRhIFRleHQgLS0+CiAgPHRleHQgeD0iMzIiIHk9IjI1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjRTMxRTI0Ij5UYWxlbnRhPC90ZXh0Pgo8L3N2Zz4K" alt="Talenta" class="h-8 w-auto"></div><div class="text-left"><div class="text-lg font-bold text-white">Sign in with Talenta</div><div class="text-sm text-white/90 mt-0.5">For Workers and Admin</div></div></div><svg class="w-6 h-6 text-white/80 group-hover:text-white group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div></button>
+```

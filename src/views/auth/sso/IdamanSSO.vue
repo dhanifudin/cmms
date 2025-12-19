@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-slate-50 to-white py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-2xl w-full">
       <!-- Main Card -->
-      <div class="bg-white rounded-lg shadow-xl p-8 sm:p-10">
+      <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-8 sm:p-10">
         <!-- IdAMan Logo and Header -->
         <div class="text-center mb-8">
           <div class="flex items-center justify-center mb-4">
@@ -28,11 +28,11 @@
             v-for="user in idamanUsers"
             :key="user.id"
             @click="selectUser(user)"
-            class="w-full p-5 bg-white border-2 border-gray-200 rounded-lg hover:border-idaman hover:bg-idaman-light transition-all duration-200 text-left flex items-center space-x-4 group shadow-sm hover:shadow-md"
+            class="w-full p-4 bg-white border border-gray-200 rounded-lg hover:border-idaman hover:bg-gray-50 transition-all duration-200 text-left flex items-center space-x-4 group shadow-sm hover:shadow-md"
           >
             <!-- Avatar -->
             <div class="flex-shrink-0">
-              <div class="w-14 h-14 rounded-full bg-gradient-to-br from-idaman to-idaman-hover flex items-center justify-center text-white font-bold text-lg shadow-md">
+              <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-bold text-sm">
                 {{ user.name.charAt(0) }}
               </div>
             </div>
@@ -40,34 +40,30 @@
             <!-- User Info -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center space-x-2 mb-1">
-                <p class="text-base font-bold text-gray-900 group-hover:text-idaman transition-colors">
+                <p class="text-sm font-semibold text-gray-900">
                   {{ user.name }}
                 </p>
                 <span
-                  class="px-2.5 py-1 text-xs font-semibold rounded-full shadow-sm"
+                  class="px-2 py-0.5 text-xs font-medium rounded-md"
                   :class="user.role === 'supervisor'
-                    ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                    : 'bg-cyan-100 text-cyan-800 border border-cyan-200'"
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                    : 'bg-cyan-50 text-cyan-700 border border-cyan-200'"
                 >
                   {{ user.role === 'supervisor' ? 'Supervisor' : 'Leader' }}
                 </span>
               </div>
-              <p class="text-sm text-gray-600 font-medium">{{ user.position }}</p>
-              <div class="flex items-center space-x-2 mt-1">
+              <p class="text-xs text-gray-600">{{ user.position }}</p>
+              <div class="flex items-center space-x-1 mt-1">
                 <p class="text-xs text-gray-500">{{ user.email }}</p>
-                <span class="text-gray-300">•</span>
+                <span class="text-gray-400">•</span>
                 <p class="text-xs text-gray-500">{{ user.organization }}</p>
               </div>
-              <p class="text-xs text-gray-500 mt-0.5">{{ user.regionName }}</p>
+              <p class="text-xs text-gray-500">{{ user.regionName }}</p>
             </div>
 
-            <!-- Arrow Icon with Animation -->
+            <!-- Brand Accent -->
             <div class="flex-shrink-0">
-              <div class="w-10 h-10 rounded-full bg-gray-100 group-hover:bg-idaman flex items-center justify-center transition-colors">
-                <svg class="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
+              <div class="w-1 h-12 bg-idaman rounded-full"></div>
             </div>
           </button>
         </div>
@@ -110,7 +106,7 @@
         <p class="text-sm font-bold text-idaman">
           PT Pertamina (Persero)
         </p>
-        <p class="text-xs text-gray-600 mt-1">
+        <p class="text-sm font-medium text-gray-700 mt-1">
           © 2025 All Rights Reserved
         </p>
         <div class="mt-3 flex items-center justify-center space-x-3 text-xs">

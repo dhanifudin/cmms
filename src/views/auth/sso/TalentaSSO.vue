@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-[#f2f4f7] py-12 px-4 sm:px-6 lg:px-8">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-gray-50 to-white py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-2xl w-full">
       <!-- Main Card -->
-      <div class="bg-white rounded shadow-[0_2px_4px_0_rgba(119,119,119,.2)] p-8 sm:p-10">
+      <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-8 sm:p-10">
         <!-- Mekari/Talenta Logo and Header -->
         <div class="text-center mb-8">
           <div class="flex items-center justify-center mb-4">
@@ -23,11 +23,11 @@
             v-for="user in talentaUsers"
             :key="user.id"
             @click="selectUser(user)"
-            class="w-full p-5 bg-white border-2 border-gray-200 rounded-lg hover:border-talenta hover:bg-talenta-light transition-all duration-200 text-left flex items-center space-x-4 group shadow-sm hover:shadow-md"
+            class="w-full p-4 bg-white border border-gray-200 rounded-lg hover:border-talenta hover:bg-gray-50 transition-all duration-200 text-left flex items-center space-x-4 group shadow-sm hover:shadow-md"
           >
             <!-- Avatar -->
             <div class="flex-shrink-0">
-              <div class="w-14 h-14 rounded-full bg-gradient-to-br from-talenta to-talenta-hover flex items-center justify-center text-white font-bold text-lg shadow-md">
+              <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-bold text-sm">
                 {{ user.name.charAt(0) }}
               </div>
             </div>
@@ -35,29 +35,25 @@
             <!-- User Info -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center space-x-2 mb-1">
-                <p class="text-base font-bold text-gray-900 group-hover:text-talenta transition-colors">
+                <p class="text-sm font-semibold text-gray-900">
                   {{ user.name }}
                 </p>
                 <span
-                  class="px-2.5 py-1 text-xs font-semibold rounded-full shadow-sm"
+                  class="px-2 py-0.5 text-xs font-medium rounded-md"
                   :class="user.role === 'admin'
-                    ? 'bg-red-100 text-red-700 border border-red-200'
-                    : 'bg-orange-100 text-orange-700 border border-orange-200'"
+                    ? 'bg-red-50 text-red-700 border border-red-200'
+                    : 'bg-orange-50 text-orange-700 border border-orange-200'"
                 >
                   {{ user.role === 'admin' ? 'Admin' : 'Worker' }}
                 </span>
               </div>
-              <p class="text-sm text-gray-600 font-medium">{{ user.email }}</p>
-              <p class="text-xs text-gray-500 mt-0.5">{{ user.terminalName }}</p>
+              <p class="text-xs text-gray-600">{{ user.email }}</p>
+              <p class="text-xs text-gray-500">{{ user.terminalName }}</p>
             </div>
 
-            <!-- Arrow Icon -->
+            <!-- Brand Accent -->
             <div class="flex-shrink-0">
-              <div class="w-10 h-10 rounded-full bg-gray-100 group-hover:bg-talenta flex items-center justify-center transition-colors">
-                <svg class="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
+              <div class="w-1 h-12 bg-talenta rounded-full"></div>
             </div>
           </button>
         </div>
@@ -80,7 +76,7 @@
 
       <!-- Footer -->
       <div class="mt-6 text-center">
-        <p class="text-xs text-[#777]">
+        <p class="text-sm font-medium text-gray-700">
           © 2025 PT Mid Solusi Nusantara
         </p>
         <div class="mt-2 flex items-center justify-center space-x-4 text-xs">
