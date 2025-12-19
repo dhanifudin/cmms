@@ -79,25 +79,42 @@
     <!-- Main content -->
     <div class="lg:ml-64">
       <!-- Top bar -->
-      <div class="sticky top-0 z-30 bg-white border-b border-gray-200">
+      <div class="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            class="lg:hidden"
-            @click="sidebarOpen = !sidebarOpen"
-          >
-            <Menu class="w-6 h-6" />
-          </Button>
-          
-          <div class="flex-1">
-            <h1 class="text-lg font-semibold text-gray-900 lg:ml-0 ml-4">
-              {{ currentPageTitle }}
-            </h1>
+          <div class="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="lg:hidden"
+              @click="sidebarOpen = !sidebarOpen"
+            >
+              <Menu class="w-6 h-6" />
+            </Button>
+            <div>
+              <h1 class="text-lg font-semibold">{{ currentPageTitle }}</h1>
+              <p v-if="currentPageTitle === 'Dashboard'" class="text-sm text-muted-foreground lg:hidden">
+                Welcome back, {{ currentUser?.name }}
+                <Badge v-if="currentUser?.role" :variant="getRoleVariant(currentUser.role)" class="ml-2">
+                  {{ currentUser.role.toUpperCase() }}
+                </Badge>
+              </p>
+            </div>
           </div>
           
-          <!-- Notifications -->
-          <NotificationCenter />
+          <div class="flex items-center space-x-4">
+            <div class="hidden lg:block">
+              <div v-if="currentPageTitle === 'Dashboard'" class="text-right">
+                <p class="text-sm text-muted-foreground">
+                  Welcome back, {{ currentUser?.name }}
+                  <Badge v-if="currentUser?.role" :variant="getRoleVariant(currentUser.role)" class="ml-2">
+                    {{ currentUser.role.toUpperCase() }}
+                  </Badge>
+                </p>
+              </div>
+              <div class="text-sm text-muted-foreground">{{ currentDateTime }}</div>
+            </div>
+            <NotificationCenter />
+          </div>
         </div>
       </div>
       
@@ -142,8 +159,32 @@ const messageStore = useMessageStore();
 const notificationStore = useNotificationStore();
 const sidebarOpen = ref(false);
 const selectedDemoUser = ref('');
+const currentDateTime = ref('');
 
 const currentUser = computed(() => authStore.currentUser);
+
+// Role badge variants
+const getRoleVariant = (role: string) => {
+  switch (role) {
+    case 'admin': return 'destructive';
+    case 'supervisor': return 'default';
+    case 'leader': return 'secondary';
+    case 'worker': return 'outline';
+    default: return 'outline';
+  }
+};
+
+// Update datetime function
+const updateDateTime = () => {
+  currentDateTime.value = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 
 const currentPageTitle = computed(() => {
   const route = router.currentRoute.value;
@@ -241,6 +282,10 @@ onMounted(async () => {
   // Initialize stores
   messageStore.initializeInbox();
   await notificationStore.initializeNotifications();
+  
+  // Initialize datetime
+  updateDateTime();
+  setInterval(updateDateTime, 60000); // Update every minute
   
   // Close sidebar on large screens by default
   if (window.innerWidth >= 1024) {
