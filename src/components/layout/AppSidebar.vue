@@ -6,11 +6,11 @@
           <SidebarMenuButton size="lg" as-child>
             <router-link to="/dashboard" class="flex items-center">
               <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Building class="size-4" />
+                <Building class="size-4 icon-theme-primary" />
               </div>
               <div class="grid flex-1 text-left text-sm leading-tight">
-                <span class="truncate font-semibold">CMMS</span>
-                <span class="truncate text-xs">Maintenance System</span>
+                <span class="truncate font-semibold sidebar-text-theme">CMMS</span>
+                <span class="truncate text-xs sidebar-text-muted-theme">Maintenance System</span>
               </div>
             </router-link>
           </SidebarMenuButton>
@@ -21,14 +21,14 @@
     <SidebarContent>
       <!-- Main Navigation Group -->
       <SidebarGroup>
-        <SidebarGroupLabel>Main</SidebarGroupLabel>
+        <SidebarGroupLabel class="sidebar-text-muted-theme">Main</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton as-child :is-active="$route.path === '/dashboard'">
                 <router-link to="/dashboard" class="flex items-center">
-                  <LayoutDashboard class="size-4" />
-                  <span>Dashboard</span>
+                  <LayoutDashboard class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Dashboard</span>
                 </router-link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -36,8 +36,8 @@
             <SidebarMenuItem>
               <SidebarMenuButton as-child :is-active="$route.path.startsWith('/inbox')">
                 <router-link to="/inbox" class="flex items-center">
-                  <Inbox class="size-4" />
-                  <span>Inbox</span>
+                  <Inbox class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Inbox</span>
                   <SidebarMenuBadge v-if="messageStore.unreadCount > 0">
                     {{ messageStore.unreadCount > 99 ? '99+' : messageStore.unreadCount }}
                   </SidebarMenuBadge>
@@ -48,8 +48,8 @@
             <SidebarMenuItem>
               <SidebarMenuButton as-child :is-active="$route.path.startsWith('/analytics')">
                 <router-link to="/analytics" class="flex items-center">
-                  <BarChart class="size-4" />
-                  <span>Analytics</span>
+                  <BarChart class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Analytics</span>
                 </router-link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -59,14 +59,14 @@
 
       <!-- Operations Group -->
       <SidebarGroup>
-        <SidebarGroupLabel>Operations</SidebarGroupLabel>
+        <SidebarGroupLabel class="sidebar-text-muted-theme">Operations</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton as-child :is-active="$route.path.startsWith('/work-orders')">
                 <router-link to="/work-orders" class="flex items-center">
-                  <ClipboardList class="size-4" />
-                  <span>Work Orders</span>
+                  <ClipboardList class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Work Orders</span>
                   <SidebarMenuBadge v-if="pendingWorkOrders > 0" variant="outline">
                     {{ pendingWorkOrders }}
                   </SidebarMenuBadge>
@@ -77,8 +77,8 @@
             <SidebarMenuItem v-if="authStore.hasPermission('manage_inventory') || authStore.hasPermission('access_personal_data')">
               <SidebarMenuButton as-child :is-active="$route.path.startsWith('/inventory')">
                 <router-link to="/inventory" class="flex items-center">
-                  <Package class="size-4" />
-                  <span>Inventory</span>
+                  <Package class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Inventory</span>
                   <SidebarMenuBadge v-if="lowStockCount > 0" variant="destructive">
                     {{ lowStockCount }}
                   </SidebarMenuBadge>
@@ -89,8 +89,8 @@
             <SidebarMenuItem v-if="authStore.hasPermission('view_invoices')">
               <SidebarMenuButton as-child :is-active="$route.path.startsWith('/invoices')">
                 <router-link to="/invoices" class="flex items-center">
-                  <FileText class="size-4" />
-                  <span>Invoices</span>
+                  <FileText class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Invoices</span>
                 </router-link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -100,14 +100,14 @@
 
       <!-- Administration Group (Admin Only) -->
       <SidebarGroup v-if="authStore.isAdmin">
-        <SidebarGroupLabel>Administration</SidebarGroupLabel>
+        <SidebarGroupLabel class="sidebar-text-muted-theme">Administration</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton as-child :is-active="$route.path.startsWith('/reports')">
                 <router-link to="/reports" class="flex items-center">
-                  <FileBarChart class="size-4" />
-                  <span>Reports</span>
+                  <FileBarChart class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Reports</span>
                 </router-link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -115,8 +115,8 @@
             <SidebarMenuItem>
               <SidebarMenuButton as-child :is-active="$route.path.startsWith('/users')">
                 <router-link to="/users" class="flex items-center">
-                  <Users class="size-4" />
-                  <span>Users</span>
+                  <Users class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Users</span>
                 </router-link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -124,8 +124,8 @@
             <SidebarMenuItem>
               <SidebarMenuButton as-child :is-active="$route.path.startsWith('/settings')">
                 <router-link to="/settings" class="flex items-center">
-                  <Settings class="size-4" />
-                  <span>Settings</span>
+                  <Settings class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Settings</span>
                 </router-link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -149,10 +149,10 @@
                   </AvatarFallback>
                 </Avatar>
                 <div class="grid flex-1 text-left text-sm leading-tight">
-                  <span class="truncate font-semibold">{{ currentUser?.name }}</span>
-                  <span class="truncate text-xs capitalize">{{ currentUser?.role }}</span>
+                  <span class="truncate font-semibold sidebar-text-theme">{{ currentUser?.name }}</span>
+                  <span class="truncate text-xs capitalize sidebar-text-muted-theme">{{ currentUser?.role }}</span>
                 </div>
-                <ChevronsUpDown class="ml-auto size-4" />
+                <ChevronsUpDown class="ml-auto size-4 icon-theme-secondary" />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -169,8 +169,8 @@
                     </AvatarFallback>
                   </Avatar>
                   <div class="grid flex-1 text-left text-sm leading-tight">
-                    <span class="truncate font-semibold">{{ currentUser?.name }}</span>
-                    <span class="truncate text-xs">{{ currentUser?.email }}</span>
+                    <span class="truncate font-semibold sidebar-text-theme">{{ currentUser?.name }}</span>
+                    <span class="truncate text-xs sidebar-text-muted-theme">{{ currentUser?.email }}</span>
                   </div>
                 </div>
               </DropdownMenuLabel>
@@ -178,7 +178,7 @@
               <DropdownMenuGroup>
                 <DropdownMenuItem as-child>
                   <router-link to="/settings" class="flex items-center">
-                    <Settings class="mr-2 h-4 w-4" />
+                    <Settings class="mr-2 h-4 w-4 icon-theme-primary" />
                     Settings
                   </router-link>
                 </DropdownMenuItem>
@@ -208,7 +208,7 @@
               
               <DropdownMenuSeparator />
               <DropdownMenuItem @click="logout" class="text-destructive focus:text-destructive">
-                <LogOut class="mr-2 h-4 w-4" />
+                <LogOut class="mr-2 h-4 w-4 icon-theme-primary" />
                 Sign out
               </DropdownMenuItem>
             </DropdownMenuContent>

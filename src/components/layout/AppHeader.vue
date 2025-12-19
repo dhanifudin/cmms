@@ -35,7 +35,7 @@
           class="relative h-8 w-full justify-start rounded-[0.5rem] bg-muted/50 text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-40 lg:w-64"
           @click="openCommandPalette"
         >
-          <Search class="mr-2 h-4 w-4" />
+          <Search class="mr-2 h-4 w-4 icon-theme-secondary" />
           Search...
           <kbd class="pointer-events-none absolute right-[0.3rem] top-[0.3rem] hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
             <span class="text-xs">⌘</span>K
@@ -48,7 +48,7 @@
         class="h-8 w-8 md:hidden"
         @click="openCommandPalette"
       >
-        <Search class="h-4 w-4" />
+        <Search class="h-4 w-4 icon-theme-primary" />
         <span class="sr-only">Search</span>
       </Button>
       <Button
@@ -57,7 +57,7 @@
         class="relative h-8 w-8"
         @click="openNotifications"
       >
-        <Bell class="h-4 w-4" />
+        <Bell class="h-4 w-4 icon-theme-primary" />
         <span v-if="notificationStore.unreadCount > 0" class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
           {{ notificationStore.unreadCount > 9 ? '9+' : notificationStore.unreadCount }}
         </span>
@@ -66,22 +66,22 @@
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <Button variant="ghost" size="icon" class="h-8 w-8">
-            <Sun v-if="!isDark" class="h-4 w-4" />
-            <Moon v-else class="h-4 w-4" />
+            <Sun v-if="!isDark" class="h-4 w-4 icon-theme-primary" />
+            <Moon v-else class="h-4 w-4 icon-theme-primary" />
             <span class="sr-only">Toggle theme</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem @click="setTheme('light')">
-            <Sun class="mr-2 h-4 w-4" />
+            <Sun class="mr-2 h-4 w-4 icon-theme-primary" />
             Light
           </DropdownMenuItem>
           <DropdownMenuItem @click="setTheme('dark')">
-            <Moon class="mr-2 h-4 w-4" />
+            <Moon class="mr-2 h-4 w-4 icon-theme-primary" />
             Dark
           </DropdownMenuItem>
           <DropdownMenuItem @click="setTheme('system')">
-            <Monitor class="mr-2 h-4 w-4" />
+            <Monitor class="mr-2 h-4 w-4 icon-theme-primary" />
             System
           </DropdownMenuItem>
         </DropdownMenuContent>

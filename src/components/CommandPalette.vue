@@ -20,7 +20,7 @@
             :value="result.id"
             @select="handleSearchResult(result)"
           >
-            <component :is="getResultIcon(result.type)" class="mr-2 h-4 w-4" />
+            <component :is="getResultIcon(result.type)" class="mr-2 h-4 w-4 icon-theme-primary" />
             <div class="flex flex-col">
               <span class="text-sm">{{ result.title }}</span>
               <span class="text-xs text-muted-foreground">{{ result.description }}</span>
@@ -40,7 +40,7 @@
             @select="handleNavigation(navItem.path)"
             :class="{ 'opacity-50': navItem.disabled }"
           >
-            <component :is="navItem.icon" class="mr-2 h-4 w-4" />
+            <component :is="navItem.icon" class="mr-2 h-4 w-4 icon-theme-primary" />
             <span>{{ navItem.label }}</span>
             <CommandShortcut v-if="navItem.shortcut">{{ navItem.shortcut }}</CommandShortcut>
           </CommandItem>
@@ -57,7 +57,7 @@
             @select="handleAction(action.action)"
             :class="{ 'opacity-50': action.disabled }"
           >
-            <component :is="action.icon" class="mr-2 h-4 w-4" />
+            <component :is="action.icon" class="mr-2 h-4 w-4 icon-theme-primary" />
             <span>{{ action.label }}</span>
             <CommandShortcut v-if="action.shortcut">{{ action.shortcut }}</CommandShortcut>
           </CommandItem>
@@ -68,17 +68,17 @@
         <!-- Theme & Settings Group -->
         <CommandGroup heading="Settings">
           <CommandItem value="toggle-theme" @select="toggleTheme">
-            <component :is="isDark ? Sun : Moon" class="mr-2 h-4 w-4" />
+            <component :is="isDark ? Sun : Moon" class="mr-2 h-4 w-4 icon-theme-primary" />
             <span>Switch to {{ isDark ? 'Light' : 'Dark' }} Mode</span>
             <CommandShortcut>⌘D</CommandShortcut>
           </CommandItem>
           <CommandItem value="settings" @select="handleNavigation('/settings')" :disabled="!authStore.isAdmin">
-            <Settings class="mr-2 h-4 w-4" />
+            <Settings class="mr-2 h-4 w-4 icon-theme-primary" />
             <span>Settings</span>
             <CommandShortcut>⌘,</CommandShortcut>
           </CommandItem>
           <CommandItem value="logout" @select="logout">
-            <LogOut class="mr-2 h-4 w-4" />
+            <LogOut class="mr-2 h-4 w-4 icon-theme-primary" />
             <span>Sign Out</span>
             <CommandShortcut>⌘Q</CommandShortcut>
           </CommandItem>
