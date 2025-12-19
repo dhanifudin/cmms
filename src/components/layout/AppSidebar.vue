@@ -122,6 +122,24 @@
             </SidebarMenuItem>
 
             <SidebarMenuItem>
+              <SidebarMenuButton as-child :is-active="$route.path.startsWith('/categories')">
+                <router-link to="/categories" class="flex items-center">
+                  <FolderTree class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Categories</span>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child :is-active="$route.path.startsWith('/templates')">
+                <router-link to="/templates" class="flex items-center">
+                  <File class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Templates</span>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
               <SidebarMenuButton as-child :is-active="$route.path.startsWith('/settings')">
                 <router-link to="/settings" class="flex items-center">
                   <Settings class="size-4 icon-theme-primary" />
@@ -266,6 +284,8 @@ import {
   Settings,
   LogOut,
   ChevronsUpDown,
+  FolderTree,
+  File,
 } from 'lucide-vue-next'
 
 const router = useRouter()

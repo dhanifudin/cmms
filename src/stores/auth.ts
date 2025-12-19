@@ -318,7 +318,9 @@ export const useAuthStore = defineStore('auth', () => {
         'manage_invoices',
         'view_invoices',
         'view_reports',
-        'access_all_terminals'
+        'access_all_terminals',
+        'manage_categories',
+        'manage_templates'
       ],
       supervisor: [
         'approve_work_orders',

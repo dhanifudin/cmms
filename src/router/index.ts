@@ -62,7 +62,7 @@ const router = createRouter({
     {
       path: '/work-orders/create',
       name: 'CreateWorkOrder',
-      component: () => import('@/views/workorders/CreateWorkOrder.vue'),
+      component: () => import('@/views/workorders/CreateWorkOrderWithTemplates.vue'),
       meta: { requiresAuth: true, permission: 'create_work_orders' }
     },
     {
@@ -118,6 +118,38 @@ const router = createRouter({
       name: 'Settings',
       component: () => import('@/views/settings/Settings.vue'),
       meta: { requiresAuth: true }
+    },
+    // Category Management
+    {
+      path: '/categories',
+      name: 'Categories',
+      component: () => import('@/views/admin/CategoryManagement.vue'),
+      meta: { requiresAuth: true, permission: 'manage_categories' }
+    },
+    // Template Management
+    {
+      path: '/templates',
+      name: 'Templates',
+      component: () => import('@/views/admin/TemplateManagement.vue'),
+      meta: { requiresAuth: true, permission: 'manage_templates' }
+    },
+    {
+      path: '/templates/create',
+      name: 'CreateTemplate',
+      component: () => import('@/views/admin/CreateTemplate.vue'),
+      meta: { requiresAuth: true, permission: 'manage_templates' }
+    },
+    {
+      path: '/templates/:id',
+      name: 'TemplateDetail',
+      component: () => import('@/views/admin/TemplateDetail.vue'),
+      meta: { requiresAuth: true, permission: 'manage_templates' }
+    },
+    {
+      path: '/templates/:id/edit',
+      name: 'EditTemplate',
+      component: () => import('@/views/admin/EditTemplate.vue'),
+      meta: { requiresAuth: true, permission: 'manage_templates' }
     }
   ]
 });

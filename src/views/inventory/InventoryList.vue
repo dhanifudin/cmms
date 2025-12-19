@@ -91,6 +91,7 @@
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="__ALL__">All Categories</SelectItem>
                 <SelectItem v-for="category in categories" :key="category" :value="category">
                   {{ category }}
                 </SelectItem>
@@ -105,6 +106,7 @@
                 <SelectValue placeholder="All Items" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="__ALL__">All Items</SelectItem>
                 <SelectItem value="low">Low Stock</SelectItem>
                 <SelectItem value="normal">Normal Stock</SelectItem>
               </SelectContent>
@@ -278,14 +280,14 @@ const totalValue = computed(() => inventoryStore.totalValue);
 const itemsByCategory = computed(() => inventoryStore.itemsByCategory);
 
 const categories = computed(() => {
-  return Object.keys(itemsByCategory.value).sort();
+  return Object.keys(itemsByCategory.value).filter(cat => cat && cat.trim()).sort();
 });
 
 const filteredItems = computed(() => {
   let items = activeItems.value;
   
   // Filter by category
-  if (filters.value.category) {
+  if (filters.value.category && filters.value.category !== '__ALL__') {
     items = items.filter(item => item.category === filters.value.category);
   }
   
@@ -295,6 +297,7 @@ const filteredItems = computed(() => {
   } else if (filters.value.stockStatus === 'normal') {
     items = items.filter(item => item.currentStock > item.minThreshold);
   }
+  // '__ALL__' or null shows all items, no filtering needed
   
   // Filter by search
   if (filters.value.search) {

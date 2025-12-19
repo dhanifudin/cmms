@@ -120,6 +120,7 @@ export interface MaterialRequirement {
   plannedQuantity: number;
   actualQuantity?: number;
   notes?: string;
+  fromTemplate?: boolean; // Indicates if this material came from a template
 }
 
 export interface StockMovement {
