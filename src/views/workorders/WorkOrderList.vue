@@ -104,7 +104,7 @@
             v-for="workOrder in filteredWorkOrders"
             :key="workOrder.id"
             class="p-6 hover:bg-muted/50 cursor-pointer transition-colors"
-            @click="$router.push(`/work-orders/${workOrder.id}`)"
+            @click="handleWorkOrderClick(workOrder)"
           >
             <div class="flex items-center justify-between">
               <div class="flex-1 min-w-0">
@@ -202,6 +202,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useWorkOrderStore } from '@/stores/workorder';
 import { Button } from '@/components/ui/button';
@@ -223,6 +224,7 @@ import {
   ChevronRight
 } from 'lucide-vue-next';
 
+const router = useRouter();
 const authStore = useAuthStore();
 const workOrderStore = useWorkOrderStore();
 
@@ -348,6 +350,17 @@ const startWork = async (workOrderId: string) => {
     await workOrderStore.updateWorkOrderStatus(workOrderId, 'in_progress');
   } catch (error) {
     console.error('Failed to start work:', error);
+  }
+};
+
+const handleWorkOrderClick = (workOrder: any) => {
+  console.log('Navigating to work order:', workOrder.id, workOrder.title);
+  
+  try {
+    router.push(`/work-orders/${workOrder.id}`);
+  } catch (error) {
+    console.error('Navigation error:', error);
+    // Could add toast notification here in future
   }
 };
 

@@ -63,9 +63,19 @@ export const useWorkOrderStore = defineStore('workorder', () => {
       
       // Mock data will be loaded from mock service
       const mockWorkOrders = await import('@/mock/workorders').then(m => m.mockWorkOrders);
+      
+      if (!mockWorkOrders || !Array.isArray(mockWorkOrders)) {
+        throw new Error('Invalid work orders data received');
+      }
+      
       workOrders.value = mockWorkOrders;
+      console.log(`Loaded ${mockWorkOrders.length} work orders`);
+      
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch work orders';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch work orders';
+      error.value = errorMessage;
+      console.error('fetchWorkOrders error:', err);
+      throw err; // Re-throw to allow components to handle
     } finally {
       isLoading.value = false;
     }
@@ -247,6 +257,35 @@ export const useWorkOrderStore = defineStore('workorder', () => {
     return workOrders.value.find(wo => wo.id === id);
   };
 
+  const getWorkOrderByIdAsync = async (id: string): Promise<WorkOrder | null> => {
+    // Check if already in store
+    let workOrder = workOrders.value.find(wo => wo.id === id);
+    if (workOrder) {
+      return workOrder;
+    }
+    
+    // If not found and store is empty, try fetching all
+    if (workOrders.value.length === 0) {
+      await fetchWorkOrders();
+      workOrder = workOrders.value.find(wo => wo.id === id);
+    }
+    
+    // If still not found, try direct fetch (for future API implementation)
+    if (!workOrder) {
+      try {
+        // This would be a direct API call in real implementation
+        // For now, return null as it's not in mock data
+        console.log(`Work order ${id} not found in mock data`);
+        return null;
+      } catch (error) {
+        console.error('Failed to fetch individual work order:', error);
+        return null;
+      }
+    }
+    
+    return workOrder;
+  };
+
   const getWorkOrdersByStatus = (status: WorkOrderStatus) => {
     return workOrders.value.filter(wo => wo.status === status);
   };
@@ -270,6 +309,7 @@ export const useWorkOrderStore = defineStore('workorder', () => {
     assignWorker,
     submitDocumentation,
     getWorkOrderById,
+    getWorkOrderByIdAsync,
     getWorkOrdersByStatus,
     getWorkOrdersByPriority
   };

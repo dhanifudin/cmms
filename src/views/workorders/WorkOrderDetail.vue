@@ -1,5 +1,66 @@
 <template>
-  <div v-if="workOrder" class="space-y-6">
+  <!-- Breadcrumb Navigation -->
+  <div class="mb-4">
+    <nav class="flex" aria-label="Breadcrumb">
+      <ol class="flex items-center space-x-4">
+        <li>
+          <router-link to="/work-orders" class="text-muted-foreground hover:text-foreground">
+            Work Orders
+          </router-link>
+        </li>
+        <li>
+          <ChevronRight class="w-4 h-4 text-muted-foreground" />
+        </li>
+        <li class="text-foreground font-medium">
+          {{ workOrder?.id || 'Loading...' }}
+        </li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- Loading State -->
+  <div v-if="isLoading" class="space-y-6">
+    <div class="flex items-center space-x-4">
+      <Skeleton class="h-10 w-10 rounded-lg" />
+      <div class="space-y-2 flex-1">
+        <Skeleton class="h-6 w-64" />
+        <Skeleton class="h-4 w-32" />
+      </div>
+    </div>
+    <Skeleton class="h-64 w-full" />
+    <Skeleton class="h-48 w-full" />
+    <Skeleton class="h-32 w-full" />
+  </div>
+
+  <!-- Error State -->
+  <div v-else-if="error" class="space-y-6">
+    <div class="flex items-center space-x-4">
+      <Button variant="ghost" size="icon" @click="$router.back()">
+        <ArrowLeft class="w-5 h-5" />
+      </Button>
+      <h1 class="text-2xl font-bold text-gray-900">Work Order Not Found</h1>
+    </div>
+    
+    <Alert variant="destructive">
+      <AlertCircle class="h-4 w-4" />
+      <AlertTitle>Error Loading Work Order</AlertTitle>
+      <AlertDescription>{{ error }}</AlertDescription>
+    </Alert>
+    
+    <div class="flex gap-3">
+      <Button @click="$router.push('/work-orders')">
+        <ArrowLeft class="w-4 h-4 mr-2" />
+        Back to Work Orders
+      </Button>
+      <Button variant="outline" @click="retryLoading">
+        <RefreshCw class="w-4 h-4 mr-2" />
+        Retry
+      </Button>
+    </div>
+  </div>
+
+  <!-- Success State - Work Order Content -->
+  <div v-else-if="workOrder" class="space-y-6">
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
@@ -331,18 +392,6 @@
       @submit="handleAfterDocumentationSubmit"
     />
   </div>
-  
-  <div v-else class="space-y-6">
-    <div class="flex items-center space-x-4">
-      <Skeleton class="h-10 w-10 rounded-lg" />
-      <div class="space-y-2 flex-1">
-        <Skeleton class="h-6 w-64" />
-        <Skeleton class="h-4 w-32" />
-      </div>
-    </div>
-    <Skeleton class="h-64 w-full" />
-    <Skeleton class="h-48 w-full" />
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -365,7 +414,10 @@ import {
   Upload,
   CheckCircle,
   XCircle,
-  Edit
+  Edit,
+  AlertCircle,
+  RefreshCw,
+  ChevronRight
 } from 'lucide-vue-next';
 import type { WorkOrder, Photo } from '@/types';
 
@@ -380,6 +432,8 @@ const showBeforeDocumentationModal = ref(false);
 const showAfterDocumentationModal = ref(false);
 const selectedPhoto = ref<Photo | null>(null);
 const showPhotoModal = ref(false);
+const isLoading = ref(true);
+const error = ref<string | null>(null);
 
 const currentUser = computed(() => authStore.currentUser);
 const isWorker = computed(() => authStore.isWorker);
@@ -604,18 +658,65 @@ const handleImageError = (event: Event) => {
   img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTkgMTJMMTEgMTRMMTUgMTBNMjEgMTJDMjEgMTYuOTcwNiAxNi45NzA2IDIxIDEyIDIxQzcuMDI5NDQgMjEgMyAxNi45NzA2IDMgMTJDMyA3LjAyOTQ0IDcuMDI5NDQgMyAxMiAzQzE2Ljk3MDYgMyAyMSA3LjAyOTQ0IDIxIDEyWiIgc3Ryb2tlPSIjOUNBM0FGIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K';
 };
 
-onMounted(async () => {
+const retryLoading = async () => {
   const workOrderId = route.params.id as string;
+  isLoading.value = true;
+  error.value = null;
   
-  // Load work orders if not already loaded
-  if (workOrderStore.workOrders.length === 0) {
-    await workOrderStore.fetchWorkOrders();
+  console.group('WorkOrderDetail loading');
+  console.log('Route params:', route.params);
+  console.log('Work order ID:', workOrderId);
+  
+  try {
+    // Validate work order ID format
+    if (!workOrderId || typeof workOrderId !== 'string') {
+      throw new Error('Invalid work order ID in URL');
+    }
+    
+    // Optional: validate ID format (flexible for different formats)
+    if (!/^wo\d{3}$/.test(workOrderId)) {
+      console.warn('Work order ID does not match expected format:', workOrderId);
+    }
+    
+    console.log('Current store state:', {
+      workOrdersCount: workOrderStore.workOrders.length,
+      isStoreLoading: workOrderStore.isLoading,
+      storeError: workOrderStore.error
+    });
+    
+    // Ensure work orders are loaded
+    if (workOrderStore.workOrders.length === 0) {
+      console.log('Fetching work orders from store...');
+      await workOrderStore.fetchWorkOrders();
+    }
+    
+    // Find the work order
+    const foundWorkOrder = workOrderStore.getWorkOrderById(workOrderId);
+    console.log('Work order lookup result:', foundWorkOrder ? 'Found' : 'Not found');
+    
+    if (!foundWorkOrder) {
+      throw new Error(`Work order with ID "${workOrderId}" not found.`);
+    }
+    
+    workOrder.value = foundWorkOrder;
+    
+    // Load inventory items in parallel (non-blocking)
+    inventoryStore.fetchInventoryItems().catch(err => {
+      console.error('Failed to load inventory items:', err);
+      // Don't fail the whole component for inventory loading issues
+    });
+    
+    console.log('Work order loaded successfully:', workOrder.value.title);
+    
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Failed to load work order details';
+    error.value = errorMessage;
+    console.error('Error loading work order:', err);
+  } finally {
+    isLoading.value = false;
+    console.groupEnd();
   }
-  
-  // Load inventory items
-  await inventoryStore.fetchInventoryItems();
-  
-  // Find the work order
-  workOrder.value = workOrderStore.getWorkOrderById(workOrderId) ?? null;
-});
+};
+
+onMounted(retryLoading);
 </script>
