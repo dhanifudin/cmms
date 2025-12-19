@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Message, MessageThread, InboxFolder, MessageType, Priority } from '@/types';
+import type { Message, MessageThread, InboxFolder, MessageType, MessageCategory, MessageAction, Priority } from '@/types';
 import { useAuthStore } from './auth';
 
 export const useMessageStore = defineStore('message', () => {
@@ -406,6 +406,243 @@ export const useMessageStore = defineStore('message', () => {
     }
   };
 
+  // System notification helpers (replacing notification store functionality)
+  const sendSystemMessage = async (messageData: {
+    subject: string;
+    content: string;
+    category: MessageCategory;
+    priority?: Priority;
+    recipientIds: string[];
+    actionButtons?: MessageAction[];
+    relatedEntity?: { type: 'work_order' | 'inventory' | 'invoice' | 'user'; id: string };
+    metadata?: Record<string, any>;
+    expiresAt?: string;
+  }) => {
+    const message: Message = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      subject: messageData.subject,
+      content: messageData.content,
+      type: 'system_notification',
+      category: messageData.category,
+      priority: messageData.priority || 'normal',
+      senderId: 'system',
+      recipientIds: messageData.recipientIds,
+      attachments: [],
+      actionButtons: messageData.actionButtons,
+      relatedEntity: messageData.relatedEntity,
+      status: 'delivered',
+      readBy: [],
+      expiresAt: messageData.expiresAt,
+      metadata: messageData.metadata,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    messages.value.unshift(message);
+    generateThreadsFromMessages();
+    updateFolderCounts();
+
+    // Auto-expire if expiration date set
+    if (message.expiresAt) {
+      const expireTime = new Date(message.expiresAt).getTime() - Date.now();
+      if (expireTime > 0) {
+        setTimeout(() => {
+          deleteMessage(message.id);
+        }, expireTime);
+      }
+    }
+
+    return message;
+  };
+
+  // Notification helpers for common scenarios
+  const notifyWorkOrderAssigned = (workOrderId: string, workOrderTitle: string, workerId: string) => {
+    if (authStore.currentUser?.id === workerId) {
+      return sendSystemMessage({
+        subject: `New Work Order Assigned: ${workOrderTitle}`,
+        content: `${workOrderTitle} has been assigned to you. Please review the details and start when ready.`,
+        category: 'work_order',
+        priority: 'high',
+        recipientIds: [workerId],
+        actionButtons: [
+          {
+            id: 'view_assignment',
+            label: 'View Details',
+            type: 'primary',
+            actionType: 'route',
+            target: `/work-orders/${workOrderId}`
+          },
+          {
+            id: 'start_work',
+            label: 'Start Work',
+            type: 'secondary',
+            actionType: 'api',
+            target: `/api/work-orders/${workOrderId}/start`,
+            requireConfirmation: true,
+            confirmationMessage: 'Are you ready to start this work order?'
+          }
+        ],
+        relatedEntity: { type: 'work_order', id: workOrderId },
+        metadata: { workOrderTitle, assignedBy: 'supervisor' }
+      });
+    }
+    return null;
+  };
+
+  const notifyWorkOrderCompleted = (workOrderId: string, workOrderTitle: string, supervisorIds: string[]) => {
+    return sendSystemMessage({
+      subject: `Work Order Completed: ${workOrderTitle}`,
+      content: `${workOrderTitle} has been completed and needs approval.`,
+      category: 'work_order',
+      priority: 'normal',
+      recipientIds: supervisorIds,
+      actionButtons: [
+        {
+          id: 'review_work',
+          label: 'Review & Approve',
+          type: 'primary',
+          actionType: 'route',
+          target: `/work-orders/${workOrderId}`
+        }
+      ],
+      relatedEntity: { type: 'work_order', id: workOrderId },
+      metadata: { workOrderTitle, status: 'submitted_for_review' }
+    });
+  };
+
+  const notifyWorkOrderOverdue = (workOrderId: string, workOrderTitle: string, recipientIds: string[]) => {
+    return sendSystemMessage({
+      subject: `Work Order Overdue: ${workOrderTitle}`,
+      content: `${workOrderTitle} is now overdue. Please complete as soon as possible.`,
+      category: 'work_order',
+      priority: 'urgent',
+      recipientIds,
+      actionButtons: [
+        {
+          id: 'view_urgent',
+          label: 'View Urgent Task',
+          type: 'danger',
+          actionType: 'route',
+          target: `/work-orders/${workOrderId}`
+        }
+      ],
+      relatedEntity: { type: 'work_order', id: workOrderId },
+      metadata: { workOrderTitle, overdue: true }
+    });
+  };
+
+  const notifyLowInventory = (itemName: string, itemId: string, currentStock: number, minThreshold: number, adminIds: string[]) => {
+    return sendSystemMessage({
+      subject: `Low Stock Alert: ${itemName}`,
+      content: `${itemName} stock is low (${currentStock}/${minThreshold}). Consider restocking.`,
+      category: 'inventory',
+      priority: 'high',
+      recipientIds: adminIds,
+      actionButtons: [
+        {
+          id: 'view_inventory',
+          label: 'View Inventory',
+          type: 'primary',
+          actionType: 'route',
+          target: `/inventory/${itemId}`
+        },
+        {
+          id: 'create_purchase_request',
+          label: 'Create Purchase Request',
+          type: 'secondary',
+          actionType: 'route',
+          target: `/inventory/${itemId}/purchase`
+        }
+      ],
+      relatedEntity: { type: 'inventory', id: itemId },
+      metadata: { itemName, currentStock, minThreshold }
+    });
+  };
+
+  const notifyInvoiceGenerated = (invoiceId: string, invoiceNumber: string, recipientIds: string[]) => {
+    return sendSystemMessage({
+      subject: `Invoice Generated: ${invoiceNumber}`,
+      content: `Invoice ${invoiceNumber} has been successfully generated and is ready for review.`,
+      category: 'invoice',
+      priority: 'normal',
+      recipientIds,
+      actionButtons: [
+        {
+          id: 'view_invoice',
+          label: 'View Invoice',
+          type: 'primary',
+          actionType: 'route',
+          target: `/invoices/${invoiceId}`
+        }
+      ],
+      relatedEntity: { type: 'invoice', id: invoiceId },
+      metadata: { invoiceNumber }
+    });
+  };
+
+  const showSuccessMessage = (message: string, userId?: string) => {
+    const recipientIds = userId ? [userId] : [authStore.currentUser?.id || ''];
+    return sendSystemMessage({
+      subject: 'Success',
+      content: message,
+      category: 'system',
+      priority: 'low',
+      recipientIds,
+      expiresAt: new Date(Date.now() + 30000).toISOString() // Auto-expire after 30 seconds
+    });
+  };
+
+  const showErrorMessage = (message: string, userId?: string) => {
+    const recipientIds = userId ? [userId] : [authStore.currentUser?.id || ''];
+    return sendSystemMessage({
+      subject: 'Error',
+      content: message,
+      category: 'system',
+      priority: 'high',
+      recipientIds,
+      expiresAt: new Date(Date.now() + 60000).toISOString() // Auto-expire after 1 minute
+    });
+  };
+
+  const executeMessageAction = async (messageId: string, actionId: string) => {
+    const message = messages.value.find(m => m.id === messageId);
+    if (!message?.actionButtons) return { success: false };
+
+    const action = message.actionButtons.find(a => a.id === actionId);
+    if (!action) return { success: false };
+
+    try {
+      if (action.requireConfirmation) {
+        const confirmed = confirm(action.confirmationMessage || 'Are you sure you want to perform this action?');
+        if (!confirmed) return { success: false };
+      }
+
+      // Mark message as read when action is taken
+      markAsRead([messageId]);
+
+      // Handle different action types
+      switch (action.actionType) {
+        case 'route':
+          // Would use router in component - for now just log
+          console.log('Navigate to:', action.target);
+          break;
+        case 'api':
+          // Make API call
+          await fetch(action.target, { method: 'POST' });
+          break;
+        case 'modal':
+          // Open modal - would emit event or use modal store
+          console.log('Open modal:', action.target);
+          break;
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to execute message action:', error);
+      return { success: false, error };
+    }
+  };
+
   return {
     messages,
     threads,
@@ -422,6 +659,15 @@ export const useMessageStore = defineStore('message', () => {
     markAsRead,
     deleteMessage,
     setCurrentThread,
-    getMessagesByFolder
+    getMessagesByFolder,
+    sendSystemMessage,
+    notifyWorkOrderAssigned,
+    notifyWorkOrderCompleted,
+    notifyWorkOrderOverdue,
+    notifyLowInventory,
+    notifyInvoiceGenerated,
+    showSuccessMessage,
+    showErrorMessage,
+    executeMessageAction
   };
 });

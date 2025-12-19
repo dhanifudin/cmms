@@ -113,7 +113,6 @@
               </div>
               <div class="text-sm text-muted-foreground">{{ currentDateTime }}</div>
             </div>
-            <NotificationCenter />
           </div>
         </div>
       </div>
@@ -133,8 +132,6 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useMessageStore } from '@/stores/message';
-import { useNotificationStore } from '@/stores/notification';
-import NotificationCenter from '@/components/notifications/NotificationCenter.vue';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -156,7 +153,6 @@ import {
 const router = useRouter();
 const authStore = useAuthStore();
 const messageStore = useMessageStore();
-const notificationStore = useNotificationStore();
 const sidebarOpen = ref(false);
 const selectedDemoUser = ref('');
 const currentDateTime = ref('');
@@ -281,7 +277,6 @@ const logout = () => {
 onMounted(async () => {
   // Initialize stores
   messageStore.initializeInbox();
-  await notificationStore.initializeNotifications();
   
   // Initialize datetime
   updateDateTime();

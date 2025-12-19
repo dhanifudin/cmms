@@ -1,221 +1,226 @@
-# PRD: Notification System
+# PRD: Notification System Removal & Inbox Enhancement
 
 ## Overview
-**Purpose**: Provide real-time notifications and alerts to users about system activities, work order updates, and important events
-**Integration**: Works with all system modules to provide contextual, role-based notifications
+**Purpose**: Remove complex notification system and focus on inbox as the primary communication channel
+**Goal**: Simplify the system by consolidating all notifications into the existing inbox feature
 
-## Delivery Channels
+## Current State Analysis
 
-### Supported Channels
-- **In-app notifications**: Displayed in application interface
-- **Push notifications**: Mobile/desktop alerts (if supported)
-- **Inbox integration**: Messages delivered to user inbox
-- **Dashboard alerts**: Real-time status updates on dashboards
+### Existing Notification Components
+- **NotificationCenter.vue**: Bell icon with dropdown showing recent notifications
+- **NotificationAlerts.vue**: Dashboard alert panels for priority notifications  
+- **NotificationSettings.vue**: User preferences for notification types and delivery
+- **NotificationToast.vue**: Popup toast notifications
+- **notification.ts store**: Complex notification state management with escalation, settings, filtering
 
-### Prototype Scope
-**In Scope**: In-app notifications, inbox integration
-**Out of Scope**: Email/SMS notifications, external push services
+### Existing Inbox System
+- **Message store**: Already handles user-to-user messages with threads
+- **Inbox interface**: Full messaging interface with folders, read/unread states
+- **Message types**: System messages, work order updates, direct communications
 
-## Notification Recipients
+## Removal Plan
 
-### Context-Aware Delivery
-**Recipients determined by**:
-- **Work Order involvement**: Creator, assigned worker, approving supervisor
-- **Location relevance**: Terminal/region managers for local activities
-- **Role responsibilities**: Admin for inventory alerts, supervisors for approvals
-- **User interactions**: Users who commented or updated work orders
+### Phase 1: Notification System Analysis
+- [x] ✅ Audit all notification-related files and dependencies
+- [x] ✅ Identify components and stores that need removal/modification
+- [x] ✅ Map notification events to inbox message equivalents
 
-### Recipient Types
-- **Direct recipients**: Primary stakeholders for the activity
-- **CC recipients**: Secondary stakeholders who need awareness
-- **Escalation recipients**: Higher-level users for overdue/critical items
+### Phase 2: Inbox Enhancement
+- **Enhance message types** to handle system notifications
+- **Add message categories** for different notification types:
+  - Work Order updates (assigned, completed, overdue)
+  - System alerts (low inventory, maintenance windows)
+  - Administrative announcements
+  - Invoice notifications
+- **Implement priority levels** in messages (low, normal, high, urgent)
+- **Add action buttons** to messages for quick actions
+- **Visual indicators** for different message types and priorities
 
-## Notification Events
+### Phase 3: Migration Strategy
+- **Convert notification events** to inbox messages
+- **Update notification triggers** throughout codebase to send inbox messages instead
+- **Preserve notification content** by transferring to message format
+- **Maintain role-based delivery** using existing message recipient logic
 
-### Work Order Related Events
-- **Work Order assigned** to worker
-- **Work Order due date approaching** (X days before - configurable)
-- **Work Order overdue** (past due date)
-- **Work Order submitted for review** (after completion)
-- **Work Order approved** by supervisor
-- **Work Order rejected** or revision requested
-- **Work Order cancelled** (if applicable)
-- **Work Order modified** (details changed by supervisor/admin)
+### Phase 4: Component Removal
+- Remove notification-specific components:
+  - `src/components/notifications/NotificationCenter.vue`
+  - `src/components/notifications/NotificationSettings.vue` 
+  - `src/components/notifications/NotificationToast.vue`
+  - `src/components/dashboard/NotificationAlerts.vue`
+- Remove notification store: `src/stores/notification.ts`
+- Clean up notification types and interfaces
+- Remove notification-related imports and references
 
-### Inventory Related Events
-- **Stock below threshold** alert (to Admin)
-- **Purchase request created** (TBD)
-- **Stock movement** confirmations (large changes)
-- **Inventory adjustment** notifications
+### Phase 5: UI Updates
+- **Remove notification bell** from header (AppLayout.vue)
+- **Enhance inbox icon** with unread count badge
+- **Update dashboard** to use inbox for alerts instead of NotificationAlerts component
+- **Consolidate communication** under single inbox interface
 
-### Invoice Related Events
-- **Invoice generated** (to recipients)
-- **Invoice sent** to recipient confirmation
-- **Payment overdue** (if payment tracking implemented)
+## Enhanced Inbox Features
 
-### Communication Events
-- **Comments added** to work orders
-- **Attachments uploaded** to work orders
-- **Direct messages** received in inbox
-- **Mentions** in comments or messages
+### Message Categories
+```typescript
+enum MessageCategory {
+  SYSTEM = 'system',           // System announcements, maintenance
+  WORK_ORDER = 'work_order',   // Work order lifecycle events
+  INVENTORY = 'inventory',     // Stock alerts, purchase requests
+  INVOICE = 'invoice',         // Invoice generation, payment alerts
+  USER = 'user',              // Direct user-to-user messages
+  EMERGENCY = 'emergency'      // Critical safety alerts
+}
+```
 
-### System Events
-- **System configuration changes** (optional)
-- **Maintenance windows** (system downtime)
-- **Data import/sync** completions
+### Message Priority & Visual Treatment
+- **Low**: No special styling, normal text
+- **Normal**: Default message appearance
+- **High**: Orange accent border, bold text
+- **Urgent**: Red accent border, bold text, top-of-list sorting
 
-## Notification Structure
+### System Message Templates
+```typescript
+// Work Order Assignment
+{
+  type: 'system_notification',
+  category: 'work_order',
+  priority: 'high',
+  subject: 'New Work Order Assigned: {workOrderTitle}',
+  content: '{workOrderTitle} has been assigned to you. Due: {dueDate}',
+  actionButtons: [
+    { label: 'View Details', action: 'route', target: '/work-orders/{id}' },
+    { label: 'Start Work', action: 'api', target: '/api/work-orders/{id}/start' }
+  ]
+}
 
-### Notification Properties
-- **Title**: Brief description of the event
-- **Message**: Detailed information about the event
-- **Type**: Event category (work_order, inventory, invoice, system)
-- **Priority**: Low, normal, high, urgent
-- **Timestamp**: When the event occurred
-- **Read status**: Read/unread tracking
-- **Action buttons**: Quick actions (approve, view, reply)
-- **Related entities**: Links to work orders, invoices, etc.
+// Low Inventory Alert
+{
+  type: 'system_notification', 
+  category: 'inventory',
+  priority: 'high',
+  subject: 'Low Stock Alert: {itemName}',
+  content: '{itemName} is below minimum threshold ({current}/{minimum})',
+  actionButtons: [
+    { label: 'View Inventory', action: 'route', target: '/inventory/{id}' }
+  ]
+}
+```
 
-### Notification Categories
-- **Informational**: Status updates, confirmations
-- **Action Required**: Approvals, reviews, responses needed
-- **Alerts**: Overdue items, threshold breaches
-- **Emergency**: Critical system or safety issues
+### Inbox Enhancements
+1. **Message filtering** by category and priority
+2. **Quick action buttons** directly in message list
+3. **Visual indicators** for message types (icons, colors)
+4. **Smart grouping** of related system messages
+5. **Auto-archive** for old system notifications
+6. **Search functionality** across all message types
 
-## User Preferences
+## Implementation Tasks
 
-### Notification Settings
-**TBD**: Can users customize notification settings?
-**Potential customizations**:
-- **Event type filtering**: Choose which events to receive
-- **Delivery channel preferences**: In-app only vs push notifications
-- **Frequency settings**: Immediate vs batched notifications
-- **Quiet hours**: No notifications during specified times
-- **Priority thresholds**: Only receive high-priority notifications
+### Backend/Store Changes
+- **Enhance message.ts store** with notification-like features:
+  - Message categories and priorities
+  - System message generation helpers
+  - Action button support
+  - Auto-delivery for system events
 
-### Default Settings
-- **Role-based defaults**: Different default settings per role
-- **Event relevance**: Only events relevant to user's role and location
-- **Critical alerts**: Always enabled for safety and compliance
+### Component Updates
+- **Update AppLayout.vue**: Remove NotificationCenter, enhance inbox icon
+- **Update Dashboard.vue**: Replace NotificationAlerts with inbox-based alerts
+- **Enhance Inbox components**: Add category filters, priority indicators
+- **Update message templates**: Support for action buttons and rich content
 
-## Notification Center
+### Event Handlers
+- **Work Order events**: Generate inbox messages instead of notifications
+- **Inventory events**: Send low stock alerts to admin inboxes
+- **System events**: Deliver maintenance announcements via inbox
+- **Invoice events**: Send invoice generation confirmations
 
-### Interface Features
-- **Unified notification list** with filtering and sorting
-- **Read/unread status** with bulk mark actions
-- **Search and filter** by type, date, priority
-- **Archive functionality** for old notifications
-- **Quick actions** directly from notification list
+## Benefits of This Approach
 
-### Real-Time Updates
-- **Live updates** as new notifications arrive
-- **Visual indicators** (badges, counters) for unread count
-- **Sound/visual alerts** for high-priority notifications
-- **Auto-refresh** to keep notifications current
+### Simplified Architecture
+- **Single communication channel** instead of multiple notification systems
+- **Unified message history** - users can reference past notifications
+- **Reduced complexity** - no escalation timers, notification settings, etc.
+- **Better mobile experience** - inbox works better on mobile than notification dropdowns
 
-## Integration with Inbox
+### Enhanced User Experience  
+- **Persistent history** - notifications don't disappear automatically
+- **Better organization** - messages can be organized, searched, archived
+- **Actionable items** - action buttons provide clear next steps
+- **Role-based filtering** - users see only relevant messages
 
-### Unified Communication
-- **Notifications delivered** to user inbox as messages
-- **Two-way integration**: Notifications become inbox messages
-- **Conversation threads**: Related notifications grouped together
-- **Reply capability**: Some notifications allow direct responses
+### Maintenance Benefits
+- **Fewer components** to maintain and test
+- **Simpler state management** - single message store vs notification + message
+- **Consistent UI patterns** - everything uses the same inbox interface
+- **Easier feature additions** - new message types easier than notification types
 
-### Message Types
-- **System notifications**: Automated system messages
-- **Work order updates**: Status changes and assignments
-- **Administrative announcements**: System-wide communications
-- **Personal messages**: Direct user-to-user communications
+## Migration Checklist
 
-## Technical Implementation
+### Files to Remove
+- [ ] `src/components/notifications/NotificationCenter.vue`
+- [ ] `src/components/notifications/NotificationSettings.vue`
+- [ ] `src/components/notifications/NotificationToast.vue`  
+- [ ] `src/components/dashboard/NotificationAlerts.vue`
+- [ ] `src/stores/notification.ts`
 
-### Notification Engine
-- **Event-driven architecture**: System events trigger notifications
-- **Rule engine**: Configurable rules for recipient determination
-- **Template system**: Customizable notification templates
-- **Delivery queue**: Reliable notification delivery mechanism
+### Files to Modify
+- [ ] `src/components/layout/AppLayout.vue` - Remove NotificationCenter import/usage
+- [ ] `src/views/dashboard/Dashboard.vue` - Replace NotificationAlerts
+- [ ] `src/stores/message.ts` - Add notification-like features
+- [ ] `src/types/index.ts` - Remove notification types, enhance message types
+- [ ] All files importing notification store or components
 
-### Real-Time Delivery
-- **WebSocket connections**: Real-time push to connected clients
-- **Polling fallback**: For connections that don't support WebSockets
-- **Offline handling**: Queue notifications for offline users
-- **Retry mechanism**: Ensure delivery of critical notifications
+### New Features to Add
+- [ ] Message categories and priority system
+- [ ] System message templates  
+- [ ] Action buttons in messages
+- [ ] Enhanced inbox filtering
+- [ ] Auto-generation of system messages for events
 
-### Performance Considerations
-- **Bulk processing**: Efficient handling of mass notifications
-- **Rate limiting**: Prevent notification spam
-- **Cleanup policies**: Automatic removal of old notifications
-- **Indexing**: Fast search and retrieval of notifications
+## Testing Strategy
 
-## Role-Based Notifications
+### Functional Testing
+- [ ] **Work order lifecycle** generates appropriate inbox messages
+- [ ] **Inventory alerts** delivered to admin users  
+- [ ] **System announcements** reach all users
+- [ ] **Message filtering** works by category and priority
+- [ ] **Action buttons** function correctly from inbox
 
-### Worker (Pekerja) Notifications
-- Work order assignments
-- Due date reminders
-- Approval/rejection status
-- Comments on their work orders
-- Personal messages from supervisors
-
-### Admin Notifications
-- Inventory low stock alerts
-- Work order creation confirmations
-- System configuration changes
-- Purchase request approvals needed
-- Critical system alerts
-
-### Supervisor Notifications
-- Work orders pending approval
-- Completed work orders for review
-- Overdue work order alerts
-- Regional performance alerts
-- Worker escalations
-
-### Leader Notifications
-- **TBD**: Based on undefined role permissions
-
-## Notification Analytics
-
-### Metrics and Reporting
-- **Delivery rates**: Successful notification delivery
-- **Read rates**: How many notifications are actually read
-- **Response times**: How quickly users act on notifications
-- **Event volume**: Notification frequency by type and user
-
-### Optimization
-- **Notification effectiveness**: Which notifications drive action
-- **User engagement**: How users interact with different notification types
-- **Performance monitoring**: System performance under notification load
+### UI/UX Testing
+- [ ] **No notification components** remain in UI
+- [ ] **Inbox badge** shows accurate unread count
+- [ ] **Message visual indicators** clearly show priority/category
+- [ ] **Mobile experience** works well with inbox-only approach
 
 ## Success Criteria
-1. ✅ Notification center with activity feed
-2. ✅ Real-time delivery of relevant notifications
-3. ✅ Role-based notification filtering
-4. ✅ Integration with inbox system
-5. ✅ Action buttons for quick responses
-6. ✅ Configurable notification rules
-7. ✅ Performance under high notification volume
 
-## Mock Data Requirements
+1. ✅ **Complete removal** of notification system components
+2. ✅ **Enhanced inbox** handles all previous notification use cases  
+3. ✅ **No functionality loss** - all notification events still reach users
+4. ✅ **Improved user experience** - simpler, more organized communication
+5. ✅ **Reduced codebase complexity** - fewer files and patterns to maintain
 
-### Sample Notifications
-- **Various event types**: Work orders, inventory, invoices, system
-- **Different priorities**: Low to urgent priority examples
-- **Multiple users**: Notifications for all role types
-- **Time distribution**: Recent and historical notifications
-- **Action states**: Read/unread, responded/pending
+## Timeline Estimate
+- **Phase 1-2**: 2-3 days (analysis and inbox enhancement)
+- **Phase 3-4**: 2-3 days (migration and component removal)  
+- **Phase 5**: 1-2 days (UI cleanup and testing)
+- **Total**: ~1 week for complete notification removal and inbox enhancement
 
-### Notification Scenarios
-- **Workflow progression**: Complete work order lifecycle notifications
-- **Alert scenarios**: Overdue items, low stock, critical issues
-- **Communication flows**: Comments, messages, announcements
-- **Bulk events**: Mass notifications for system changes
+## Risk Mitigation
+- **Backup current notification logic** before removal
+- **Gradual migration** - enhance inbox first, then remove notifications
+- **Thorough testing** of all system events that previously generated notifications
+- **User feedback** on inbox-only approach during prototype phase
 
-## Open Questions
-1. **User Preferences**: Can users customize which notifications they receive?
-2. **Push Notifications**: Mobile push notification support needed?
-3. **Email Integration**: Should critical notifications also send emails?
-4. **Escalation Rules**: Auto-escalate unread notifications after X hours?
-5. **Notification Retention**: How long to keep notification history?
-6. **Quiet Hours**: Support for do-not-disturb time periods?
-7. **Emergency Override**: Force delivery for critical safety notifications?
-8. **External Integration**: Integration with other communication systems?
+---
+
+## Conclusion
+
+Removing the complex notification system in favor of an enhanced inbox provides:
+- **Simplified architecture** with a single communication channel
+- **Better user experience** with persistent, organized messaging  
+- **Easier maintenance** with fewer components and patterns
+- **Mobile-friendly** interface that scales well across devices
+
+This approach aligns with modern communication patterns where users expect unified inboxes rather than ephemeral notifications.

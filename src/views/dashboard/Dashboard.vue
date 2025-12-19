@@ -1,6 +1,9 @@
 <template>
   <div class="space-y-6">
 
+    <!-- Quick Actions -->
+    <QuickActionsPanel />
+
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <Card 
@@ -133,8 +136,8 @@
 
       <!-- Sidebar -->
       <div class="space-y-6">
-        <!-- Priority Notifications -->
-        <NotificationAlerts />
+        <!-- Priority Messages -->
+        <InboxAlerts />
         
         <!-- Low Stock Alert (Admin only) -->
         <Card v-if="isAdmin && lowStockItems.length > 0">
@@ -170,9 +173,6 @@
           </CardContent>
         </Card>
 
-        <!-- Quick Actions -->
-        <QuickActionsPanel />
-        
         <!-- Recent Activity -->
         <Card>
           <CardHeader>
@@ -220,7 +220,7 @@ import {
   Clock
 } from 'lucide-vue-next';
 import QuickActionsPanel from '@/components/dashboard/QuickActionsPanel.vue';
-import NotificationAlerts from '@/components/dashboard/NotificationAlerts.vue';
+import InboxAlerts from '@/components/dashboard/InboxAlerts.vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const authStore = useAuthStore();

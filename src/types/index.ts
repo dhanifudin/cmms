@@ -133,81 +133,24 @@ export interface StockMovement {
   createdAt: string;
 }
 
-export interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'warning' | 'error' | 'success';
-  category: NotificationCategory;
-  priority: Priority;
-  userId: string;
-  read: boolean;
-  actionUrl?: string;
-  actionButtons?: NotificationAction[];
-  relatedEntity?: {
-    type: 'work_order' | 'inventory' | 'user' | 'invoice';
-    id: string;
-  };
-  metadata?: Record<string, any>;
-  escalationLevel?: number;
-  escalatedAt?: string;
-  expiresAt?: string;
-  createdAt: string;
-  readAt?: string;
-}
 
-export type NotificationCategory = 
-  | 'work_order'
-  | 'inventory' 
-  | 'invoice'
-  | 'communication'
-  | 'system'
-  | 'emergency';
-
-export interface NotificationAction {
+// Message and Communication types
+export interface MessageAction {
   id: string;
   label: string;
   type: 'primary' | 'secondary' | 'danger';
   actionType: 'route' | 'api' | 'modal';
-  target?: string; // URL for route, API endpoint, or modal identifier
+  target: string;
   requireConfirmation?: boolean;
   confirmationMessage?: string;
 }
 
-export interface NotificationSettings {
-  userId: string;
-  categories: Record<NotificationCategory, boolean>;
-  priorities: Record<Priority, boolean>;
-  deliveryChannels: {
-    inApp: boolean;
-    inbox: boolean;
-    push?: boolean;
-    email?: boolean;
-  };
-  quietHours?: {
-    enabled: boolean;
-    startTime: string; // HH:MM
-    endTime: string; // HH:MM
-    timezone: string;
-  };
-  escalationSettings: {
-    enabled: boolean;
-    delayMinutes: number; // Escalate after X minutes if unread
-    maxLevel: number;
-  };
-  sounds: {
-    enabled: boolean;
-    highPriorityOnly: boolean;
-  };
-  updatedAt: string;
-}
-
-// Message and Communication types
 export interface Message {
   id: string;
   subject?: string;
   content: string;
   type: MessageType;
+  category?: MessageCategory;
   priority: Priority;
   senderId: string;
   sender?: User;
@@ -216,12 +159,15 @@ export interface Message {
   threadId?: string;
   parentId?: string; // for replies
   attachments: MessageAttachment[];
+  actionButtons?: MessageAction[];
   relatedEntity?: {
     type: 'work_order' | 'inventory' | 'invoice' | 'user';
     id: string;
   };
   status: 'sent' | 'delivered' | 'read';
   readBy: MessageReadStatus[];
+  expiresAt?: string;
+  metadata?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
 }
@@ -233,6 +179,14 @@ export type MessageType =
   | 'admin_broadcast'
   | 'supervisor_feedback'
   | 'automated_reminder';
+
+export type MessageCategory = 
+  | 'system'
+  | 'work_order'
+  | 'inventory'
+  | 'invoice'
+  | 'user'
+  | 'emergency';
 
 export interface MessageAttachment {
   id: string;

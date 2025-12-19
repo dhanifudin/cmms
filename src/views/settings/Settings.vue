@@ -29,9 +29,13 @@
 
     <!-- Tab Content -->
     <div class="mt-6">
-      <!-- Notifications Tab -->
-      <div v-if="activeTab === 'notifications'">
-        <NotificationSettings @saved="handleSettingsSaved" />
+      <!-- Notifications Tab (Removed - replaced by inbox system) -->
+      <div v-if="activeTab === 'notifications'" class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-6">Notification Settings</h2>
+        <div class="text-center py-8">
+          <p class="text-gray-500 mb-4">Notification settings have been simplified.</p>
+          <p class="text-sm text-gray-400">All system notifications are now delivered through your <router-link to="/inbox" class="text-blue-600 hover:text-blue-800">Inbox</router-link>.</p>
+        </div>
       </div>
 
       <!-- Profile Tab -->
@@ -198,8 +202,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { useNotificationStore } from '@/stores/notification';
-import NotificationSettings from '@/components/notifications/NotificationSettings.vue';
 import {
   Bell as NotificationIcon,
   User as ProfileIcon,
@@ -208,7 +210,6 @@ import {
 } from 'lucide-vue-next';
 
 const authStore = useAuthStore();
-const notificationStore = useNotificationStore();
 
 const activeTab = ref('notifications');
 const preferences = ref({
@@ -227,18 +228,12 @@ const tabs = [
 ];
 
 onMounted(async () => {
-  // Load notification settings
-  if (!notificationStore.settings) {
-    await notificationStore.loadSettings();
-  }
+  // Initialize settings
 });
 
-const handleSettingsSaved = () => {
-  notificationStore.showSuccess('Notification settings saved successfully!');
-};
 
 const savePreferences = () => {
   // In a real app, this would save to backend
-  notificationStore.showSuccess('Preferences saved successfully!');
+  console.log('Preferences saved successfully!');
 };
 </script>

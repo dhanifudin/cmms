@@ -351,7 +351,7 @@ import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useWorkOrderStore } from '@/stores/workorder';
 import { useInventoryStore } from '@/stores/inventory';
-import { useNotificationStore } from '@/stores/notification';
+import { useMessageStore } from '@/stores/message';
 import DocumentationModal from '@/components/workorder/DocumentationModal.vue';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -373,7 +373,7 @@ const route = useRoute();
 const authStore = useAuthStore();
 const workOrderStore = useWorkOrderStore();
 const inventoryStore = useInventoryStore();
-const notificationStore = useNotificationStore();
+const messageStore = useMessageStore();
 
 const workOrder = ref<WorkOrder | null>(null);
 const showBeforeDocumentationModal = ref(false);
@@ -489,10 +489,10 @@ const completeWorkOrder = async () => {
     workOrder.value.status = 'completed';
     
     // Send notification
-    notificationStore.showSuccess('Work order completed successfully');
+    messageStore.showSuccessMessage('Work order completed successfully');
   } catch (error) {
     console.error('Failed to complete work order:', error);
-    notificationStore.showError('Failed to complete work order');
+    messageStore.showErrorMessage('Failed to complete work order');
   }
 };
 
@@ -534,11 +534,11 @@ const handleBeforeDocumentationSubmit = async (data: {
     
     showBeforeDocumentationModal.value = false;
     
-    notificationStore.showSuccess('Before documentation submitted. You can now start the maintenance work.');
+    messageStore.showSuccessMessage('Before documentation submitted. You can now start the maintenance work.');
     
   } catch (error) {
     console.error('Failed to submit before documentation:', error);
-    notificationStore.showError('Failed to submit before documentation');
+    messageStore.showErrorMessage('Failed to submit before documentation');
   }
 };
 
@@ -581,14 +581,16 @@ const handleAfterDocumentationSubmit = async (data: {
     
     showAfterDocumentationModal.value = false;
     
-    notificationStore.showSuccess('Work completed and submitted for supervisor review.');
+    messageStore.showSuccessMessage('Work completed and submitted for supervisor review.');
     
     // Notify supervisor about completion
-    notificationStore.notifyWorkOrderCompleted(workOrder.value.id, workOrder.value.title);
+    if (workOrder.value) {
+      messageStore.notifyWorkOrderCompleted(workOrder.value.id, workOrder.value.title, ['supervisor1', 'admin1']);
+    }
     
   } catch (error) {
     console.error('Failed to submit after documentation:', error);
-    notificationStore.showError('Failed to submit after documentation');
+    messageStore.showErrorMessage('Failed to submit after documentation');
   }
 };
 
