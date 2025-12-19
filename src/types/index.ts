@@ -7,13 +7,176 @@ export interface User {
   role: UserRole;
   terminalId?: string;
   regionId?: string;
-  status: 'active' | 'inactive';
+  status: UserStatus;
   avatar?: string;
   ssoProvider?: 'talenta' | 'idaman'; // SSO authentication provider
   lastLogin?: string; // ISO timestamp of last login
+  employeeId?: string; // Employee ID from HRIS
+  phoneNumber?: string;
+  department?: string;
+  hireDate?: string;
+  mfaEnabled?: boolean;
+  passwordLastChanged?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  lastModifiedBy?: string;
 }
 
 export type UserRole = 'admin' | 'supervisor' | 'leader' | 'worker';
+export type UserStatus = 'active' | 'inactive' | 'suspended' | 'terminated';
+
+// User Management Types
+export interface UserStatusHistory {
+  id: string;
+  userId: string;
+  previousStatus: UserStatus;
+  newStatus: UserStatus;
+  reason: string;
+  changedBy: string;
+  changedAt: string;
+  effectiveDate: string;
+  notes?: string;
+}
+
+export interface UserRoleHistory {
+  id: string;
+  userId: string;
+  previousRole: UserRole;
+  newRole: UserRole;
+  promotionReason: string;
+  approvedBy: string;
+  approvedAt: string;
+  effectiveDate: string;
+  trainingCompleted?: boolean;
+  performanceScore?: number;
+}
+
+export interface UserPermission {
+  id: string;
+  userId: string;
+  permissionCode: string;
+  grantedBy: string;
+  grantedAt: string;
+  expiresAt?: string;
+  isActive: boolean;
+  notes?: string;
+}
+
+export interface UserSession {
+  id: string;
+  userId: string;
+  sessionToken: string;
+  ipAddress: string;
+  userAgent: string;
+  deviceInfo?: string;
+  createdAt: string;
+  lastActivity: string;
+  expiresAt: string;
+  isActive: boolean;
+}
+
+export interface UserAuditLog {
+  id: string;
+  userId?: string;
+  actionType: UserAuditAction;
+  actionDescription: string;
+  performedBy: string;
+  ipAddress?: string;
+  timestamp: string;
+  oldValues?: Record<string, any>;
+  newValues?: Record<string, any>;
+  affectedUsers?: string[];
+  reason?: string;
+}
+
+export type UserAuditAction = 
+  | 'user_created'
+  | 'user_updated'
+  | 'user_deleted'
+  | 'status_changed'
+  | 'role_changed'
+  | 'permission_granted'
+  | 'permission_revoked'
+  | 'password_changed'
+  | 'password_reset'
+  | 'login_success'
+  | 'login_failed'
+  | 'session_started'
+  | 'session_ended'
+  | 'bulk_operation'
+  | 'data_export'
+  | 'admin_action';
+
+export interface CreateUserForm {
+  name: string;
+  email: string;
+  employeeId?: string;
+  phoneNumber?: string;
+  role: UserRole;
+  terminalId?: string;
+  regionId?: string;
+  department?: string;
+  hireDate?: string;
+  ssoProvider?: 'talenta' | 'idaman';
+  status: UserStatus;
+  mfaEnabled?: boolean;
+  sendWelcomeEmail?: boolean;
+  notes?: string;
+}
+
+export interface UpdateUserForm {
+  name?: string;
+  email?: string;
+  role?: UserRole;
+  status?: UserStatus;
+  employeeId?: string;
+  phoneNumber?: string;
+  terminalId?: string;
+  regionId?: string;
+  department?: string;
+  ssoProvider?: string;
+  hireDate?: string;
+  mfaEnabled?: boolean;
+  forcePasswordReset?: boolean;
+  notes?: string;
+}
+
+export interface BulkUserOperation {
+  operation: 'status_change' | 'role_change' | 'permission_update' | 'delete' | 'export';
+  userIds: string[];
+  parameters?: Record<string, any>;
+  reason?: string;
+  scheduledFor?: string;
+}
+
+export interface UserFilter {
+  search?: string;
+  role?: UserRole;
+  status?: UserStatus;
+  terminalId?: string;
+  regionId?: string;
+  department?: string;
+  ssoProvider?: 'talenta' | 'idaman';
+  mfaEnabled?: boolean;
+  lastLoginAfter?: string;
+  lastLoginBefore?: string;
+  createdAfter?: string;
+  createdBefore?: string;
+}
+
+export interface UserManagementStats {
+  totalUsers: number;
+  activeUsers: number;
+  newUsersThisMonth: number;
+  usersByRole: Record<UserRole, number>;
+  usersByStatus: Record<UserStatus, number>;
+  usersByTerminal: Record<string, number>;
+  mfaAdoptionRate: number;
+  averageSessionDuration: number;
+  recentLoginCount: number;
+}
 
 export interface Terminal {
   id: string;

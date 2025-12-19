@@ -274,7 +274,9 @@ const allUsers = ref<User[]>([
     role: 'admin',
     terminalId: 'terminal1',
     regionId: 'region1',
-    status: 'active'
+    status: 'active',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   },
   {
     id: 'supervisor1',
@@ -282,7 +284,9 @@ const allUsers = ref<User[]>([
     email: 'supervisor@pertamc.com',
     role: 'supervisor',
     regionId: 'region1',
-    status: 'active'
+    status: 'active',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   },
   {
     id: 'worker1',
@@ -291,7 +295,9 @@ const allUsers = ref<User[]>([
     role: 'worker',
     terminalId: 'terminal1',
     regionId: 'region1',
-    status: 'active'
+    status: 'active',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   },
   {
     id: 'leader1',
@@ -299,7 +305,9 @@ const allUsers = ref<User[]>([
     email: 'leader@pertamc.com',
     role: 'leader',
     regionId: 'region1',
-    status: 'active'
+    status: 'active',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   }
 ]);
 

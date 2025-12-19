@@ -150,6 +150,13 @@ const router = createRouter({
       name: 'EditTemplate',
       component: () => import('@/views/admin/EditTemplate.vue'),
       meta: { requiresAuth: true, permission: 'manage_templates' }
+    },
+    // User Management
+    {
+      path: '/users',
+      name: 'UserManagement',
+      component: () => import('@/views/admin/UserManagement.vue'),
+      meta: { requiresAuth: true, permission: 'manage_users' }
     }
   ]
 });

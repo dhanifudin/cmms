@@ -252,10 +252,10 @@ const navigationItems = computed((): NavigationItem[] => {
 
 // Demo user switching
 const demoUsers = [
-  { id: 'admin1', name: 'Ahmad Sutrisno', role: 'admin' as const, email: 'admin@terminal1.com', terminalId: 'terminal1', regionId: 'region1', status: 'active' as const },
-  { id: 'supervisor1', name: 'Budi Santoso', role: 'supervisor' as const, email: 'supervisor@pertamc.com', regionId: 'region1', status: 'active' as const },
-  { id: 'worker1', name: 'Candra Wijaya', role: 'worker' as const, email: 'worker@terminal1.com', terminalId: 'terminal1', regionId: 'region1', status: 'active' as const },
-  { id: 'leader1', name: 'Diana Sari', role: 'leader' as const, email: 'leader@pertamc.com', regionId: 'region1', status: 'active' as const }
+  { id: 'admin1', name: 'Ahmad Sutrisno', role: 'admin' as const, email: 'admin@terminal1.com', terminalId: 'terminal1', regionId: 'region1', status: 'active' as const, createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
+  { id: 'supervisor1', name: 'Budi Santoso', role: 'supervisor' as const, email: 'supervisor@pertamc.com', regionId: 'region1', status: 'active' as const, createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
+  { id: 'worker1', name: 'Candra Wijaya', role: 'worker' as const, email: 'worker@terminal1.com', terminalId: 'terminal1', regionId: 'region1', status: 'active' as const, createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
+  { id: 'leader1', name: 'Diana Sari', role: 'leader' as const, email: 'leader@pertamc.com', regionId: 'region1', status: 'active' as const, createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' }
 ];
 
 const switchDemoUser = (value: any) => {

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User, UserRole } from '@/types';
+import { mockUsers } from '@/mock/users';
 
 export const useAuthStore = defineStore('auth', () => {
   const currentUser = ref<User | null>(null);
@@ -31,7 +32,9 @@ export const useAuthStore = defineStore('auth', () => {
           terminalId: 'terminal1',
           regionId: 'region1',
           status: 'active',
-          avatar: '/avatars/admin.jpg'
+          avatar: '/avatars/admin.jpg',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z'
         },
         'supervisor@pertamc.com': {
           id: 'supervisor1',
@@ -40,7 +43,9 @@ export const useAuthStore = defineStore('auth', () => {
           role: 'supervisor',
           regionId: 'region1',
           status: 'active',
-          avatar: '/avatars/supervisor.jpg'
+          avatar: '/avatars/supervisor.jpg',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z'
         },
         'worker@terminal1.com': {
           id: 'worker1',
@@ -50,7 +55,9 @@ export const useAuthStore = defineStore('auth', () => {
           terminalId: 'terminal1',
           regionId: 'region1',
           status: 'active',
-          avatar: '/avatars/worker.jpg'
+          avatar: '/avatars/worker.jpg',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z'
         },
         'leader@pertamc.com': {
           id: 'leader1',
@@ -59,7 +66,9 @@ export const useAuthStore = defineStore('auth', () => {
           role: 'leader',
           regionId: 'region1',
           status: 'active',
-          avatar: '/avatars/leader.jpg'
+          avatar: '/avatars/leader.jpg',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z'
         }
       };
 
@@ -82,6 +91,19 @@ export const useAuthStore = defineStore('auth', () => {
       };
     } finally {
       isLoading.value = false;
+    }
+  };
+
+  // Initialize user management store with mock data
+  const initializeUserManagement = () => {
+    try {
+      // Dynamically import to avoid circular dependencies
+      import('./userManagement').then(({ useUserManagementStore }) => {
+        const userManagementStore = useUserManagementStore();
+        userManagementStore.initializeStore(mockUsers);
+      });
+    } catch (error) {
+      console.warn('Failed to initialize user management store:', error);
     }
   };
 
@@ -155,7 +177,9 @@ export const useAuthStore = defineStore('auth', () => {
         terminalId: 'terminal1',
         regionId: 'region1',
         status: 'active',
-        avatar: '/avatars/admin.jpg'
+        avatar: '/avatars/admin.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
       },
       'worker1': {
         id: 'worker1',
@@ -165,7 +189,9 @@ export const useAuthStore = defineStore('auth', () => {
         terminalId: 'terminal1',
         regionId: 'region1',
         status: 'active',
-        avatar: '/avatars/worker.jpg'
+        avatar: '/avatars/worker.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
       },
       'worker2': {
         id: 'worker2',
@@ -175,7 +201,9 @@ export const useAuthStore = defineStore('auth', () => {
         terminalId: 'terminal2',
         regionId: 'region1',
         status: 'active',
-        avatar: '/avatars/worker2.jpg'
+        avatar: '/avatars/worker2.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
       },
       'admin2': {
         id: 'admin2',
@@ -185,7 +213,9 @@ export const useAuthStore = defineStore('auth', () => {
         terminalId: 'terminal3',
         regionId: 'region2',
         status: 'active',
-        avatar: '/avatars/admin2.jpg'
+        avatar: '/avatars/admin2.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
       },
       'worker3': {
         id: 'worker3',
@@ -195,7 +225,9 @@ export const useAuthStore = defineStore('auth', () => {
         terminalId: 'terminal4',
         regionId: 'region2',
         status: 'active',
-        avatar: '/avatars/worker3.jpg'
+        avatar: '/avatars/worker3.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
       }
     };
 
@@ -207,7 +239,9 @@ export const useAuthStore = defineStore('auth', () => {
         role: 'supervisor',
         regionId: 'region1',
         status: 'active',
-        avatar: '/avatars/supervisor.jpg'
+        avatar: '/avatars/supervisor.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
       },
       'leader1': {
         id: 'leader1',
@@ -216,7 +250,9 @@ export const useAuthStore = defineStore('auth', () => {
         role: 'leader',
         regionId: 'region1',
         status: 'active',
-        avatar: '/avatars/leader.jpg'
+        avatar: '/avatars/leader.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
       },
       'supervisor2': {
         id: 'supervisor2',
@@ -225,7 +261,9 @@ export const useAuthStore = defineStore('auth', () => {
         role: 'supervisor',
         regionId: 'region2',
         status: 'active',
-        avatar: '/avatars/supervisor2.jpg'
+        avatar: '/avatars/supervisor2.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
       },
       'leader2': {
         id: 'leader2',
@@ -234,7 +272,9 @@ export const useAuthStore = defineStore('auth', () => {
         role: 'leader',
         regionId: 'region3',
         status: 'active',
-        avatar: '/avatars/leader2.jpg'
+        avatar: '/avatars/leader2.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
       },
       'supervisor3': {
         id: 'supervisor3',
@@ -243,7 +283,9 @@ export const useAuthStore = defineStore('auth', () => {
         role: 'supervisor',
         regionId: 'region4',
         status: 'active',
-        avatar: '/avatars/supervisor3.jpg'
+        avatar: '/avatars/supervisor3.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
       }
     };
 
@@ -320,7 +362,13 @@ export const useAuthStore = defineStore('auth', () => {
         'view_reports',
         'access_all_terminals',
         'manage_categories',
-        'manage_templates'
+        'manage_templates',
+        'promote_users',
+        'bulk_operations',
+        'view_audit_trail',
+        'manage_permissions',
+        'system_admin',
+        'security_admin'
       ],
       supervisor: [
         'approve_work_orders',
@@ -370,6 +418,8 @@ export const useAuthStore = defineStore('auth', () => {
     hasPermission,
     // SSO methods
     handleSSOCallback,
+    // Initialization
+    initializeUserManagement,
     // SSO computed properties
     ssoProvider,
     isTalentaUser,

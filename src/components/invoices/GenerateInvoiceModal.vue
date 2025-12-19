@@ -509,7 +509,15 @@ const generateInvoice = async () => {
 
     // Mock users for invoice calculation
     const mockUsers = [
-      { id: 'user1', name: 'Worker 1', email: 'worker1@example.com', role: 'worker' as const, status: 'active' as const }
+      { 
+        id: 'user1', 
+        name: 'Worker 1', 
+        email: 'worker1@example.com', 
+        role: 'worker' as const, 
+        status: 'active' as const,
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
+      }
     ];
 
     const invoice = await invoiceStore.generateInvoice(
