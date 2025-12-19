@@ -15,6 +15,33 @@ const router = createRouter({
       meta: { requiresGuest: true }
     },
     {
+      path: '/auth/sso/talenta',
+      name: 'TalentaSSO',
+      component: () => import('@/views/auth/sso/TalentaSSO.vue'),
+      meta: {
+        requiresGuest: true,
+        title: 'Sign in with Talenta'
+      }
+    },
+    {
+      path: '/auth/sso/idaman',
+      name: 'IdamanSSO',
+      component: () => import('@/views/auth/sso/IdamanSSO.vue'),
+      meta: {
+        requiresGuest: true,
+        title: 'Sign in with Idaman'
+      }
+    },
+    {
+      path: '/auth/callback',
+      name: 'SSOCallback',
+      component: () => import('@/views/auth/SSOCallback.vue'),
+      meta: {
+        requiresGuest: true,
+        title: 'Completing sign in...'
+      }
+    },
+    {
       path: '/dashboard',
       name: 'Dashboard',
       component: () => import('@/views/dashboard/Dashboard.vue'),

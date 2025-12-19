@@ -9,6 +9,8 @@ export interface User {
   regionId?: string;
   status: 'active' | 'inactive';
   avatar?: string;
+  ssoProvider?: 'talenta' | 'idaman'; // SSO authentication provider
+  lastLogin?: string; // ISO timestamp of last login
 }
 
 export type UserRole = 'admin' | 'supervisor' | 'leader' | 'worker';

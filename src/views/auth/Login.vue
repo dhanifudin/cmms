@@ -10,33 +10,50 @@
         </p>
       </div>
 
-      <form class="mt-8 space-y-6" @submit.prevent="handleLogin">
+      <div class="mt-8 space-y-6">
+        <!-- SSO Provider Buttons -->
         <div class="space-y-4">
-          <div class="space-y-2">
-            <Label for="email">Email address</Label>
-            <Input
-              id="email"
-              v-model="form.email"
-              name="email"
-              type="email"
-              autocomplete="email"
-              required
-              placeholder="Enter your email"
-            />
-          </div>
+          <button
+            @click="handleSSOClick('talenta')"
+            :disabled="isLoading"
+            class="group w-full rounded-lg border-2 border-talenta bg-talenta hover:bg-talenta-hover transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-xl"
+          >
+            <div class="flex items-center justify-between p-5">
+              <div class="flex items-center space-x-4">
+                <div class="flex-shrink-0 bg-white rounded-lg p-2 shadow-sm">
+                  <img src="/logos/talenta-logo.svg" alt="Talenta" class="h-8 w-auto" />
+                </div>
+                <div class="text-left">
+                  <div class="text-lg font-bold text-white">Sign in with Talenta</div>
+                  <div class="text-sm text-white/90 mt-0.5">For Workers and Admin</div>
+                </div>
+              </div>
+              <svg class="w-6 h-6 text-white/80 group-hover:text-white group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </button>
 
-          <div class="space-y-2">
-            <Label for="password">Password</Label>
-            <Input
-              id="password"
-              v-model="form.password"
-              name="password"
-              type="password"
-              autocomplete="current-password"
-              required
-              placeholder="Enter your password"
-            />
-          </div>
+          <button
+            @click="handleSSOClick('idaman')"
+            :disabled="isLoading"
+            class="group w-full rounded-lg border-2 border-idaman bg-idaman hover:bg-idaman-hover transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-xl"
+          >
+            <div class="flex items-center justify-between p-5">
+              <div class="flex items-center space-x-4">
+                <div class="flex-shrink-0 bg-white rounded-lg p-2 shadow-sm">
+                  <img src="/logos/idaman-logo.svg" alt="IdAMan" class="h-8 w-auto" />
+                </div>
+                <div class="text-left">
+                  <div class="text-lg font-bold text-white">Sign in with Idaman</div>
+                  <div class="text-sm text-white/90 mt-0.5">For Supervisors and Leaders</div>
+                </div>
+              </div>
+              <svg class="w-6 h-6 text-white/80 group-hover:text-white group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </button>
         </div>
 
         <Alert v-if="error" variant="destructive">
@@ -45,57 +62,24 @@
           <AlertDescription>{{ error }}</AlertDescription>
         </Alert>
 
-        <Button
-          type="submit"
-          :disabled="isLoading"
-          class="w-full"
-        >
-          <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-          {{ isLoading ? 'Signing in...' : 'Sign in' }}
-        </Button>
-
-        <!-- Demo credentials -->
+        <!-- Demo Information -->
         <Alert class="mt-6">
           <Info class="h-4 w-4" />
-          <AlertTitle>Demo Credentials</AlertTitle>
+          <AlertTitle>SSO Provider Information</AlertTitle>
           <AlertDescription>
-            <div class="space-y-1 text-xs mt-2">
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <strong>Admin:</strong><br>
-                  admin@terminal1.com
-                </div>
-                <div>
-                  <strong>Supervisor:</strong><br>
-                  supervisor@pertamc.com
-                </div>
-                <div>
-                  <strong>Worker:</strong><br>
-                  worker@terminal1.com
-                </div>
-                <div>
-                  <strong>Leader:</strong><br>
-                  leader@pertamc.com
-                </div>
+            <div class="space-y-2 text-xs mt-2">
+              <div>
+                <strong class="text-[#E31E24]">Talenta (Mekari):</strong>
+                <p class="ml-2 mt-1">Workers and Admin users</p>
               </div>
-              <p class="mt-2"><strong>Password for all:</strong> password</p>
+              <div>
+                <strong class="text-[#0066CC]">Idaman SSO:</strong>
+                <p class="ml-2 mt-1">Supervisors and Leaders</p>
+              </div>
             </div>
           </AlertDescription>
         </Alert>
-
-        <!-- Quick login buttons -->
-        <div class="mt-4 grid grid-cols-2 gap-3">
-          <Button
-            v-for="user in quickLoginUsers"
-            :key="user.email"
-            type="button"
-            variant="outline"
-            @click="quickLogin(user)"
-          >
-            {{ user.role }} Demo
-          </Button>
-        </div>
-      </form>
+      </div>
     </div>
   </div>
 </template>
@@ -104,53 +88,21 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertCircle, Info } from 'lucide-vue-next';
+import { AlertCircle, Info } from 'lucide-vue-next';
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-const form = ref({
-  email: '',
-  password: ''
-});
-
 const error = ref('');
 const isLoading = ref(false);
 
-const quickLoginUsers = [
-  { email: 'admin@terminal1.com', role: 'Admin' },
-  { email: 'supervisor@pertamc.com', role: 'Supervisor' },
-  { email: 'worker@terminal1.com', role: 'Worker' },
-  { email: 'leader@pertamc.com', role: 'Leader' }
-];
-
-const handleLogin = async () => {
+const handleSSOClick = (provider: 'talenta' | 'idaman') => {
   error.value = '';
   isLoading.value = true;
-  
-  try {
-    const result = await authStore.login(form.value.email, form.value.password);
-    
-    if (result.success) {
-      router.push('/dashboard');
-    } else {
-      error.value = result.error || 'Login failed';
-    }
-  } catch (err) {
-    error.value = 'An unexpected error occurred';
-  } finally {
-    isLoading.value = false;
-  }
-};
 
-const quickLogin = (user: { email: string; role: string }) => {
-  form.value.email = user.email;
-  form.value.password = 'password';
-  handleLogin();
+  // Navigate to SSO provider page
+  router.push(`/auth/sso/${provider}`);
 };
 
 onMounted(() => {
