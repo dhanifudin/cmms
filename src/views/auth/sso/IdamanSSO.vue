@@ -28,7 +28,7 @@
             v-for="user in idamanUsers"
             :key="user.id"
             @click="selectUser(user)"
-            class="w-full p-5 border-2 border-gray-200 rounded-lg hover:border-idaman hover:bg-idaman-light transition-all duration-200 text-left flex items-center space-x-4 group shadow-sm hover:shadow-md"
+            class="w-full p-5 bg-white border-2 border-gray-200 rounded-lg hover:border-idaman hover:bg-idaman-light transition-all duration-200 text-left flex items-center space-x-4 group shadow-sm hover:shadow-md"
           >
             <!-- Avatar -->
             <div class="flex-shrink-0">
@@ -93,7 +93,7 @@
         <div class="text-center">
           <button
             @click="backToLogin"
-            class="px-6 py-2.5 border-2 border-gray-300 hover:border-idaman text-gray-700 hover:text-idaman font-medium rounded-lg transition-all duration-200 hover:bg-idaman-light"
+            class="px-6 py-2.5 bg-white border-2 border-gray-300 hover:border-idaman text-gray-700 hover:text-idaman font-medium rounded-lg transition-all duration-200 hover:bg-idaman-light"
           >
             <div class="flex items-center space-x-2">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
