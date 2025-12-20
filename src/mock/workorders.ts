@@ -119,6 +119,12 @@ export const mockWorkOrders: WorkOrder[] = [
     startDate: '2024-12-18T08:00:00Z',
     dueDate: '2024-12-20T17:00:00Z',
     estimatedDuration: 4,
+    
+    // Template integration fields
+    inheritedFromTemplate: false,
+    customizations: [],
+    checklistLocked: false,
+    
     checklist: pipelineChecklistItems,
     beforePhotos: [],
     afterPhotos: [],
@@ -143,6 +149,12 @@ export const mockWorkOrders: WorkOrder[] = [
     startDate: '2024-12-17T09:00:00Z',
     dueDate: '2024-12-19T16:00:00Z',
     estimatedDuration: 6,
+    
+    // Template integration fields
+    inheritedFromTemplate: false,
+    customizations: [],
+    checklistLocked: false,
+    
     checklist: compressorChecklistItems.map(item => ({
       ...item,
       beforeValue: item.id === 'oil_level' ? 'Low' : 
@@ -176,6 +188,12 @@ export const mockWorkOrders: WorkOrder[] = [
     dueDate: '2024-12-18T17:00:00Z',
     estimatedDuration: 8,
     completedAt: '2024-12-17T15:30:00Z',
+    
+    // Template integration fields
+    inheritedFromTemplate: false,
+    customizations: [],
+    checklistLocked: false,
+    
     checklist: safetyChecklistItems.map(item => ({
       ...item,
       beforeValue: item.id === 'gas_detector_status' ? 'Needs Calibration' :
@@ -211,6 +229,12 @@ export const mockWorkOrders: WorkOrder[] = [
     startDate: '2024-12-18T06:00:00Z',
     dueDate: '2024-12-18T18:00:00Z',
     estimatedDuration: 12,
+    
+    // Template integration fields
+    inheritedFromTemplate: false,
+    customizations: [],
+    checklistLocked: false,
+    
     checklist: [
       {
         id: 'leak_location',
@@ -266,6 +290,12 @@ export const mockWorkOrders: WorkOrder[] = [
     dueDate: '2024-12-16T15:00:00Z',
     estimatedDuration: 3,
     completedAt: '2024-12-16T13:00:00Z',
+    
+    // Template integration fields
+    inheritedFromTemplate: false,
+    customizations: [],
+    checklistLocked: false,
+    
     checklist: [
       {
         id: 'pump_pressure',
@@ -318,6 +348,12 @@ export const mockWorkOrders: WorkOrder[] = [
     startDate: '2024-12-20T08:00:00Z',
     dueDate: '2024-12-22T17:00:00Z',
     estimatedDuration: 16,
+    
+    // Template integration fields
+    inheritedFromTemplate: false,
+    customizations: [],
+    checklistLocked: false,
+    
     checklist: [
       {
         id: 'tank_isolation',
@@ -405,6 +441,12 @@ export const mockWorkOrders: WorkOrder[] = [
     beforePhotos: [],
     afterPhotos: [],
     beforeNotes: 'Valve shows signs of wear, seal appears damaged and needs replacement. Lubrication required.',
+    
+    // Template integration fields
+    inheritedFromTemplate: false,
+    customizations: [],
+    checklistLocked: false,
+    
     materials: [
       { itemId: 'item001', plannedQuantity: 2 }, // Pipeline gaskets  
       { itemId: 'item009', plannedQuantity: 1 }  // Pump seals (valve seals)

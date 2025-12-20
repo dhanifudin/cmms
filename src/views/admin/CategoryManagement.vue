@@ -52,23 +52,39 @@
           </Select>
         </div>
         
-        <div class="flex items-center space-x-2">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            :class="{ 'bg-muted': viewMode === 'tree' }"
-            @click="viewMode = 'tree'"
-          >
-            <TreePine class="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            :class="{ 'bg-muted': viewMode === 'list' }"
-            @click="viewMode = 'list'"
-          >
-            <List class="h-4 w-4" />
-          </Button>
+        <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-2">
+            <label class="text-sm text-muted-foreground">Show Templates:</label>
+            <Button
+              variant="ghost"
+              size="sm"
+              :class="{ 'bg-muted': showTemplatesInTree }"
+              @click="showTemplatesInTree = !showTemplatesInTree"
+            >
+              <FileText class="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div class="w-px h-4 bg-border" />
+          
+          <div class="flex items-center space-x-1">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              :class="{ 'bg-muted': viewMode === 'tree' }"
+              @click="viewMode = 'tree'"
+            >
+              <TreePine class="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              :class="{ 'bg-muted': viewMode === 'list' }"
+              @click="viewMode = 'list'"
+            >
+              <List class="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -93,22 +109,19 @@
         </div>
 
         <div v-else>
-          <!-- Tree View -->
-          <div v-if="viewMode === 'tree'" class="category-tree space-y-2">
-            <AdminCategoryTreeNode
-              v-for="category in filteredCategories"
-              :key="category.id"
-              :category="category"
-              :selected-categories="selectedCategories"
-              :can-edit="true"
-              :can-delete="canDeleteCategory(category)"
-              :can-reorder="true"
-              @edit="editCategory"
-              @delete="deleteCategory"
-              @add-child="addChildCategory"
-              @toggle-status="toggleCategoryStatus"
-              @select="toggleCategorySelection"
-              @view-details="viewCategoryDetails"
+          <!-- Tree View with Enhanced Drag & Drop -->
+          <div v-if="viewMode === 'tree'" class="category-tree">
+            <CategoryTreeView
+              :allow-edit="true"
+              :allow-create="true"
+              :allow-reorder="true"
+              :show-templates="showTemplatesInTree"
+              :show-search-field="false"
+              :external-search-query="searchTerm"
+              @category-select="viewCategoryDetails"
+              @edit-category="editCategory"
+              @create-category="() => { parentCategory = null; showCreateModal = true; }"
+              @import-categories="showImportDialog = true"
             />
           </div>
           
@@ -220,17 +233,19 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useCategoryStore } from '@/stores/category';
+import { useTemplateStore } from '@/stores/template';
 import { useToast } from '@/hooks/use-toast';
 import type { WorkOrderCategory, CreateCategoryForm } from '@/types/templates';
 
 // Components
-import AdminCategoryTreeNode from '@/components/category/AdminCategoryTreeNode.vue';
+// import AdminCategoryTreeNode from '@/components/category/AdminCategoryTreeNode.vue';
 import CategoryListItem from '@/components/category/CategoryListItem.vue';
 import CategoryDetailPanel from '@/components/category/CategoryDetailPanel.vue';
 import CategoryFormModal from '@/components/category/CategoryFormModal.vue';
 import CategoryImportDialog from '@/components/category/CategoryImportDialog.vue';
 import CategoryAnalyticsModal from '@/components/category/CategoryAnalyticsModal.vue';
 import BulkMoveDialog from '@/components/category/BulkMoveDialog.vue';
+import CategoryTreeView from '@/components/category/CategoryTreeView.vue';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -240,12 +255,13 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 // Icons
 import {
-  Plus, Upload, Download, BarChart3, Search, TreePine, List,
+  Plus, Upload, Download, BarChart3, Search, TreePine, List, FileText,
   Loader2, AlertCircle, FolderX, Power, PowerOff, Move, Trash2, X
 } from 'lucide-vue-next';
 
 // Store and composables
 const categoryStore = useCategoryStore();
+const templateStore = useTemplateStore();
 const { toast } = useToast();
 
 // Reactive state
@@ -254,6 +270,7 @@ const statusFilter = ref('all');
 const viewMode = ref<'tree' | 'list'>('tree');
 const selectedCategories = ref<string[]>([]);
 const selectedCategory = ref<WorkOrderCategory | null>(null);
+const showTemplatesInTree = ref(false);
 
 // Modal states
 const showCreateModal = ref(false);
@@ -305,10 +322,10 @@ const filteredCategoriesList = computed(() => {
 });
 
 // Methods
-const canDeleteCategory = (category: WorkOrderCategory): boolean => {
-  // TODO: Check if category has templates or work orders
-  return !category.children || category.children.length === 0;
-};
+// const canDeleteCategory = (category: WorkOrderCategory): boolean => {
+//   // TODO: Check if category has templates or work orders
+//   return !category.children || category.children.length === 0;
+// };
 
 const toggleCategorySelection = (categoryId: string) => {
   const index = selectedCategories.value.indexOf(categoryId);
@@ -344,10 +361,10 @@ const deleteCategory = async (category: WorkOrderCategory) => {
   }
 };
 
-const addChildCategory = (parentCat: WorkOrderCategory) => {
-  parentCategory.value = parentCat;
-  showCreateModal.value = true;
-};
+// const addChildCategory = (parentCat: WorkOrderCategory) => {
+//   parentCategory.value = parentCat;
+//   showCreateModal.value = true;
+// };
 
 const toggleCategoryStatus = async (category: WorkOrderCategory) => {
   try {
@@ -555,8 +572,11 @@ const handleBulkMove = async (targetParentId: string | null) => {
 };
 
 // Lifecycle
-onMounted(() => {
-  categoryStore.fetchCategories();
+onMounted(async () => {
+  await Promise.all([
+    categoryStore.fetchCategories(),
+    templateStore.fetchTemplates()
+  ]);
 });
 </script>
 

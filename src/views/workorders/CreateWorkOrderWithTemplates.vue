@@ -57,37 +57,43 @@
       </CardContent>
     </Card>
 
-    <!-- Template Selection -->
-    <Card v-if="creationMethod === 'template' && !selectedTemplate">
+    <!-- Enhanced Template Selection -->
+    <Card v-if="creationMethod === 'template' && !selectedTemplate && !showCustomization">
       <CardHeader>
         <CardTitle>Select Template</CardTitle>
         <p class="text-sm text-muted-foreground">
-          Choose a template to pre-populate the work order
+          Browse categories and choose a template to pre-populate the work order
         </p>
       </CardHeader>
       <CardContent>
-        <TemplateSelector
-          v-model="selectedTemplateId"
-          @template-select="handleTemplateSelect"
+        <TemplateSelectionWizard
+          :categories="categoryStore.categoryTree"
+          :templates="templateStore.templates"
+          :maintenance-type="form.type"
+          @template-selected="handleTemplateSelect"
+          @category-selected="handleCategorySelected"
         />
         <div class="flex items-center justify-between mt-6">
           <Button variant="outline" @click="setCreationMethod(null)">
             <ChevronLeft class="h-4 w-4 mr-2" />
             Back to Selection
           </Button>
-          <Button 
-            :disabled="!selectedTemplateId"
-            @click="applyTemplate"
-          >
-            Use Selected Template
-            <ChevronRight class="h-4 w-4 ml-2" />
-          </Button>
         </div>
       </CardContent>
     </Card>
 
-    <!-- Template Preview -->
-    <Card v-if="selectedTemplate">
+    <!-- Template Customization Interface -->
+    <div v-if="selectedTemplate && showCustomization">
+      <WorkOrderCustomizationInterface
+        :template="selectedTemplate"
+        :initial-data="customizationData"
+        @save="handleCustomizationSave"
+        @cancel="handleCustomizationCancel"
+      />
+    </div>
+
+    <!-- Template Preview (Only shown if not in customization mode) -->
+    <Card v-if="selectedTemplate && !showCustomization">
       <CardHeader class="flex flex-row items-center justify-between space-y-0">
         <div>
           <CardTitle class="flex items-center space-x-2">
@@ -102,6 +108,10 @@
           <Badge :variant="getTypeVariant(selectedTemplate.type)" class="text-xs">
             {{ selectedTemplate.type }}
           </Badge>
+          <Button variant="outline" size="sm" @click="startCustomization">
+            <Edit class="h-4 w-4 mr-2" />
+            Customize
+          </Button>
           <Button variant="outline" size="sm" @click="clearTemplate">
             <X class="h-4 w-4 mr-2" />
             Remove Template
@@ -109,11 +119,7 @@
         </div>
       </CardHeader>
       <CardContent>
-        <div class="grid grid-cols-4 gap-4 text-sm">
-          <div class="text-center p-3 bg-muted/30 rounded-lg">
-            <div class="font-medium text-blue-600">{{ selectedTemplate.sopSteps?.length || 0 }}</div>
-            <div class="text-muted-foreground">SOP Steps</div>
-          </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div class="text-center p-3 bg-muted/30 rounded-lg">
             <div class="font-medium text-green-600">{{ selectedTemplate.checklist?.length || 0 }}</div>
             <div class="text-muted-foreground">Checklist Items</div>
@@ -126,17 +132,63 @@
             <div class="font-medium text-purple-600">{{ selectedTemplate.estimatedDuration }}h</div>
             <div class="text-muted-foreground">Est. Duration</div>
           </div>
+          <div class="text-center p-3 bg-muted/30 rounded-lg">
+            <div class="font-medium text-blue-600">{{ selectedTemplate.defaultPriority }}</div>
+            <div class="text-muted-foreground">Priority</div>
+          </div>
+        </div>
+        
+        <div class="mt-4 flex items-center justify-between">
+          <div class="text-sm text-muted-foreground">
+            Template will be applied with all default settings
+          </div>
+          <Button @click="startCustomization">
+            <Edit class="h-4 w-4 mr-2" />
+            Customize Template
+          </Button>
         </div>
       </CardContent>
     </Card>
 
     <!-- Work Order Form -->
-    <div v-if="creationMethod !== null">
+    <div v-if="creationMethod !== null && !showCustomization">
+      <!-- Customization Summary -->
+      <Card v-if="hasTemplateCustomizations" class="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950">
+        <CardContent class="p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <Edit class="h-4 w-4 text-blue-600" />
+              <span class="font-medium text-blue-900 dark:text-blue-100">Template Customized</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <Badge variant="outline" class="text-xs">
+                {{ customizationData?.stats?.checklist?.added || 0 }} checklist items added
+              </Badge>
+              <Badge variant="outline" class="text-xs">
+                {{ customizationData?.stats?.materials?.added || 0 }} materials added
+              </Badge>
+              <Button variant="outline" size="sm" @click="startCustomization">
+                <Edit class="h-4 w-4 mr-2" />
+                Edit Customization
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
       <form @submit.prevent="handleSubmit" class="space-y-6">
         <!-- Basic Details -->
         <Card>
           <CardHeader>
-            <CardTitle>Work Order Details</CardTitle>
+            <div class="flex items-center justify-between">
+              <CardTitle>Work Order Details</CardTitle>
+              <div v-if="selectedTemplate && !hasTemplateCustomizations">
+                <Button variant="outline" size="sm" @click="startCustomization">
+                  <Edit class="h-4 w-4 mr-2" />
+                  Customize Template
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -326,17 +378,18 @@
           </Card>
         </div>
 
-        <!-- Materials Section (Enhanced) -->
-        <Card>
+        <!-- Materials Section (Simplified for Templates) -->
+        <Card v-if="!selectedTemplate || (selectedTemplate && form.materials.length > 0)">
           <CardHeader class="flex flex-row items-center justify-between space-y-0">
             <CardTitle class="flex items-center space-x-2">
               <Package class="h-5 w-5" />
               <span>Required Materials</span>
               <Badge v-if="selectedTemplate" variant="outline" class="text-xs ml-2">
-                From Template
+                {{ hasTemplateCustomizations ? 'Customized' : 'From Template' }}
               </Badge>
             </CardTitle>
             <Button
+              v-if="!selectedTemplate"
               type="button"
               variant="outline"
               size="sm"
@@ -345,69 +398,116 @@
               <Plus class="w-4 h-4 mr-2" />
               Add Material
             </Button>
+            <Button
+              v-else-if="selectedTemplate && !hasTemplateCustomizations"
+              type="button"
+              variant="outline"
+              size="sm"
+              @click="startCustomization"
+            >
+              <Edit class="w-4 h-4 mr-2" />
+              Customize Materials
+            </Button>
           </CardHeader>
           <CardContent>
-            <Alert v-if="form.materials.length === 0">
+            <div v-if="selectedTemplate && !hasTemplateCustomizations">
+              <div class="text-center py-6">
+                <Package class="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
+                <h3 class="font-medium mb-1">Template Materials</h3>
+                <p class="text-sm text-muted-foreground mb-4">
+                  This template includes {{ selectedTemplate.materials?.length || 0 }} predefined materials
+                </p>
+                <Button variant="outline" @click="startCustomization">
+                  <Edit class="h-4 w-4 mr-2" />
+                  View and Customize Materials
+                </Button>
+              </div>
+            </div>
+            
+            <Alert v-else-if="!selectedTemplate && form.materials.length === 0">
               <Package class="h-4 w-4" />
               <AlertTitle>No materials added</AlertTitle>
               <AlertDescription>
-                {{ selectedTemplate ? 'Template materials will be added automatically.' : 'Click "Add Material" to include required materials for this work order.' }}
+                Click "Add Material" to include required materials for this work order.
               </AlertDescription>
             </Alert>
 
-            <div v-else class="space-y-4">
-              <div
-                v-for="(material, index) in form.materials"
-                :key="index"
-                class="flex items-center space-x-4 p-4 border border-border rounded-lg"
-                :class="{ 'bg-blue-50 border-blue-200': material.fromTemplate }"
-              >
-                <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Material</Label>
-                    <Select v-model="material.itemId" required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Material" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem
-                          v-for="item in availableItems"
-                          :key="item.id"
-                          :value="item.id"
-                        >
-                          {{ item.name }} ({{ item.code }})
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label>Planned Quantity</Label>
-                    <Input
-                      v-model.number="material.plannedQuantity"
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      required
-                    />
-                  </div>
-                  
-                  <div class="flex items-end">
-                    <Badge v-if="material.fromTemplate" variant="outline" class="text-xs">
-                      Template
-                    </Badge>
-                  </div>
-                </div>
-                
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  @click="removeMaterial(index)"
-                  :disabled="material.fromTemplate && selectedTemplate"
+            <div v-else-if="form.materials.length > 0" class="space-y-3">
+              <div class="text-sm text-muted-foreground mb-3">
+                {{ form.materials.length }} material{{ form.materials.length !== 1 ? 's' : '' }} configured
+                <span v-if="hasTemplateCustomizations"> (includes customizations)</span>
+              </div>
+              
+              <!-- Simple material summary for template-based work orders -->
+              <div v-if="selectedTemplate" class="space-y-2">
+                <div
+                  v-for="(material, index) in form.materials.slice(0, 3)"
+                  :key="index"
+                  class="flex items-center justify-between p-2 bg-muted/30 rounded"
                 >
-                  <Trash2 class="w-4 h-4 text-red-500" />
-                </Button>
+                  <span class="text-sm font-medium">{{ material.itemName || 'Material ' + (index + 1) }}</span>
+                  <Badge variant="outline" class="text-xs">
+                    {{ material.plannedQuantity }}
+                  </Badge>
+                </div>
+                <div v-if="form.materials.length > 3" class="text-xs text-muted-foreground text-center">
+                  +{{ form.materials.length - 3 }} more materials
+                </div>
+                <div class="pt-2">
+                  <Button variant="outline" size="sm" @click="startCustomization" class="w-full">
+                    <Edit class="h-4 w-4 mr-2" />
+                    View All Materials
+                  </Button>
+                </div>
+              </div>
+              
+              <!-- Full material editor for custom work orders -->
+              <div v-else class="space-y-4">
+                <div
+                  v-for="(material, index) in form.materials"
+                  :key="index"
+                  class="flex items-center space-x-4 p-4 border border-border rounded-lg"
+                >
+                  <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label>Material</Label>
+                      <Select v-model="material.itemId" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Material" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem
+                            v-for="item in availableItems"
+                            :key="item.id"
+                            :value="item.id"
+                          >
+                            {{ item.name }} ({{ item.code }})
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label>Planned Quantity</Label>
+                      <Input
+                        v-model.number="material.plannedQuantity"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    @click="removeMaterial(index)"
+                  >
+                    <Trash2 class="w-4 h-4 text-red-500" />
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -454,12 +554,13 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 
 // Custom Components
-import TemplateSelector from '@/components/template/TemplateSelector.vue';
+import TemplateSelectionWizard from '@/components/workorder/TemplateSelectionWizard.vue';
+import WorkOrderCustomizationInterface from '@/components/workorder/WorkOrderCustomizationInterface.vue';
 import CategorySelector from '@/components/category/CategorySelector.vue';
 
 // Icons
 import { 
-  Plus, Package, Trash2, FileText, X, ChevronLeft, ChevronRight,
+  Plus, Package, Trash2, FileText, X, ChevronLeft, Edit,
   ShieldCheck, AlertTriangle, CheckCircle, Circle, Loader2
 } from 'lucide-vue-next';
 
@@ -480,6 +581,9 @@ const creationMethod = ref<'template' | 'custom' | null>(null);
 const selectedTemplateId = ref<string>('');
 const selectedTemplate = ref<WorkOrderTemplate | null>(null);
 const selectedCategoryId = ref<string>('');
+const showCustomization = ref(false);
+const customizationData = ref<any>(null);
+const hasTemplateCustomizations = ref(false);
 
 // Enhanced form with template support
 const form = ref<CreateWorkOrderForm & { categoryId?: string }>({
@@ -517,43 +621,64 @@ const setCreationMethod = (method: 'template' | 'custom' | null) => {
 const handleTemplateSelect = (template: WorkOrderTemplate) => {
   selectedTemplate.value = template;
   selectedTemplateId.value = template.id;
+  
+  // Set up basic template data
+  selectedCategoryId.value = template.categoryId;
+  form.value.categoryId = template.categoryId;
+  
+  // Initialize customization data with template defaults
+  customizationData.value = {
+    terminalId: form.value.terminalId,
+    startDate: form.value.startDate,
+    dueDate: form.value.dueDate,
+    assignedWorkerId: form.value.assignedWorkerId
+  };
 };
 
-const applyTemplate = () => {
-  if (!selectedTemplate.value) return;
-  
-  const template = selectedTemplate.value;
-  
-  // Pre-populate form fields from template
-  form.value = {
-    ...form.value,
-    title: template.name,
-    description: template.description,
-    type: template.type,
-    subType: template.subType,
-    priority: template.defaultPriority,
-    estimatedDuration: template.estimatedDuration,
-    categoryId: template.categoryId
-  };
-  
-  selectedCategoryId.value = template.categoryId;
-  
-  // Add template materials
-  if (template.materials && template.materials.length > 0) {
-    form.value.materials = template.materials.map(material => ({
-      itemId: material.itemId,
-      plannedQuantity: material.plannedQuantity,
-      fromTemplate: true
-    }));
+const handleCategorySelected = (category: WorkOrderCategory | null) => {
+  if (category) {
+    selectedCategoryId.value = category.id;
+    form.value.categoryId = category.id;
+  } else {
+    selectedCategoryId.value = '';
+    form.value.categoryId = '';
   }
 };
+
 
 const clearTemplate = () => {
   selectedTemplate.value = null;
   selectedTemplateId.value = '';
+  showCustomization.value = false;
+  customizationData.value = null;
+  hasTemplateCustomizations.value = false;
   
   // Reset form to default values but keep manually entered data
   form.value.materials = form.value.materials.filter(m => !m.fromTemplate);
+};
+
+const startCustomization = () => {
+  showCustomization.value = true;
+};
+
+const handleCustomizationSave = (customizedWorkOrder: any) => {
+  // Apply the customized work order data to the form
+  Object.assign(form.value, customizedWorkOrder);
+  
+  // Track if there were customizations
+  hasTemplateCustomizations.value = customizedWorkOrder.customizations?.hasCustomizations || false;
+  
+  // Store customization metadata
+  customizationData.value = customizedWorkOrder.customizations;
+  
+  // Exit customization mode and show the work order form
+  showCustomization.value = false;
+  creationMethod.value = 'template'; // Ensure we stay in template mode
+};
+
+const handleCustomizationCancel = () => {
+  // Return to template preview without saving changes
+  showCustomization.value = false;
 };
 
 const handleCategorySelect = (category: WorkOrderCategory) => {
@@ -611,10 +736,15 @@ const handleSubmit = async () => {
     let workOrder;
     
     if (selectedTemplate.value) {
-      // Use template store method to create from template
+      // Use template store method to create from template with inheritance tracking
+      const templateData = {
+        ...workOrderData,
+        customizations: customizationData.value
+      };
+      
       workOrder = await templateStore.createWorkOrderFromTemplate(
         selectedTemplate.value.id,
-        workOrderData
+        templateData
       );
     } else {
       // Create regular work order

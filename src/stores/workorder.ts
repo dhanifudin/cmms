@@ -108,6 +108,12 @@ export const useWorkOrderStore = defineStore('workorder', () => {
         dueDate: formData.dueDate,
         estimatedDuration: formData.estimatedDuration,
         parentId: formData.parentId,
+        
+        // Template integration fields
+        inheritedFromTemplate: false,
+        customizations: [],
+        checklistLocked: false,
+        
         checklist: [],
         beforePhotos: [],
         afterPhotos: [],

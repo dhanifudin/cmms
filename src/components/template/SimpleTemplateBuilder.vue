@@ -243,6 +243,8 @@ const emit = defineEmits<{
 const form = ref<CreateTemplateForm>({
   name: '',
   description: '',
+  code: '',
+  version: '1.0',
   categoryId: '',
   type: 'preventive',
   subType: undefined,
@@ -307,6 +309,8 @@ onMounted(() => {
     form.value = {
       name: props.template.name,
       description: props.template.description,
+      code: props.template.code,
+      version: props.template.version,
       categoryId: props.template.categoryId,
       type: props.template.type,
       subType: props.template.subType,
@@ -317,8 +321,8 @@ onMounted(() => {
       materials: [],
       safetyRequirements: props.template.safetyRequirements ? [...props.template.safetyRequirements] : [],
       prerequisites: props.template.prerequisites ? [...props.template.prerequisites] : [],
-      requiredSkills: [],
-      requiredCertifications: [],
+      requiredSkills: props.template.requiredSkills ? [...props.template.requiredSkills] : [],
+      requiredCertifications: props.template.requiredCertifications ? [...props.template.requiredCertifications] : [],
       isRecurring: props.template.isRecurring,
       recurrencePattern: props.template.recurrencePattern,
       tags: props.template.tags ? [...props.template.tags] : []

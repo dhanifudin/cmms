@@ -1,11 +1,12 @@
-// Mock Data for Work Order Templates
+// Enhanced Mock Data for Work Order Templates with Template Integration
 
 import type { 
   WorkOrderTemplate, 
   SOPStep, 
   ChecklistItemTemplate, 
   MaterialRequirementTemplate,
-  RecurrencePattern 
+  RecurrencePattern,
+  ToolRequirement 
 } from '@/types/templates';
 
 // Common SOP Steps for different maintenance types
@@ -106,103 +107,191 @@ const compressorInspectionSteps: Omit<SOPStep, 'id'>[] = [
 ];
 
 // Common Checklist Templates
-const pressureTestChecklist: Omit<ChecklistItemTemplate, 'id'>[] = [
+const pressureTestChecklist: Omit<ChecklistItemTemplate, 'id' | 'templateId'>[] = [
   {
     label: 'Test Pressure (PSI)',
+    description: 'Record the actual test pressure achieved during the test',
     type: 'number',
     required: true,
     unit: 'PSI',
     minValue: 0,
     maxValue: 1000,
-    helpText: 'Record the actual test pressure achieved'
+    order: 1,
+    section: 'Test Parameters',
+    helpText: 'Record the actual test pressure achieved',
+    warningThreshold: 800,
+    criticalThreshold: 950,
+    isActive: true,
+    createdAt: '2024-01-20T09:00:00Z',
+    updatedAt: '2024-01-20T09:00:00Z'
   },
   {
     label: 'Pressure Hold Duration (minutes)',
+    description: 'Total time the test pressure was maintained',
     type: 'number',
     required: true,
     unit: 'minutes',
     minValue: 1,
     maxValue: 480,
-    helpText: 'Duration pressure was maintained'
+    order: 2,
+    section: 'Test Parameters',
+    helpText: 'Duration pressure was maintained',
+    isActive: true,
+    createdAt: '2024-01-20T09:00:00Z',
+    updatedAt: '2024-01-20T09:00:00Z'
   },
   {
     label: 'Visual Leak Detection',
+    description: 'Visual inspection for any leaks during test',
     type: 'yes_no',
     required: true,
-    helpText: 'Any visible leaks detected during test?'
+    order: 3,
+    section: 'Inspection Results',
+    helpText: 'Any visible leaks detected during test?',
+    isActive: true,
+    createdAt: '2024-01-20T09:00:00Z',
+    updatedAt: '2024-01-20T09:00:00Z'
   },
   {
     label: 'Pressure Drop (%)',
+    description: 'Percentage pressure drop during test period',
     type: 'number',
     required: true,
     unit: '%',
     minValue: 0,
     maxValue: 100,
-    helpText: 'Percentage pressure drop during test period'
+    order: 4,
+    section: 'Test Parameters',
+    helpText: 'Percentage pressure drop during test period',
+    warningThreshold: 5,
+    criticalThreshold: 10,
+    isActive: true,
+    createdAt: '2024-01-20T09:00:00Z',
+    updatedAt: '2024-01-20T09:00:00Z'
   },
   {
     label: 'Test Result',
+    description: 'Overall result of the pressure test',
     type: 'dropdown',
     required: true,
     options: ['Pass', 'Fail', 'Needs Retest'],
-    helpText: 'Overall test result'
+    order: 5,
+    section: 'Test Results',
+    helpText: 'Overall test result',
+    isActive: true,
+    createdAt: '2024-01-20T09:00:00Z',
+    updatedAt: '2024-01-20T09:00:00Z'
   }
 ];
 
-const compressorInspectionChecklist: Omit<ChecklistItemTemplate, 'id'>[] = [
+const compressorInspectionChecklist: Omit<ChecklistItemTemplate, 'id' | 'templateId'>[] = [
   {
     label: 'Suction Pressure (PSI)',
+    description: 'Compressor suction pressure measurement',
     type: 'number',
     required: true,
     unit: 'PSI',
     minValue: 0,
     maxValue: 100,
-    helpText: 'Compressor suction pressure reading'
+    order: 1,
+    section: 'Pressure Parameters',
+    helpText: 'Compressor suction pressure reading',
+    warningThreshold: 15,
+    criticalThreshold: 5,
+    isActive: true,
+    createdAt: '2024-02-10T14:00:00Z',
+    updatedAt: '2024-02-10T14:00:00Z'
   },
   {
     label: 'Discharge Pressure (PSI)',
+    description: 'Compressor discharge pressure measurement',
     type: 'number',
     required: true,
     unit: 'PSI',
     minValue: 0,
     maxValue: 500,
-    helpText: 'Compressor discharge pressure reading'
+    order: 2,
+    section: 'Pressure Parameters',
+    helpText: 'Compressor discharge pressure reading',
+    warningThreshold: 450,
+    criticalThreshold: 480,
+    isActive: true,
+    createdAt: '2024-02-10T14:00:00Z',
+    updatedAt: '2024-02-10T14:00:00Z'
   },
   {
     label: 'Oil Level',
+    description: 'Current oil level assessment',
     type: 'dropdown',
     required: true,
     options: ['Low', 'Normal', 'High', 'Overfilled'],
-    helpText: 'Current oil level in sight glass'
+    order: 3,
+    section: 'Lubrication System',
+    helpText: 'Current oil level in sight glass',
+    conditionalLogic: [{
+      dependsOn: '',
+      condition: 'equals' as const,
+      value: 'Low',
+      action: 'require' as const
+    }],
+    isActive: true,
+    createdAt: '2024-02-10T14:00:00Z',
+    updatedAt: '2024-02-10T14:00:00Z'
   },
   {
     label: 'Oil Condition',
+    description: 'Visual assessment of oil condition',
     type: 'dropdown',
     required: true,
     options: ['Clean', 'Slightly Dirty', 'Dirty', 'Contaminated'],
-    helpText: 'Visual assessment of oil condition'
+    order: 4,
+    section: 'Lubrication System',
+    helpText: 'Visual assessment of oil condition',
+    isActive: true,
+    createdAt: '2024-02-10T14:00:00Z',
+    updatedAt: '2024-02-10T14:00:00Z'
   },
   {
     label: 'Vibration Level',
+    description: 'Overall vibration assessment',
     type: 'dropdown',
     required: true,
     options: ['Normal', 'Slightly Elevated', 'High', 'Excessive'],
-    helpText: 'Overall vibration assessment'
+    order: 5,
+    section: 'Performance Parameters',
+    helpText: 'Overall vibration assessment',
+    isActive: true,
+    createdAt: '2024-02-10T14:00:00Z',
+    updatedAt: '2024-02-10T14:00:00Z'
   },
   {
     label: 'Operating Temperature (°C)',
+    description: 'Main bearing or cylinder temperature',
     type: 'number',
     required: true,
     unit: '°C',
     minValue: -10,
     maxValue: 150,
-    helpText: 'Main bearing or cylinder temperature'
+    order: 6,
+    section: 'Performance Parameters',
+    helpText: 'Main bearing or cylinder temperature',
+    warningThreshold: 80,
+    criticalThreshold: 100,
+    isActive: true,
+    createdAt: '2024-02-10T14:00:00Z',
+    updatedAt: '2024-02-10T14:00:00Z'
   },
   {
     label: 'Unusual Noises',
+    description: 'Detection of any unusual noises during operation',
     type: 'yes_no',
     required: true,
-    helpText: 'Any unusual noises detected?'
+    order: 7,
+    section: 'Performance Parameters',
+    helpText: 'Any unusual noises detected?',
+    isActive: true,
+    createdAt: '2024-02-10T14:00:00Z',
+    updatedAt: '2024-02-10T14:00:00Z'
   }
 ];
 
@@ -255,6 +344,88 @@ const compressorMaterials: MaterialRequirementTemplate[] = [
   }
 ];
 
+// Tool Requirements
+const pipelineTestTools: Omit<ToolRequirement, 'id'>[] = [
+  {
+    name: 'Pressure Test Pump',
+    type: 'power_tool',
+    required: true,
+    specifications: 'Hydraulic test pump, 0-1500 PSI range'
+  },
+  {
+    name: 'Calibrated Pressure Gauge',
+    type: 'measuring_device',
+    required: true,
+    specifications: 'Digital gauge, ±0.1% accuracy, current calibration'
+  },
+  {
+    name: 'Gas Detector',
+    type: 'safety_equipment',
+    required: true,
+    specifications: 'Multi-gas detector with methane, H2S, O2, LEL'
+  },
+  {
+    name: 'LOTO Kit',
+    type: 'safety_equipment',
+    required: true,
+    specifications: 'Lockout/tagout devices, padlocks, tags'
+  }
+];
+
+const compressorTools: Omit<ToolRequirement, 'id'>[] = [
+  {
+    name: 'Vibration Analyzer',
+    type: 'measuring_device',
+    required: true,
+    specifications: 'Portable vibration meter with data logging'
+  },
+  {
+    name: 'Infrared Thermometer',
+    type: 'measuring_device',
+    required: true,
+    specifications: 'Non-contact IR thermometer, -50°C to 500°C'
+  },
+  {
+    name: 'Oil Analysis Kit',
+    type: 'measuring_device',
+    required: false,
+    specifications: 'Oil sampling bottles and viscosity cup'
+  },
+  {
+    name: 'Ultrasonic Leak Detector',
+    type: 'measuring_device',
+    required: false,
+    specifications: 'Ultrasonic detector for gas leaks'
+  }
+];
+
+const fireGasTools: Omit<ToolRequirement, 'id'>[] = [
+  {
+    name: 'Calibration Gas Kit',
+    type: 'measuring_device',
+    required: true,
+    specifications: 'Multi-gas calibration standard with regulator'
+  },
+  {
+    name: 'Heat Gun',
+    type: 'power_tool',
+    required: true,
+    specifications: 'Variable temperature heat gun for detector testing'
+  },
+  {
+    name: 'Smoke Test Equipment',
+    type: 'measuring_device',
+    required: true,
+    specifications: 'Non-toxic smoke pellets and dispenser'
+  },
+  {
+    name: 'Communication Radio',
+    type: 'safety_equipment',
+    required: true,
+    specifications: 'Intrinsically safe two-way radio'
+  }
+];
+
 // Recurrence Patterns
 const monthlyPattern: RecurrencePattern = {
   type: 'monthly',
@@ -275,10 +446,24 @@ export const mockTemplates: WorkOrderTemplate[] = [
     id: 'template-pipeline-pressure-test',
     name: 'Pipeline Pressure Test',
     description: 'Standard operating procedure for pipeline pressure testing to verify integrity and leak detection.',
+    code: 'PIPE_PRESS_TEST_V2',
+    version: '2.1',
     categoryId: 'cat-pipeline-gas-transmission',
     type: 'preventive',
     defaultPriority: 'high',
     estimatedDuration: 5.5,
+    checklist: pressureTestChecklist.map((item, index) => ({
+      ...item,
+      id: `checklist-pressure-${index + 1}`,
+      templateId: 'template-pipeline-pressure-test'
+    })),
+    materials: pipelineMaterials,
+    instructions: 'Follow all safety procedures and ensure proper equipment calibration before starting. Coordinate with operations team and obtain all necessary permits.',
+    safetyNotes: 'This procedure involves high-pressure testing. Maintain safe distances and follow lockout/tagout procedures. Emergency response team must be on standby.',
+    tools: pipelineTestTools.map((tool, index) => ({
+      ...tool,
+      id: `tool-pressure-${index + 1}`
+    })),
     sopSteps: pressureTestSteps.map((step, index) => ({
       ...step,
       id: `sop-pressure-${index + 1}`
@@ -295,16 +480,11 @@ export const mockTemplates: WorkOrderTemplate[] = [
       'All permits obtained',
       'Test equipment calibrated within 12 months'
     ],
-    checklist: pressureTestChecklist.map((item, index) => ({
-      ...item,
-      id: `checklist-pressure-${index + 1}`
-    })),
-    materials: pipelineMaterials,
     requiredSkills: ['Pipeline Testing Certification', 'Pressure Systems'],
     requiredCertifications: ['Confined Space', 'Gas Detection'],
     isRecurring: true,
     recurrencePattern: quarterlyPattern,
-    version: '2.1',
+    status: 'active',
     approvedBy: 'supervisor1',
     approvedAt: '2024-02-01T10:00:00Z',
     isActive: true,
@@ -313,13 +493,16 @@ export const mockTemplates: WorkOrderTemplate[] = [
     lastUsedAt: '2024-12-15T14:30:00Z',
     createdBy: 'admin1',
     createdAt: '2024-01-20T09:00:00Z',
-    updatedAt: '2024-02-01T10:00:00Z'
+    updatedAt: '2024-02-01T10:00:00Z',
+    lastUsed: '2024-12-15T14:30:00Z'
   },
 
   {
     id: 'template-valve-maintenance',
     name: 'Pipeline Valve Routine Maintenance',
     description: 'Preventive maintenance for pipeline isolation and control valves including lubrication and operation testing.',
+    code: 'VALVE_MAINT_ROUTINE_V1',
+    version: '1.3',
     categoryId: 'cat-pipeline-valves',
     type: 'preventive',
     defaultPriority: 'normal',
@@ -379,38 +562,73 @@ export const mockTemplates: WorkOrderTemplate[] = [
     checklist: [
       {
         id: 'checklist-valve-1',
+        templateId: 'template-valve-maintenance',
         label: 'Valve Inlet Pressure (PSI)',
+        description: 'Pressure measurement at valve inlet',
         type: 'number',
         required: true,
         unit: 'PSI',
         minValue: 0,
-        maxValue: 1000
+        maxValue: 1000,
+        order: 1,
+        section: 'Pressure Parameters',
+        isActive: true,
+        createdAt: '2024-01-22T08:30:00Z',
+        updatedAt: '2024-01-22T08:30:00Z'
       },
       {
         id: 'checklist-valve-2',
+        templateId: 'template-valve-maintenance',
         label: 'Valve Operation Test',
+        description: 'Assessment of valve operation quality',
         type: 'dropdown',
         required: true,
-        options: ['Smooth', 'Slight Binding', 'Difficult', 'Seized']
+        options: ['Smooth', 'Slight Binding', 'Difficult', 'Seized'],
+        order: 2,
+        section: 'Operation Test',
+        isActive: true,
+        createdAt: '2024-01-22T08:30:00Z',
+        updatedAt: '2024-01-22T08:30:00Z'
       },
       {
         id: 'checklist-valve-3',
+        templateId: 'template-valve-maintenance',
         label: 'Seal Condition',
+        description: 'Condition assessment of valve seals',
         type: 'dropdown',
         required: true,
-        options: ['Good', 'Fair', 'Poor', 'Needs Replacement']
+        options: ['Good', 'Fair', 'Poor', 'Needs Replacement'],
+        order: 3,
+        section: 'Visual Inspection',
+        isActive: true,
+        createdAt: '2024-01-22T08:30:00Z',
+        updatedAt: '2024-01-22T08:30:00Z'
       },
       {
         id: 'checklist-valve-4',
+        templateId: 'template-valve-maintenance',
         label: 'Lubrication Applied',
+        description: 'Confirmation that lubrication was applied',
         type: 'yes_no',
-        required: true
+        required: true,
+        order: 4,
+        section: 'Maintenance Actions',
+        isActive: true,
+        createdAt: '2024-01-22T08:30:00Z',
+        updatedAt: '2024-01-22T08:30:00Z'
       },
       {
         id: 'checklist-valve-5',
+        templateId: 'template-valve-maintenance',
         label: 'Gas Leakage Detected',
+        description: 'Detection of any gas leaks during inspection',
         type: 'yes_no',
-        required: true
+        required: true,
+        order: 5,
+        section: 'Safety Check',
+        isActive: true,
+        createdAt: '2024-01-22T08:30:00Z',
+        updatedAt: '2024-01-22T08:30:00Z'
       }
     ],
     materials: [
@@ -433,7 +651,7 @@ export const mockTemplates: WorkOrderTemplate[] = [
     requiredCertifications: [],
     isRecurring: true,
     recurrencePattern: monthlyPattern,
-    version: '1.3',
+    status: 'active',
     approvedBy: 'supervisor1',
     approvedAt: '2024-01-25T11:00:00Z',
     isActive: true,
@@ -450,10 +668,24 @@ export const mockTemplates: WorkOrderTemplate[] = [
     id: 'template-compressor-monthly-inspection',
     name: 'Gas Compressor Monthly Inspection',
     description: 'Comprehensive monthly inspection of gas compressor units including lubrication system, performance parameters, and safety systems.',
+    code: 'COMP_INSPECT_MONTH_V3',
+    version: '3.0',
     categoryId: 'cat-compressor-gas-centrifugal',
     type: 'preventive',
     defaultPriority: 'normal',
     estimatedDuration: 6,
+    checklist: compressorInspectionChecklist.map((item, index) => ({
+      ...item,
+      id: `checklist-compressor-${index + 1}`,
+      templateId: 'template-compressor-monthly-inspection'
+    })),
+    materials: compressorMaterials,
+    instructions: 'Ensure compressor is properly isolated and follow all safety lockout procedures. Check oil levels and conditions before starting inspection.',
+    safetyNotes: 'Compressor must be completely shut down and isolated. Continuous gas monitoring required throughout inspection. Use proper PPE.',
+    tools: compressorTools.map((tool, index) => ({
+      ...tool,
+      id: `tool-compressor-${index + 1}`
+    })),
     sopSteps: compressorInspectionSteps.map((step, index) => ({
       ...step,
       id: `sop-compressor-${index + 1}`
@@ -470,16 +702,11 @@ export const mockTemplates: WorkOrderTemplate[] = [
       'Lubrication oil inventory',
       'Calibrated instruments available'
     ],
-    checklist: compressorInspectionChecklist.map((item, index) => ({
-      ...item,
-      id: `checklist-compressor-${index + 1}`
-    })),
-    materials: compressorMaterials,
     requiredSkills: ['Compressor Systems', 'Rotating Equipment', 'Lubrication Systems'],
     requiredCertifications: ['Rotating Equipment', 'Confined Space'],
     isRecurring: true,
     recurrencePattern: monthlyPattern,
-    version: '3.0',
+    status: 'active',
     approvedBy: 'supervisor1',
     approvedAt: '2024-02-15T13:00:00Z',
     isActive: true,
@@ -488,7 +715,8 @@ export const mockTemplates: WorkOrderTemplate[] = [
     lastUsedAt: '2024-12-17T09:30:00Z',
     createdBy: 'admin2',
     createdAt: '2024-02-10T14:00:00Z',
-    updatedAt: '2024-02-15T13:00:00Z'
+    updatedAt: '2024-02-15T13:00:00Z',
+    lastUsed: '2024-12-17T09:30:00Z'
   },
 
   // Safety System Templates
@@ -496,6 +724,8 @@ export const mockTemplates: WorkOrderTemplate[] = [
     id: 'template-fire-gas-calibration',
     name: 'Fire & Gas Detection System Calibration',
     description: 'Quarterly calibration and functional testing of fire and gas detection sensors and alarm systems.',
+    code: 'SAFETY_FIREGAS_CAL_V2',
+    version: '2.5',
     categoryId: 'cat-safety-fire-gas',
     type: 'preventive',
     defaultPriority: 'high',
@@ -564,20 +794,38 @@ export const mockTemplates: WorkOrderTemplate[] = [
       'Operations coordination complete',
       'Weather conditions suitable'
     ],
+    instructions: 'Coordinate with control room before starting. Ensure backup detection systems are active. Use only certified calibration gas.',
+    safetyNotes: 'Critical safety system - coordinate with operations. Emergency response team must be notified. Test in bypass mode only.',
+    tools: fireGasTools.map((tool, index) => ({
+      ...tool,
+      id: `tool-firegas-${index + 1}`
+    })),
     checklist: [
       {
         id: 'checklist-firegas-1',
+        templateId: 'template-fire-gas-calibration',
         label: 'Gas Detector Calibration Status',
+        description: 'Overall calibration status of gas detectors',
         type: 'dropdown',
         required: true,
-        options: ['Pass', 'Fail', 'Out of Range', 'Needs Adjustment']
+        options: ['Pass', 'Fail', 'Out of Range', 'Needs Adjustment'],
+        order: 1,
+        section: 'Gas Detection',
+        isActive: true,
+        createdAt: '2024-02-25T10:00:00Z',
+        updatedAt: '2024-02-25T10:00:00Z'
       },
       {
         id: 'checklist-firegas-2',
         label: 'Fire Detector Response Test',
         type: 'dropdown',
         required: true,
-        options: ['Pass', 'Fail', 'Slow Response', 'No Response']
+        options: ['Pass', 'Fail', 'Slow Response', 'No Response'],
+        templateId: 'template-008',
+        order: 2,
+        isActive: true,
+        createdAt: '2024-02-25T10:00:00Z',
+        updatedAt: '2024-02-25T10:00:00Z'
       },
       {
         id: 'checklist-firegas-3',
@@ -586,20 +834,35 @@ export const mockTemplates: WorkOrderTemplate[] = [
         required: true,
         unit: 'seconds',
         minValue: 0,
-        maxValue: 300
+        maxValue: 300,
+        templateId: 'template-008',
+        order: 3,
+        isActive: true,
+        createdAt: '2024-02-25T10:00:00Z',
+        updatedAt: '2024-02-25T10:00:00Z'
       },
       {
         id: 'checklist-firegas-4',
         label: 'Auto-Shutdown Test',
         type: 'yes_no',
-        required: true
+        required: true,
+        templateId: 'template-008',
+        order: 4,
+        isActive: true,
+        createdAt: '2024-02-25T10:00:00Z',
+        updatedAt: '2024-02-25T10:00:00Z'
       },
       {
         id: 'checklist-firegas-5',
         label: 'Communication Test',
         type: 'dropdown',
         required: true,
-        options: ['Good', 'Intermittent', 'Poor', 'Failed']
+        options: ['Good', 'Intermittent', 'Poor', 'Failed'],
+        templateId: 'template-008',
+        order: 5,
+        isActive: true,
+        createdAt: '2024-02-25T10:00:00Z',
+        updatedAt: '2024-02-25T10:00:00Z'
       }
     ],
     materials: [
@@ -629,7 +892,7 @@ export const mockTemplates: WorkOrderTemplate[] = [
     requiredCertifications: ['Gas Detection Systems', 'Fire Safety'],
     isRecurring: true,
     recurrencePattern: quarterlyPattern,
-    version: '2.5',
+    status: 'active',
     approvedBy: 'supervisor1',
     approvedAt: '2024-03-01T09:00:00Z',
     isActive: true,
@@ -638,7 +901,8 @@ export const mockTemplates: WorkOrderTemplate[] = [
     lastUsedAt: '2024-12-16T08:00:00Z',
     createdBy: 'admin1',
     createdAt: '2024-02-25T10:00:00Z',
-    updatedAt: '2024-03-01T09:00:00Z'
+    updatedAt: '2024-03-01T09:00:00Z',
+    lastUsed: '2024-12-16T08:00:00Z'
   },
 
   // Storage System Template
@@ -710,28 +974,48 @@ export const mockTemplates: WorkOrderTemplate[] = [
         id: 'checklist-tank-1',
         label: 'Tank Isolation Complete',
         type: 'yes_no',
-        required: true
+        required: true,
+        templateId: 'template-009',
+        order: 1,
+        isActive: true,
+        createdAt: '2024-02-26T10:00:00Z',
+        updatedAt: '2024-02-26T10:00:00Z'
       },
       {
         id: 'checklist-tank-2',
         label: 'Gas Testing Results',
         type: 'dropdown',
         required: true,
-        options: ['Safe', 'Marginal', 'Unsafe', 'Needs Ventilation']
+        options: ['Safe', 'Marginal', 'Unsafe', 'Needs Ventilation'],
+        templateId: 'template-009',
+        order: 2,
+        isActive: true,
+        createdAt: '2024-02-26T10:00:00Z',
+        updatedAt: '2024-02-26T10:00:00Z'
       },
       {
         id: 'checklist-tank-3',
         label: 'External Corrosion Rating',
         type: 'dropdown',
         required: true,
-        options: ['None', 'Light', 'Moderate', 'Severe']
+        options: ['None', 'Light', 'Moderate', 'Severe'],
+        templateId: 'template-009',
+        order: 3,
+        isActive: true,
+        createdAt: '2024-02-26T10:00:00Z',
+        updatedAt: '2024-02-26T10:00:00Z'
       },
       {
         id: 'checklist-tank-4',
         label: 'Internal Coating Condition',
         type: 'dropdown',
         required: true,
-        options: ['Excellent', 'Good', 'Fair', 'Poor', 'Failed']
+        options: ['Excellent', 'Good', 'Fair', 'Poor', 'Failed'],
+        templateId: 'template-009',
+        order: 4,
+        isActive: true,
+        createdAt: '2024-02-26T10:00:00Z',
+        updatedAt: '2024-02-26T10:00:00Z'
       },
       {
         id: 'checklist-tank-5',
@@ -740,7 +1024,12 @@ export const mockTemplates: WorkOrderTemplate[] = [
         required: true,
         unit: 'mm',
         minValue: 0,
-        maxValue: 50
+        maxValue: 50,
+        templateId: 'template-009',
+        order: 5,
+        isActive: true,
+        createdAt: '2024-02-26T10:00:00Z',
+        updatedAt: '2024-02-26T10:00:00Z'
       }
     ],
     materials: [
@@ -774,7 +1063,9 @@ export const mockTemplates: WorkOrderTemplate[] = [
       interval: 1,
       monthOfYear: 6
     },
+    code: 'STORAGE_TANK_INSPECT_V1',
     version: '1.8',
+    status: 'active',
     approvedBy: 'supervisor2',
     approvedAt: '2024-03-10T15:00:00Z',
     isActive: true,
@@ -855,13 +1146,23 @@ export const mockTemplates: WorkOrderTemplate[] = [
         label: 'Panel Condition',
         type: 'dropdown',
         required: true,
-        options: ['Excellent', 'Good', 'Fair', 'Needs Attention']
+        options: ['Excellent', 'Good', 'Fair', 'Needs Attention'],
+        templateId: 'template-010',
+        order: 1,
+        isActive: true,
+        createdAt: '2024-02-27T10:00:00Z',
+        updatedAt: '2024-02-27T10:00:00Z'
       },
       {
         id: 'checklist-electrical-2',
         label: 'Connection Torque Check',
         type: 'yes_no',
-        required: true
+        required: true,
+        templateId: 'template-010',
+        order: 2,
+        isActive: true,
+        createdAt: '2024-02-27T10:00:00Z',
+        updatedAt: '2024-02-27T10:00:00Z'
       },
       {
         id: 'checklist-electrical-3',
@@ -870,14 +1171,24 @@ export const mockTemplates: WorkOrderTemplate[] = [
         required: true,
         unit: 'MΩ',
         minValue: 0,
-        maxValue: 1000
+        maxValue: 1000,
+        templateId: 'template-010',
+        order: 3,
+        isActive: true,
+        createdAt: '2024-02-27T10:00:00Z',
+        updatedAt: '2024-02-27T10:00:00Z'
       },
       {
         id: 'checklist-electrical-4',
         label: 'Ground Continuity Test',
         type: 'dropdown',
         required: true,
-        options: ['Pass', 'Fail', 'Marginal']
+        options: ['Pass', 'Fail', 'Marginal'],
+        templateId: 'template-010',
+        order: 4,
+        isActive: true,
+        createdAt: '2024-02-27T10:00:00Z',
+        updatedAt: '2024-02-27T10:00:00Z'
       }
     ],
     materials: [
@@ -900,7 +1211,9 @@ export const mockTemplates: WorkOrderTemplate[] = [
     requiredCertifications: ['Electrical Safety', 'Arc Flash Training'],
     isRecurring: true,
     recurrencePattern: quarterlyPattern,
+    code: 'ELECTRICAL_INSPECT_Q_V1',
     version: '1.2',
+    status: 'active',
     approvedBy: 'supervisor2',
     approvedAt: '2024-02-20T11:00:00Z',
     isActive: true,
@@ -917,6 +1230,8 @@ export const mockTemplates: WorkOrderTemplate[] = [
     id: 'template-emergency-response-draft',
     name: 'Emergency Response Procedure (DRAFT)',
     description: 'Emergency response procedure for gas leak incidents - currently in review.',
+    code: 'SAFETY_EMERG_RESP_DRAFT_V1',
+    version: '0.1',
     categoryId: 'cat-safety-emergency',
     type: 'corrective',
     subType: 'incidental',
@@ -942,14 +1257,19 @@ export const mockTemplates: WorkOrderTemplate[] = [
         label: 'Response Level',
         type: 'dropdown',
         required: true,
-        options: ['Level 1', 'Level 2', 'Level 3', 'All Clear']
+        options: ['Level 1', 'Level 2', 'Level 3', 'All Clear'],
+        templateId: 'template-emergency-response-draft',
+        order: 1,
+        isActive: true,
+        createdAt: '2024-12-10T16:00:00Z',
+        updatedAt: '2024-12-10T16:00:00Z'
       }
     ],
     materials: [],
     requiredSkills: ['Emergency Response'],
     requiredCertifications: ['Emergency Response Team'],
     isRecurring: false,
-    version: '0.1',
+    status: 'draft',
     isActive: false, // Not approved yet
     tags: ['emergency', 'response', 'draft'],
     usageCount: 0,

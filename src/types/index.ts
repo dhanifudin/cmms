@@ -199,6 +199,7 @@ export interface Region {
   manager?: User;
 }
 
+
 export interface WorkOrder {
   id: string;
   title: string;
@@ -217,7 +218,51 @@ export interface WorkOrder {
   completedAt?: string;
   parentId?: string; // for hierarchy
   children?: WorkOrder[];
-  checklist: ChecklistItem[];
+  
+  // Template relationship
+  templateId?: string; // Reference to source template
+  templateVersion?: string; // Version used when created
+  
+  // Category relationship  
+  categoryId?: string; // Can be derived from template or set manually
+  
+  // Inheritance tracking
+  inheritedFromTemplate: boolean;
+  customizations: any[]; // Track changes from template (using any to avoid circular reference)
+  
+  // Enhanced template inheritance tracking
+  templateInheritance?: {
+    templateId: string;
+    templateName: string;
+    templateVersion: string;
+    templateCode: string;
+    inheritedAt: string;
+    hasCustomizations: boolean;
+    customizationSummary?: any;
+    originalFields: {
+      title: string;
+      description: string;
+      priority: string;
+      estimatedDuration: number;
+      checklistItemCount: number;
+      materialCount: number;
+    };
+    appliedFields: {
+      title: string;
+      description: string;
+      priority: string;
+      estimatedDuration: number;
+    };
+  };
+  
+  // Enhanced fields for template support
+  instructions?: string;
+  safetyNotes?: string;
+  
+  // Enhanced checklist with inheritance
+  checklist: ChecklistItem[]; // Derived from template but can be modified
+  checklistLocked: boolean; // Prevent modifications if required for compliance
+  
   beforePhotos: Photo[];
   afterPhotos: Photo[];
   beforeNotes?: string;
@@ -242,7 +287,7 @@ export type Priority = 'low' | 'normal' | 'high' | 'urgent';
 export interface ChecklistItem {
   id: string;
   label: string;
-  type: 'yes_no' | 'number' | 'text' | 'dropdown' | 'rating';
+  type: 'yes_no' | 'number' | 'numeric' | 'text' | 'dropdown' | 'rating' | 'boolean' | 'photo' | 'signature' | 'checkbox' | 'file_upload';
   required: boolean;
   beforeValue?: any;
   afterValue?: any;
@@ -250,6 +295,10 @@ export interface ChecklistItem {
   options?: string[]; // for dropdown
   minValue?: number;
   maxValue?: number;
+  ratingMin?: number; // For rating scale
+  ratingMax?: number; // For rating scale
+  description?: string;
+  isCustom?: boolean; // Added during work order customization
 }
 
 export interface Photo {
@@ -280,10 +329,13 @@ export interface InventoryItem {
 export interface MaterialRequirement {
   itemId: string;
   item?: InventoryItem;
+  itemName?: string; // Cached for display
   plannedQuantity: number;
   actualQuantity?: number;
   notes?: string;
   fromTemplate?: boolean; // Indicates if this material came from a template
+  isOptional?: boolean;
+  isCustom?: boolean; // Added during work order customization
 }
 
 export interface StockMovement {
@@ -463,4 +515,9 @@ export interface CreateWorkOrderForm {
   estimatedDuration: number;
   parentId?: string;
   materials: MaterialRequirement[];
+  
+  // Enhanced template support
+  instructions?: string;
+  safetyNotes?: string;
+  checklist?: ChecklistItem[];
 }

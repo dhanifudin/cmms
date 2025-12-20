@@ -102,12 +102,14 @@ export const useCategoryStore = defineStore('category', () => {
         }
       }
 
-      // Calculate level
+      // Calculate level and path
       let level = 1;
+      let parentPath = '';
       if (categoryData.parentId) {
         const parent = getCategoryById(categoryData.parentId);
         if (parent) {
           level = parent.level + 1;
+          parentPath = parent.path;
         }
       }
 
@@ -116,8 +118,15 @@ export const useCategoryStore = defineStore('category', () => {
         id: `cat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name: categoryData.name.trim(),
         description: categoryData.description?.trim() || undefined,
+        code: categoryData.code.trim(),
         parentId: categoryData.parentId || undefined,
         level,
+        path: categoryData.parentId ? `${parentPath}/${categoryData.name.trim()}` : categoryData.name.trim(),
+        templateCount: 0,
+        maintenanceTypes: categoryData.maintenanceTypes,
+        requiredPermissions: categoryData.requiredPermissions,
+        defaultPriority: categoryData.defaultPriority,
+        defaultEstimatedDuration: categoryData.defaultEstimatedDuration,
         iconName: categoryData.iconName,
         color: categoryData.color,
         isActive: categoryData.isActive,
@@ -507,7 +516,12 @@ export const useCategoryStore = defineStore('category', () => {
     const duplicateData: CreateCategoryForm = {
       name: `${originalCategory.name} (Copy)`,
       description: originalCategory.description,
+      code: `${originalCategory.code}_COPY`,
       parentId: originalCategory.parentId,
+      maintenanceTypes: originalCategory.maintenanceTypes,
+      requiredPermissions: originalCategory.requiredPermissions,
+      defaultPriority: originalCategory.defaultPriority,
+      defaultEstimatedDuration: originalCategory.defaultEstimatedDuration,
       iconName: originalCategory.iconName,
       color: originalCategory.color,
       isActive: false, // Start as inactive
@@ -517,8 +531,7 @@ export const useCategoryStore = defineStore('category', () => {
     return createCategory(duplicateData);
   };
 
-  // Initialize store
-  fetchCategories();
+  // Note: Don't initialize automatically, let components call fetchCategories when needed
 
   return {
     // State
