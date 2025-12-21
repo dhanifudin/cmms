@@ -60,6 +60,16 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/work-orders/history',
+      name: 'WorkOrderHistory',
+      component: () => import('@/views/workorders/WorkOrderHistory.vue'),
+      meta: { 
+        requiresAuth: true,
+        requiresRole: ['admin', 'supervisor', 'leader'],
+        title: 'Work Order History'
+      }
+    },
+    {
       path: '/work-orders/create',
       name: 'CreateWorkOrder',
       component: () => import('@/views/workorders/CreateWorkOrderWithTemplates.vue'),
@@ -174,6 +184,19 @@ router.beforeEach((to, _from, next) => {
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
     next('/dashboard');
     return;
+  }
+  
+  // Check role requirements
+  if (to.meta.requiresRole && authStore.currentUser) {
+    const requiredRoles = Array.isArray(to.meta.requiresRole) 
+      ? to.meta.requiresRole 
+      : [to.meta.requiresRole];
+    
+    if (!requiredRoles.includes(authStore.currentUser.role)) {
+      // Redirect to dashboard with error message
+      next('/dashboard');
+      return;
+    }
   }
   
   // Check permissions

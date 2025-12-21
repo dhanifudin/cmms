@@ -63,13 +63,22 @@
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton as-child :is-active="$route.path.startsWith('/work-orders')">
+              <SidebarMenuButton as-child :is-active="$route.path === '/work-orders'">
                 <router-link to="/work-orders" class="flex items-center">
                   <ClipboardList class="size-4 icon-theme-primary" />
                   <span class="sidebar-text-theme">Work Orders</span>
                   <SidebarMenuBadge v-if="pendingWorkOrders > 0" variant="outline">
                     {{ pendingWorkOrders }}
                   </SidebarMenuBadge>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem v-if="canViewHistory">
+              <SidebarMenuButton as-child :is-active="$route.path === '/work-orders/history'">
+                <router-link to="/work-orders/history" class="flex items-center">
+                  <Archive class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Work Order History</span>
                 </router-link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -286,6 +295,7 @@ import {
   ChevronsUpDown,
   FolderTree,
   File,
+  Archive,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -295,6 +305,12 @@ const workOrderStore = useWorkOrderStore()
 const inventoryStore = useInventoryStore()
 
 const currentUser = computed(() => authStore.currentUser)
+
+// Role-based permissions
+const canViewHistory = computed(() => {
+  const userRole = authStore.currentUser?.role;
+  return ['admin', 'supervisor', 'leader'].includes(userRole || '');
+})
 
 // Badge counts
 const pendingWorkOrders = computed(() => {

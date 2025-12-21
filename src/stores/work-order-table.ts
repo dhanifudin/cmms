@@ -87,9 +87,27 @@ export const useWorkOrderTableStore = defineStore('workOrderTable', () => {
 
   const currentUserRole = ref<'worker' | 'supervisor' | 'admin'>('worker'); // TODO: Get from auth store
 
+  // Helper function to determine if a work order should be in ongoing vs history
+  const shouldShowInOngoing = (row: WorkOrderTableRow): boolean => {
+    // If not completed, always show in ongoing
+    if (row.status !== 'completed') {
+      return true;
+    }
+    
+    // For completed work orders, check if they were completed in the current month
+    const now = new Date();
+    const lastUpdated = new Date(row.lastUpdated);
+    
+    return lastUpdated.getFullYear() === now.getFullYear() && 
+           lastUpdated.getMonth() === now.getMonth();
+  };
+
   // Computed
   const filteredRows = computed(() => {
     let rows = [...state.value.rows];
+
+    // First, filter out work orders that should be in history
+    rows = rows.filter(shouldShowInOngoing);
 
     // Apply search
     if (state.value.search.query.trim()) {

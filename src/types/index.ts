@@ -636,6 +636,137 @@ export interface WorkOrderActionPermissions {
   canApprove: boolean;
 }
 
+// Work Order History Types
+export interface WorkOrderHistoryRow extends Omit<WorkOrderTableRow, 'status'> {
+  status: 'completed'; // History only contains completed work orders
+  completedDate: string; // When the work order was completed
+  completedBy: {
+    id: string;
+    name: string;
+    role: 'worker' | 'supervisor' | 'admin';
+  };
+  completionNotes?: string;
+  actualDuration: number; // Actual time taken vs estimated
+  isArchived: boolean; // For future archive functionality
+  archivedDate?: string;
+}
+
+export interface WorkOrderHistoryFilters extends Omit<WorkOrderTableFilters, 'status'> {
+  completedDateRange?: {
+    start: string; // ISO date string
+    end: string; // ISO date string
+  };
+  completedByIds?: string[];
+  durationVariance?: {
+    type: 'over' | 'under' | 'within';
+    threshold: number; // Percentage variance from estimated
+  };
+  hasNotes?: boolean;
+}
+
+export interface WorkOrderHistoryPagination {
+  page: number;
+  pageSize: 25 | 50 | 100; // Larger page sizes for history
+  total: number;
+  totalPages: number;
+  dateRange: {
+    start: string; // ISO date string
+    end: string; // ISO date string
+  };
+  // Date-based pagination for performance
+  cursor?: {
+    lastCompletedDate: string;
+    lastId: string;
+  };
+}
+
+export interface WorkOrderHistorySearchOptions {
+  query: string;
+  fields: ('title' | 'code' | 'assignedWorker' | 'completedBy' | 'completionNotes')[];
+  useAdvanced: boolean;
+  operators?: {
+    [key: string]: string;
+  };
+}
+
+export interface WorkOrderHistorySort {
+  field: keyof WorkOrderHistoryRow;
+  direction: 'asc' | 'desc';
+}
+
+export interface WorkOrderHistoryState {
+  rows: WorkOrderHistoryRow[];
+  filters: WorkOrderHistoryFilters;
+  search: WorkOrderHistorySearchOptions;
+  pagination: WorkOrderHistoryPagination;
+  sort: WorkOrderHistorySort;
+  loading: boolean;
+  error: string | null;
+  lastUpdated: string;
+  // Performance optimization
+  cache: {
+    [key: string]: {
+      data: WorkOrderHistoryRow[];
+      timestamp: string;
+      expiresAt: string;
+    };
+  };
+}
+
+// History permissions - only for admin, supervisor, leader
+export interface WorkOrderHistoryPermissions {
+  canViewHistory: boolean;
+  canViewAllTerminals: boolean; // Admin can view all, others limited to their scope
+  canViewDetails: boolean;
+  canExportSummary: boolean; // Future feature
+}
+
+// Month-based separation logic
+export interface WorkOrderSeparationRule {
+  currentMonthCutoff: Date;
+  shouldMoveToHistory: (completedDate: string) => boolean;
+  getHistoryDateRange: (months: number) => { start: string; end: string };
+}
+
+// Performance optimization interfaces
+export interface WorkOrderHistoryCache {
+  get: (key: string) => WorkOrderHistoryRow[] | null;
+  set: (key: string, data: WorkOrderHistoryRow[], expiresIn: number) => void;
+  invalidate: (pattern?: string) => void;
+  clear: () => void;
+}
+
+export interface WorkOrderHistoryQuery {
+  filters: WorkOrderHistoryFilters;
+  search: WorkOrderHistorySearchOptions;
+  pagination: Pick<WorkOrderHistoryPagination, 'page' | 'pageSize' | 'dateRange' | 'cursor'>;
+  sort: WorkOrderHistorySort;
+}
+
+// Statistics for history dashboard
+export interface WorkOrderHistoryStats {
+  totalCompleted: number;
+  completedThisMonth: number;
+  completedLastMonth: number;
+  averageDuration: number;
+  onTimeCompletion: number; // Percentage
+  overdueCompletion: number; // Percentage
+  byMaintenanceType: {
+    preventive: number;
+    corrective: number;
+  };
+  byPriority: {
+    low: number;
+    normal: number;
+    high: number;
+    urgent: number;
+  };
+  completionTrend: {
+    date: string;
+    count: number;
+  }[];
+}
+
 // Form types
 export interface CreateWorkOrderForm {
   title: string;
