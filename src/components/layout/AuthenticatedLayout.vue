@@ -23,7 +23,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import { useMessageStore } from '@/stores/message'
 import { useWorkOrderStore } from '@/stores/workorder'
 import { useInventoryStore } from '@/stores/inventory'
@@ -38,7 +39,8 @@ import SkipToMain from './SkipToMain.vue'
 import AppSidebar from './AppSidebar.vue'
 import AppHeader from './AppHeader.vue'
 
-// Initialize stores on layout mount
+// Initialize stores
+const authStore = useAuthStore()
 const messageStore = useMessageStore()
 const workOrderStore = useWorkOrderStore()
 const inventoryStore = useInventoryStore()
@@ -47,8 +49,7 @@ const notificationStore = useNotificationStore()
 // Initialize keyboard shortcuts
 useKeyboardShortcuts()
 
-onMounted(async () => {
-  // Initialize data stores
+const initializeStores = async () => {
   try {
     await Promise.all([
       messageStore.initializeInbox(),
@@ -61,5 +62,19 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to initialize stores:', error)
   }
+}
+
+onMounted(async () => {
+  // Wait for auth to be initialized before loading data stores
+  if (authStore.isAuthenticated) {
+    await initializeStores()
+  }
 })
+
+// Watch for auth status changes to initialize stores when user is authenticated
+watch(() => authStore.isAuthenticated, async (isAuth) => {
+  if (isAuth) {
+    await initializeStores()
+  }
+}, { immediate: false })
 </script>

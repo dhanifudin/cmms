@@ -37,8 +37,10 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   // Actions
   const fetchInventoryItems = async () => {
-    if (!authStore.hasPermission('manage_inventory') && !authStore.hasPermission('access_personal_data')) {
-      throw new Error('Insufficient permissions');
+    // Allow basic inventory viewing for all authenticated users
+    // Individual operations will check specific permissions as needed
+    if (!authStore.isAuthenticated) {
+      throw new Error('Authentication required');
     }
 
     isLoading.value = true;

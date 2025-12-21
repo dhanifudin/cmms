@@ -28,7 +28,7 @@
                 <SelectValue placeholder="All actions" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All actions</SelectItem>
+                <SelectItem value="__ALL__">All actions</SelectItem>
                 <SelectItem value="user_created">User Created</SelectItem>
                 <SelectItem value="user_updated">User Updated</SelectItem>
                 <SelectItem value="user_deleted">User Deleted</SelectItem>
@@ -65,7 +65,7 @@
                 <SelectValue placeholder="All time" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All time</SelectItem>
+                <SelectItem value="__ALL__">All time</SelectItem>
                 <SelectItem value="today">Today</SelectItem>
                 <SelectItem value="yesterday">Yesterday</SelectItem>
                 <SelectItem value="week">Last 7 days</SelectItem>

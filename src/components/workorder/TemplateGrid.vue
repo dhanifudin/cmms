@@ -16,7 +16,7 @@
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Types</SelectItem>
+            <SelectItem value="__ALL__">All Types</SelectItem>
             <SelectItem value="preventive">Preventive</SelectItem>
             <SelectItem value="corrective">Corrective</SelectItem>
           </SelectContent>

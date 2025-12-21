@@ -110,8 +110,8 @@ export const useReportsStore = defineStore('reports', () => {
     {
       id: 'total_penalties',
       title: 'Total Penalties',
-      value: '$2,250',
-      change: '+$450',
+      value: 'Rp 33,750,000',
+      change: '+Rp 6,750,000',
       changeType: 'increase',
       period: 'this month',
       category: 'invoices'

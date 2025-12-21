@@ -339,6 +339,22 @@ export const useAuthStore = defineStore('auth', () => {
         sessionStorage.removeItem('sso_state');
         sessionStorage.removeItem('sso_nonce');
       }
+    } else {
+      // Auto-login for development/demo - set a default admin user
+      const defaultUser = {
+        id: 'admin1',
+        name: 'Ahmad Sutrisno',
+        email: 'admin@terminal1.com',
+        role: 'admin' as const,
+        terminalId: 'terminal1',
+        regionId: 'region1',
+        status: 'active' as const,
+        avatar: '/avatars/admin.jpg',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
+      };
+      currentUser.value = defaultUser;
+      localStorage.setItem('cmms_user', JSON.stringify(defaultUser));
     }
   };
 

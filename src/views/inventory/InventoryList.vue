@@ -59,7 +59,7 @@
             </div>
             <div class="ml-4 flex-1">
               <p class="text-sm font-medium text-muted-foreground">Total Value</p>
-              <p class="text-2xl font-semibold">${{ formatCurrency(totalValue) }}</p>
+              <p class="text-2xl font-semibold">{{ formatCurrency(totalValue) }}</p>
             </div>
           </div>
         </CardContent>
@@ -315,7 +315,12 @@ const filteredItems = computed(() => {
 const hasPermission = (permission: string) => authStore.hasPermission(permission);
 
 const formatCurrency = (value: number) => {
-  return value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(value);
 };
 
 const getStockPercentage = (item: any) => {

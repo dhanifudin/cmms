@@ -87,7 +87,7 @@
                   <SelectValue placeholder="Any status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any status</SelectItem>
+                  <SelectItem value="__ANY__">Any status</SelectItem>
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="assigned">Assigned</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
@@ -105,7 +105,7 @@
                   <SelectValue placeholder="Any priority" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any priority</SelectItem>
+                  <SelectItem value="__ANY__">Any priority</SelectItem>
                   <SelectItem value="high">High</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="low">Low</SelectItem>

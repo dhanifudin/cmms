@@ -40,7 +40,7 @@
                 <SelectValue placeholder="Select parent (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None (Root Category)</SelectItem>
+                <SelectItem value="__ROOT__">None (Root Category)</SelectItem>
                 <SelectItem 
                   v-for="category in availableParentCategories" 
                   :key="category.id"

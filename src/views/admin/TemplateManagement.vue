@@ -110,7 +110,7 @@
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All statuses</SelectItem>
+                <SelectItem value="__ALL__">All statuses</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="deprecated">Deprecated</SelectItem>
@@ -125,7 +125,7 @@
                 <SelectValue placeholder="All types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All types</SelectItem>
+                <SelectItem value="__ALL__">All types</SelectItem>
                 <SelectItem value="preventive">Preventive</SelectItem>
                 <SelectItem value="corrective">Corrective</SelectItem>
               </SelectContent>

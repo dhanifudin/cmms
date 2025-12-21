@@ -126,7 +126,7 @@
                 <SelectValue placeholder="Select worker (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Unassigned</SelectItem>
+                <SelectItem value="__UNASSIGNED__">Unassigned</SelectItem>
                 <SelectItem
                   v-for="worker in mockWorkers"
                   :key="worker.id"
