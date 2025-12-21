@@ -56,7 +56,7 @@ const router = createRouter({
     {
       path: '/work-orders',
       name: 'WorkOrders',
-      component: () => import('@/views/workorders/WorkOrderList.vue'),
+      component: () => import('@/views/workorders/WorkOrderTableView.vue'),
       meta: { requiresAuth: true }
     },
     {

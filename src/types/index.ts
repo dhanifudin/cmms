@@ -501,6 +501,141 @@ export interface InvoiceItem {
   category: string;
 }
 
+// Work Order Table Interface for new table view
+export interface WorkOrderTableRow {
+  id: string;
+  code: string;
+  title: string;
+  status: 'draft' | 'assigned' | 'in_progress' | 'completed' | 'overdue' | 'submitted_for_review';
+  maintenanceType: 'preventive' | 'corrective';
+  priority: 'high' | 'medium' | 'low';
+  dueDate: string;
+  assignedTo: {
+    id: string;
+    name: string;
+    role: 'worker' | 'supervisor' | 'admin';
+  } | null;
+  terminal: {
+    id: string;
+    name: string;
+    region: string;
+  };
+  category: {
+    id: string;
+    name: string;
+    level: number;
+    path: string;
+  };
+  progress: number; // 0-100 percentage
+  isOverdue: boolean;
+  daysOverdue?: number;
+  estimatedDuration: number; // in hours
+  createdAt: string;
+  createdBy: {
+    id: string;
+    name: string;
+    role: 'admin' | 'supervisor';
+  };
+  templateUsed?: {
+    id: string;
+    name: string;
+    version: string;
+  };
+  lastUpdated: string;
+  urgencyScore: number; // Calculated score for sorting
+  
+  // Additional metadata
+  hasDocumentation: boolean;
+  checklistProgress: {
+    completed: number;
+    total: number;
+  };
+}
+
+// Pagination and filtering interfaces
+export interface WorkOrderTableFilters {
+  maintenanceType?: ('preventive' | 'corrective')[];
+  status?: ('draft' | 'assigned' | 'in_progress' | 'completed' | 'overdue' | 'submitted_for_review')[];
+  priority?: ('high' | 'medium' | 'low')[];
+  categoryIds?: string[];
+  terminalIds?: string[];
+  assignedWorkerIds?: string[];
+  createdByIds?: string[];
+  dateRange?: {
+    field: 'dueDate' | 'createdAt' | 'lastUpdated';
+    start: string;
+    end: string;
+  };
+  progressRange?: {
+    min: number;
+    max: number;
+  };
+  durationRange?: {
+    min: number;
+    max: number;
+  };
+  hasTemplate?: boolean;
+  isOverdue?: boolean;
+}
+
+export interface WorkOrderTableSearchOptions {
+  query: string;
+  fields: ('title' | 'code' | 'assignedWorker')[];
+  useAdvanced: boolean;
+  operators?: {
+    [key: string]: string; // e.g., "title:pump", "worker:john"
+  };
+}
+
+export interface WorkOrderTablePagination {
+  page: number;
+  pageSize: 10 | 25 | 50;
+  total: number;
+  totalPages: number;
+}
+
+export interface WorkOrderTableSort {
+  field: keyof WorkOrderTableRow;
+  direction: 'asc' | 'desc';
+  overridePriority?: boolean; // If true, override default overdue priority
+}
+
+export interface WorkOrderBulkAction {
+  type: 'status_update' | 'reassign' | 'priority_change' | 'delete';
+  workOrderIds: string[];
+  payload?: {
+    status?: WorkOrderTableRow['status'];
+    assignedTo?: string;
+    priority?: WorkOrderTableRow['priority'];
+  };
+}
+
+export interface WorkOrderTableState {
+  rows: WorkOrderTableRow[];
+  filters: WorkOrderTableFilters;
+  search: WorkOrderTableSearchOptions;
+  pagination: WorkOrderTablePagination;
+  sort: WorkOrderTableSort;
+  selectedIds: string[];
+  loading: boolean;
+  error: string | null;
+  lastUpdated: string;
+}
+
+// Action permissions by role
+export interface WorkOrderActionPermissions {
+  canView: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canReassign: boolean;
+  canChangeStatus: boolean;
+  canBulkEdit: boolean;
+  canCreate: boolean;
+  canComment: boolean;
+  canSubmitDocumentation: boolean;
+  canApprove: boolean;
+}
+
 // Form types
 export interface CreateWorkOrderForm {
   title: string;
