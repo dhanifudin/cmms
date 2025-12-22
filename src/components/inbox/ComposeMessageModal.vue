@@ -9,7 +9,7 @@
         <!-- Header -->
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-medium text-gray-900">
-            {{ isReply ? 'Reply to Message' : 'Compose Message' }}
+            Create Work Order Message Thread
           </h3>
           <button
             @click="$emit('close')"
@@ -21,6 +21,14 @@
 
         <!-- Form -->
         <form @submit.prevent="handleSubmit" class="space-y-4">
+          <!-- Gaming-style: WO threads only, no general messaging -->
+          <div class="p-3 bg-blue-50 rounded-md border border-blue-200 mb-4">
+            <p class="text-sm text-blue-700">
+              🎮 <strong>Gaming-Style Messaging:</strong> Create work order notification threads only. 
+              Recipients will be auto-populated based on work order assignments.
+            </p>
+          </div>
+          
           <!-- Recipients (only show if not a reply) -->
           <div v-if="!isReply">
             <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -104,15 +112,15 @@
 
           <!-- Message Type -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Message Type</label>
             <select
               v-model="form.type"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="direct_message">Direct Message</option>
-              <option value="work_order_comment">Work Order Comment</option>
-              <option value="admin_broadcast" v-if="authStore.isAdmin">Admin Broadcast</option>
+              <option value="work_order_comment">Work Order Notification</option>
               <option value="supervisor_feedback" v-if="authStore.isSupervisor">Supervisor Feedback</option>
+              <option value="wo_template_created" v-if="authStore.isSupervisor">Template Created</option>
+              <option value="wo_assignment" v-if="authStore.isSupervisor">Work Assignment</option>
             </select>
           </div>
 

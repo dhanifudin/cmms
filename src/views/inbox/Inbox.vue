@@ -1,17 +1,22 @@
 <template>
-  <div class="h-screen flex bg-gray-50">
+  <div class="h-[90vh] max-h-[90vh] flex bg-gray-50 mx-auto my-4 rounded-lg shadow-lg overflow-hidden">
     <!-- Sidebar -->
-    <div class="w-80 bg-white border-r border-gray-200 flex flex-col">
+    <div class="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
       <!-- Header -->
-      <div class="p-4 border-b border-gray-200">
-        <div class="flex items-center justify-between mb-4">
-          <h1 class="text-lg font-semibold text-gray-900">Inbox</h1>
+      <div class="p-3 border-b border-gray-200 flex-shrink-0">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h1 class="text-base font-semibold text-gray-900">Inbox</h1>
+            <p class="text-xs text-gray-500">System notifications</p>
+          </div>
+          <!-- Compose only for supervisors with WO context -->
           <button
+            v-if="authStore.isSupervisor"
             @click="showComposeModal = true"
-            class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <PlusIcon class="h-3 w-3 mr-1" />
-            Compose
+            New
           </button>
         </div>
 
@@ -22,19 +27,19 @@
             v-model="searchQuery"
             type="text"
             placeholder="Search messages..."
-            class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
       </div>
 
       <!-- Folders -->
-      <div class="flex-1 overflow-y-auto">
-        <div class="p-2 space-y-1">
+      <div class="flex-1 overflow-y-auto min-h-0">
+        <div class="p-1">
           <button
             v-for="folder in folders"
             :key="folder.id"
             @click="selectedFolder = folder.id"
-            class="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 transition-colors"
+            class="w-full flex items-center px-3 py-2 text-sm font-medium rounded hover:bg-gray-100 transition-colors mb-1"
             :class="{
               'bg-blue-100 text-blue-700': selectedFolder === folder.id,
               'text-gray-700': selectedFolder !== folder.id
@@ -42,12 +47,12 @@
           >
             <component
               :is="getIconComponent(folder.icon || 'Folder')"
-              class="h-4 w-4 mr-3"
+              class="h-4 w-4 mr-2 flex-shrink-0"
             />
-            <span class="flex-1 text-left">{{ folder.name }}</span>
+            <span class="flex-1 text-left truncate">{{ folder.name }}</span>
             <span
               v-if="folder.messageCount > 0"
-              class="ml-2 px-2 py-0.5 text-xs rounded-full"
+              class="ml-1 px-1.5 py-0.5 text-xs rounded-full flex-shrink-0"
               :class="{
                 'bg-blue-100 text-blue-600': folder.unreadCount === 0,
                 'bg-red-100 text-red-600 font-medium': folder.unreadCount > 0
@@ -61,12 +66,23 @@
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col h-full">
+      <!-- Message Pagination - Top of main content area -->
+      <MessagePagination
+        v-if="filteredMessages.length > 0"
+        :current-page="messageStore.pagination.currentPage"
+        :total-pages="messageStore.pagination.totalPages"
+        :total-messages="messageStore.pagination.totalMessages"
+        :page-size="messageStore.pagination.pageSize"
+        @page-change="handlePageChange"
+        @page-size-change="handlePageSizeChange"
+      />
+      
       <!-- Message List -->
-      <div class="flex-1 flex">
+      <div class="flex-1 flex h-full min-h-0">
         <!-- Thread/Message List -->
-        <div class="w-96 bg-white border-r border-gray-200 flex flex-col">
-          <div class="p-4 border-b border-gray-200">
+        <div class="w-96 bg-white border-r border-gray-200 flex flex-col h-full">
+          <div class="p-3 border-b border-gray-200 flex-shrink-0">
             <h2 class="text-sm font-medium text-gray-900">
               {{ getCurrentFolderName() }}
               <span v-if="filteredMessages.length > 0" class="text-gray-500">
@@ -75,22 +91,22 @@
             </h2>
           </div>
 
-          <div class="flex-1 overflow-y-auto">
-            <div v-if="isLoading" class="p-4 text-center text-gray-500">
+          <div class="flex-1 overflow-y-auto min-h-0">
+            <div v-if="isLoading" class="p-3 text-center text-gray-500">
               Loading messages...
             </div>
             
-            <div v-else-if="filteredMessages.length === 0" class="p-4 text-center text-gray-500">
+            <div v-else-if="filteredMessages.length === 0" class="p-3 text-center text-gray-500">
               <InboxIcon class="h-8 w-8 mx-auto mb-2 text-gray-400" />
               <p>No messages found</p>
             </div>
 
             <div v-else class="divide-y divide-gray-200">
               <div
-                v-for="message in filteredMessages"
+                v-for="message in paginatedMessages"
                 :key="message.id"
                 @click="selectMessage(message)"
-                class="p-4 hover:bg-gray-50 cursor-pointer border-l-4 transition-colors"
+                class="p-3 hover:bg-gray-50 cursor-pointer border-l-4 transition-colors"
                 :class="{
                   'border-l-blue-500 bg-blue-50': selectedMessage?.id === message.id,
                   'border-l-transparent': selectedMessage?.id !== message.id,
@@ -162,8 +178,8 @@
         </div>
 
         <!-- Message Detail -->
-        <div class="flex-1 flex flex-col">
-          <div v-if="!selectedMessage" class="flex-1 flex items-center justify-center bg-gray-50">
+        <div class="flex-1 flex flex-col h-full">
+          <div v-if="!selectedMessage" class="flex-1 flex items-center justify-center bg-gray-50 h-full">
             <div class="text-center">
               <MailIcon class="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <h3 class="text-lg font-medium text-gray-900 mb-2">No message selected</h3>
@@ -171,9 +187,9 @@
             </div>
           </div>
 
-          <div v-else class="flex-1 flex flex-col bg-white">
+          <div v-else class="flex-1 flex flex-col bg-white h-full min-h-0">
             <!-- Message Header -->
-            <div class="px-6 py-4 border-b border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200 flex-shrink-0">
               <div class="flex items-start justify-between">
                 <div class="flex-1">
                   <h2 class="text-lg font-medium text-gray-900">
@@ -194,13 +210,11 @@
                 </div>
 
                 <div class="ml-4 flex items-center space-x-2">
-                  <button
-                    @click="replyToMessage"
-                    class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
-                  >
-                    <ReplyIcon class="h-4 w-4 mr-1" />
-                    Reply
-                  </button>
+                  <!-- Gaming-style: Read-only notifications, no replies -->
+                  <div class="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded text-gray-500 bg-gray-50">
+                    <MailIcon class="h-4 w-4 mr-1" />
+                    Read Only
+                  </div>
                   
                   <button
                     @click="deleteMessage(selectedMessage.id)"
@@ -214,7 +228,7 @@
             </div>
 
             <!-- Message Content -->
-            <div class="flex-1 px-6 py-4 overflow-y-auto">
+            <div class="flex-1 px-6 py-4 overflow-y-auto min-h-0">
               <div class="prose prose-sm max-w-none">
                 <div class="whitespace-pre-wrap">{{ selectedMessage.content }}</div>
               </div>
@@ -250,6 +264,14 @@
                   </router-link>
                 </div>
               </div>
+              
+              <!-- Enhanced v2.0: Action Buttons -->
+              <MessageActionButtons
+                v-if="selectedMessage.actionButtons && selectedMessage.actionButtons.length > 0"
+                :action-buttons="selectedMessage.actionButtons"
+                :message-id="selectedMessage.id"
+                @action-executed="handleActionExecuted"
+              />
             </div>
           </div>
         </div>
@@ -276,11 +298,12 @@ import {
   Search as SearchIcon,
   Inbox as InboxIcon,
   Mail as MailIcon,
-  Reply as ReplyIcon,
   Trash2 as TrashIcon,
   Paperclip as PaperclipIcon
 } from 'lucide-vue-next';
 import ComposeMessageModal from '@/components/inbox/ComposeMessageModal.vue';
+import MessagePagination from '@/components/inbox/MessagePagination.vue';
+import MessageActionButtons from '@/components/inbox/MessageActionButtons.vue';
 
 const messageStore = useMessageStore();
 const authStore = useAuthStore();
@@ -306,7 +329,20 @@ const filteredMessages = computed(() => {
     );
   }
   
+  // Enhanced v2.0: Update pagination when filtered messages change
+  messageStore.updatePagination(messages);
+  
   return messages;
+});
+
+// Enhanced v2.0: Paginated messages for display
+const paginatedMessages = computed(() => {
+  const allMessages = filteredMessages.value;
+  return messageStore.paginateMessages(
+    allMessages, 
+    messageStore.pagination.currentPage, 
+    messageStore.pagination.pageSize
+  );
 });
 
 onMounted(() => {
@@ -417,10 +453,38 @@ const handleSendMessage = async (messageData: any) => {
   replyToMessageData.value = null;
 };
 
-const replyToMessage = () => {
-  if (selectedMessage.value) {
-    replyToMessageData.value = selectedMessage.value;
-    showComposeModal.value = true;
+// Gaming-style: No reply functionality
+// const replyToMessage = () => {
+//   if (selectedMessage.value) {
+//     replyToMessageData.value = selectedMessage.value;
+//     showComposeModal.value = true;
+//   }
+// };
+
+// Enhanced v2.0: Pagination event handlers
+const handlePageChange = (page: number) => {
+  messageStore.setPaginationPage(page);
+  selectedMessage.value = null; // Clear selection when changing pages
+};
+
+const handlePageSizeChange = (pageSize: 25 | 50 | 100) => {
+  messageStore.setPaginationPageSize(pageSize);
+  selectedMessage.value = null; // Clear selection when changing page size
+};
+
+// Enhanced v2.0: Action button handler
+const handleActionExecuted = (actionId: string, result: { success: boolean; error?: any }) => {
+  if (result.success) {
+    // Gaming-style success feedback
+    console.log(`🎮 Action "${actionId}" completed successfully!`);
+    
+    // Mark message as read when action is taken
+    if (selectedMessage.value) {
+      messageStore.markAsRead([selectedMessage.value.id]);
+    }
+  } else {
+    // Gaming-style error feedback  
+    console.error(`❌ Action "${actionId}" failed:`, result.error);
   }
 };
 </script>

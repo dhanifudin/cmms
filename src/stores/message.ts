@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Message, MessageThread, InboxFolder, MessageType, MessageCategory, MessageAction, Priority } from '@/types';
+import type { Message, MessageThread, InboxFolder, MessageType, MessageCategory, MessageAction, Priority, MessagePagination } from '@/types';
 import { useAuthStore } from './auth';
 
 export const useMessageStore = defineStore('message', () => {
@@ -9,6 +9,14 @@ export const useMessageStore = defineStore('message', () => {
   const folders = ref<InboxFolder[]>([]);
   const currentThreadId = ref<string | null>(null);
   const isLoading = ref(false);
+  
+  // Enhanced v2.0: Pagination state
+  const pagination = ref<MessagePagination>({
+    currentPage: 1,
+    pageSize: 25,
+    totalPages: 1,
+    totalMessages: 0
+  });
 
   const authStore = useAuthStore();
 
@@ -101,79 +109,226 @@ export const useMessageStore = defineStore('message', () => {
     const currentUserId = authStore.currentUser.id;
     const now = new Date();
     
-    // Generate mock messages based on user role
+    // Gaming-style: Generate WO lifecycle notification messages
     const mockMessages: Message[] = [
+      // Gaming Message 1: Template WO Created (for Admin)
       {
-        id: 'msg1',
-        subject: 'Work Order Assignment: Generator Maintenance',
-        content: 'You have been assigned to work order WO-001 for generator maintenance at Terminal 1. Please review the details and start the work by the scheduled date.',
-        type: 'work_order_comment',
+        id: 'gaming_msg_1',
+        subject: '🎯 New Quest Template Available: Pipeline Maintenance',
+        content: 'Template "Monthly Pipeline Inspection" has been created and is ready for deployment. Click to assign workers and begin the mission.\n\n🔧 Estimated Duration: 2-3 hours\n💰 Estimated Cost: Rp 2,500,000\n📍 Location: Terminal 1',
+        type: 'wo_template_created',
         priority: 'normal',
         senderId: 'supervisor1',
         recipientIds: [currentUserId],
-        threadId: 'thread1',
+        threadId: 'gaming_thread_1',
         attachments: [],
         relatedEntity: {
           type: 'work_order',
-          id: 'wo1'
+          id: 'wo_template_1'
+        },
+        status: 'delivered',
+        readBy: [],
+        createdAt: new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString()
+      },
+      // Gaming Message 2: Mission Assigned
+      {
+        id: 'gaming_msg_2',
+        subject: '⚡ Mission Briefing: Generator Check Assigned',
+        content: 'Worker [Candra Wijaya] has been assigned to Generator Maintenance mission. Estimated completion: 2 hours. Good luck, operative!\n\n🎮 Mission Code: GEN-MAINT-001\n👤 Operative: Candra Wijaya\n⭐ Difficulty: Medium\n📅 Due Date: December 22, 2024',
+        type: 'wo_assignment',
+        priority: 'high',
+        senderId: 'system',
+        recipientIds: [currentUserId],
+        threadId: 'gaming_thread_2',
+        attachments: [],
+        relatedEntity: {
+          type: 'work_order',
+          id: 'wo_001'
         },
         status: 'delivered',
         readBy: [],
         createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
         updatedAt: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString()
       },
+      // Gaming Message 3: Mission Started
       {
-        id: 'msg2',
-        content: 'Work order WO-002 has been completed and is ready for your review.',
-        type: 'system_notification',
+        id: 'gaming_msg_3',
+        subject: '🚀 Mission In Progress: Pump Inspection Started',
+        content: 'Operative [Budi Santoso] has started the Pump System Inspection mission. Mission timer is now active.\n\n⏱️ Started: Just now\n📊 Progress: 0% → 25%\n🎯 Next Checkpoint: Pre-maintenance inspection complete',
+        type: 'wo_started',
         priority: 'normal',
         senderId: 'system',
         recipientIds: [currentUserId],
-        threadId: 'thread2',
+        threadId: 'gaming_thread_3',
         attachments: [],
         relatedEntity: {
           type: 'work_order',
-          id: 'wo2'
+          id: 'wo_002'
+        },
+        status: 'delivered',
+        readBy: [],
+        createdAt: new Date(now.getTime() - 45 * 60 * 1000).toISOString(),
+        updatedAt: new Date(now.getTime() - 45 * 60 * 1000).toISOString()
+      },
+      // Gaming Message 4: Achievement Unlocked (WO Completed)
+      {
+        id: 'gaming_msg_4',
+        subject: '✅ Achievement Unlocked: Safety Check Completed',
+        content: 'Outstanding! [Diana Sari] has successfully completed the Safety System Check mission. Awaiting final review and approval.\n\n🏆 Achievement: Safety Champion\n⏱️ Completion Time: 1h 45m (Under estimate!)\n💎 Quality Score: 95/100\n🎖️ Bonus Points: +500 XP',
+        type: 'wo_completed',
+        priority: 'normal',
+        senderId: 'system',
+        recipientIds: [currentUserId],
+        threadId: 'gaming_thread_4',
+        attachments: [],
+        relatedEntity: {
+          type: 'work_order',
+          id: 'wo_003'
         },
         status: 'delivered',
         readBy: [],
         createdAt: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
         updatedAt: new Date(now.getTime() - 30 * 60 * 1000).toISOString()
       },
+      // Gaming Message 5: Admin Memo (WO Processing)
       {
-        id: 'msg3',
-        subject: 'Low Inventory Alert',
-        content: 'Oil Filter (Item Code: OF-001) stock level has dropped below the minimum threshold. Current stock: 3 units. Minimum threshold: 5 units.',
-        type: 'system_notification',
-        priority: 'high',
+        id: 'gaming_msg_5',
+        subject: '📋 Admin Memo: Work Order Processing Required',
+        content: 'The following completed mission requires your attention for final processing and invoice generation:\n\n🎯 Mission: Pipeline Leak Detection\n👤 Operative: Ahmad Sutrisno\n✅ Status: Approved by Supervisor\n💰 Cost Summary: Rp 1,850,000\n\nPlease process the completion paperwork and generate the invoice.',
+        type: 'admin_memo',
+        priority: 'normal',
         senderId: 'system',
         recipientIds: [currentUserId],
-        threadId: 'thread3',
+        threadId: 'gaming_thread_5',
         attachments: [],
         relatedEntity: {
-          type: 'inventory',
-          id: 'inv1'
+          type: 'work_order',
+          id: 'wo_004'
         },
         status: 'delivered',
         readBy: [],
-        createdAt: new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString()
+        createdAt: new Date(now.getTime() - 15 * 60 * 1000).toISOString(),
+        updatedAt: new Date(now.getTime() - 15 * 60 * 1000).toISOString()
+      },
+      // Enhanced v2.0: Admin Memo with Create Work Order Action Button
+      {
+        id: 'gaming_msg_preventive_memo',
+        subject: '📋 Admin Memo: Preventive Maintenance Schedule Required',
+        content: 'Template "Monthly Generator Inspection" is due for deployment this month. Create work orders for scheduled preventive maintenance.\n\n🎯 Template: Monthly Generator Inspection\n🔧 Category: Power Systems\n⭐ Difficulty: Medium\n⏱️ Duration: 2-3 hours\n💰 Estimated Cost: Rp 1,850,000\n📍 Locations: Terminal 1, Terminal 2, Terminal 3\n\nAction required: Deploy template to create work orders for assigned operatives.',
+        type: 'admin_memo',
+        priority: 'high',
+        senderId: 'supervisor1',
+        recipientIds: [currentUserId],
+        threadId: 'gaming_preventive_thread',
+        attachments: [],
+        actionButtons: [
+          {
+            id: 'create_wo_from_template',
+            label: 'Create Work Order',
+            type: 'primary',
+            actionType: 'route',
+            target: '/work-orders/create-from-template/generator_inspection_template'
+          },
+          {
+            id: 'view_template_details',
+            label: 'View Template',
+            type: 'secondary',
+            actionType: 'route',
+            target: '/templates/generator_inspection_template'
+          },
+          {
+            id: 'schedule_later',
+            label: 'Schedule Later',
+            type: 'secondary',
+            actionType: 'modal',
+            target: 'schedule-modal'
+          }
+        ],
+        relatedEntity: {
+          type: 'template',
+          id: 'generator_inspection_template'
+        },
+        status: 'delivered',
+        readBy: [],
+        createdAt: new Date(now.getTime() - 25 * 60 * 1000).toISOString(),
+        updatedAt: new Date(now.getTime() - 25 * 60 * 1000).toISOString()
+      },
+      // Gaming Message 6: Mission Failed (WO Rejected)
+      {
+        id: 'gaming_msg_6',
+        subject: '❌ Mission Review: Additional Work Required',
+        content: 'Mission "Compressor Lubrication" requires additional work. The supervisor has requested modifications before approval.\n\n📝 Feedback: Oil levels need re-checking\n🔄 Action Required: Re-submit after corrections\n⏰ New Deadline: Extended 24 hours\n💡 Tip: Double-check all measurements',
+        type: 'wo_revision_required',
+        priority: 'high',
+        senderId: 'supervisor1',
+        recipientIds: [currentUserId],
+        threadId: 'gaming_thread_6',
+        attachments: [],
+        relatedEntity: {
+          type: 'work_order',
+          id: 'wo_005'
+        },
+        status: 'delivered',
+        readBy: [],
+        createdAt: new Date(now.getTime() - 10 * 60 * 1000).toISOString(),
+        updatedAt: new Date(now.getTime() - 10 * 60 * 1000).toISOString()
+      },
+      // Gaming Message 7: Critical Alert (Overdue)
+      {
+        id: 'gaming_msg_7',
+        subject: '🚨 CRITICAL ALERT: Mission Overdue!',
+        content: 'URGENT: The "Gas Leak Detection" mission is now overdue and requires immediate attention!\n\n⚠️ Status: OVERDUE by 8 hours\n🎯 Mission: Gas Detection System Check\n👤 Operative: [Unassigned]\n💀 Penalty Active: Rp 375,000/day\n\n🚨 IMMEDIATE ACTION REQUIRED! 🚨',
+        type: 'wo_overdue',
+        priority: 'urgent',
+        senderId: 'system',
+        recipientIds: [currentUserId],
+        threadId: 'gaming_thread_7',
+        attachments: [],
+        relatedEntity: {
+          type: 'work_order',
+          id: 'wo_006'
+        },
+        status: 'delivered',
+        readBy: [],
+        createdAt: new Date(now.getTime() - 5 * 60 * 1000).toISOString(),
+        updatedAt: new Date(now.getTime() - 5 * 60 * 1000).toISOString()
+      },
+      // Gaming Message 8: Inventory Alert (Gaming Style)
+      {
+        id: 'gaming_msg_8',
+        subject: '📦 Resource Alert: Low Inventory Detected',
+        content: 'Warning: Critical resource running low! Your mission supplies need restocking.\n\n🔧 Item: Oil Filter (OF-001)\n📊 Current Stock: 3 units\n⚠️ Minimum Required: 5 units\n🎮 Action: Restock mission available\n\nDont let your operatives run out of essential supplies!',
+        type: 'inventory_alert',
+        priority: 'high',
+        senderId: 'system',
+        recipientIds: [currentUserId],
+        threadId: 'gaming_thread_8',
+        attachments: [],
+        relatedEntity: {
+          type: 'inventory',
+          id: 'inv_001'
+        },
+        status: 'delivered',
+        readBy: [],
+        createdAt: new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString()
       }
     ];
 
-    // Add role-specific messages
+    // Gaming-style: Add role-specific gaming notifications
     if (authStore.isAdmin) {
       mockMessages.push({
-        id: 'msg4',
-        subject: 'System Maintenance Scheduled',
-        content: 'System maintenance is scheduled for tomorrow at 2:00 AM. Expected downtime: 30 minutes.',
-        type: 'admin_broadcast',
+        id: 'gaming_admin_1',
+        subject: '⚙️ Command Center: Weekly Mission Summary',
+        content: 'Weekly administrative briefing is ready for review. Operations report shows excellent progress this week!\n\n📊 Missions Completed: 23/25\n⚡ Success Rate: 92%\n👥 Active Operatives: 15\n💰 Week Revenue: Rp 45,750,000\n\nKeep up the excellent work, Commander!',
+        type: 'admin_summary',
         priority: 'normal',
-        senderId: currentUserId,
-        recipientIds: ['worker1', 'supervisor1', 'leader1'],
-        threadId: 'thread4',
+        senderId: 'system',
+        recipientIds: [currentUserId],
+        threadId: 'gaming_admin_thread',
         attachments: [],
-        status: 'sent',
+        status: 'delivered',
         readBy: [],
         createdAt: new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(),
         updatedAt: new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString()
@@ -182,13 +337,14 @@ export const useMessageStore = defineStore('message', () => {
 
     if (authStore.isSupervisor) {
       mockMessages.push({
-        id: 'msg5',
-        content: 'Please review and approve the pending work orders for this week.',
-        type: 'automated_reminder',
+        id: 'gaming_supervisor_1',
+        subject: '📋 Squad Leader Briefing: Pending Approvals',
+        content: 'Your squad operatives are awaiting mission approvals. Review the completed work and unlock their achievements!\n\n⏳ Pending Reviews: 3 missions\n🏆 Ready for Approval: Safety Check, Pump Maintenance\n🎯 Awaiting Assignment: Generator Inspection\n\nYour team is counting on your leadership!',
+        type: 'supervisor_reminder',
         priority: 'normal',
         senderId: 'system',
         recipientIds: [currentUserId],
-        threadId: 'thread5',
+        threadId: 'gaming_supervisor_thread',
         attachments: [],
         status: 'delivered',
         readBy: [],
@@ -197,8 +353,130 @@ export const useMessageStore = defineStore('message', () => {
       });
     }
 
-    messages.value = mockMessages;
+    // Enhanced v2.0: Generate additional mock messages for pagination testing
+    const additionalMessages = generateAdditionalMockMessages(now, currentUserId);
+    messages.value = [...mockMessages, ...additionalMessages];
     generateThreadsFromMessages();
+    
+    // Initialize pagination
+    updatePagination(messages.value);
+  };
+
+  // Enhanced v2.0: Generate additional gaming-style messages for pagination
+  const generateAdditionalMockMessages = (now: Date, currentUserId: string): Message[] => {
+    const templates = [
+      { name: 'Generator Inspection', category: 'Power Systems', difficulty: 'Medium', duration: '2-3 hours', cost: 'Rp 1,850,000' },
+      { name: 'Compressor Maintenance', category: 'Gas Systems', difficulty: 'High', duration: '4-5 hours', cost: 'Rp 3,200,000' },
+      { name: 'Pipeline Leak Detection', category: 'Pipeline Systems', difficulty: 'Low', duration: '1-2 hours', cost: 'Rp 950,000' },
+      { name: 'Safety Valve Testing', category: 'Safety Systems', difficulty: 'Medium', duration: '2-3 hours', cost: 'Rp 1,500,000' },
+      { name: 'Pressure Relief Check', category: 'Safety Systems', difficulty: 'High', duration: '3-4 hours', cost: 'Rp 2,750,000' }
+    ];
+    
+    const workers = ['Ahmad Sutrisno', 'Budi Santoso', 'Candra Wijaya', 'Diana Sari', 'Eko Prasetyo'];
+    const terminals = ['Terminal 1', 'Terminal 2', 'Terminal 3', 'Terminal 4', 'Terminal 5'];
+    
+    const additionalMessages: Message[] = [];
+    
+    // Generate 45 additional messages for pagination testing (total ~53 messages)
+    for (let i = 1; i <= 45; i++) {
+      const template = templates[i % templates.length];
+      const worker = workers[i % workers.length];
+      const terminal = terminals[i % terminals.length];
+      const hoursAgo = Math.floor(Math.random() * 72) + 1; // 1-72 hours ago
+      
+      // Vary message types for diversity
+      const messageTypes = [
+        'wo_assignment',
+        'wo_started', 
+        'wo_completed',
+        'admin_memo',
+        'wo_template_created',
+        'inventory_alert'
+      ];
+      
+      const messageType = messageTypes[i % messageTypes.length] as MessageType;
+      let subject = '';
+      let content = '';
+      
+      switch (messageType) {
+        case 'wo_assignment':
+          subject = `⚡ Mission Assigned: ${template!.name} #${i.toString().padStart(3, '0')}`;
+          content = `Worker [${worker}] has been assigned to ${template!.name} mission at ${terminal}.\n\n🎮 Mission Code: ${template!.category.toUpperCase()}-${i.toString().padStart(3, '0')}\n👤 Operative: ${worker}\n⭐ Difficulty: ${template!.difficulty}\n📍 Location: ${terminal}`;
+          break;
+        case 'wo_started':
+          subject = `🚀 Mission Active: ${template!.name} Started`;
+          content = `Operative [${worker}] has begun the ${template!.name} mission at ${terminal}.\n\n⏱️ Started: ${hoursAgo}h ago\n📊 Progress: 25% → In Progress\n🎯 Estimated Duration: ${template!.duration}`;
+          break;
+        case 'wo_completed':
+          subject = `✅ Mission Complete: ${template!.name} Finished`;
+          content = `Excellent work! [${worker}] has completed the ${template!.name} mission.\n\n🏆 Achievement: ${template!.category} Champion\n⏱️ Duration: ${template!.duration}\n💎 Quality Score: ${85 + Math.floor(Math.random() * 15)}/100\n🎖️ XP Earned: +${Math.floor(Math.random() * 500) + 300}`;
+          break;
+        case 'admin_memo':
+          subject = `📋 Admin Memo: ${template!.name} Processing Required`;
+          content = `Mission "${template!.name}" requires administrative processing and invoice generation.\n\n🎯 Mission: ${template!.name}\n👤 Operative: ${worker}\n📍 Location: ${terminal}\n💰 Cost: ${template!.cost}\n\nAction required for completion paperwork.`;
+          break;
+        case 'wo_template_created':
+          subject = `🎯 New Quest Template: ${template!.name} Available`;
+          content = `Template "${template!.name}" has been created and is ready for deployment.\n\n🔧 Category: ${template!.category}\n⭐ Difficulty: ${template!.difficulty}\n⏱️ Duration: ${template!.duration}\n💰 Estimated Cost: ${template!.cost}`;
+          break;
+        case 'inventory_alert':
+          subject = `📦 Resource Alert: ${template!.category} Supplies Low`;
+          content = `Warning: Mission supplies running low for ${template!.category} operations!\n\n🔧 Category: ${template!.category}\n📊 Current Stock: ${Math.floor(Math.random() * 5) + 1} units\n⚠️ Minimum Required: 5 units\n🎮 Restock mission recommended`;
+          break;
+      }
+      
+      // Enhanced v2.0: Add action buttons for admin memos and template creation
+      const actionButtons = messageType === 'admin_memo' ? [
+        {
+          id: 'create_wo_from_template',
+          label: 'Create Work Order',
+          type: 'primary' as const,
+          actionType: 'route' as const,
+          target: `/work-orders/create-from-template/${template!.name.toLowerCase().replace(/\s+/g, '_')}`
+        },
+        {
+          id: 'view_details',
+          label: 'View Details',
+          type: 'secondary' as const,
+          actionType: 'route' as const,
+          target: `/work-orders/${i.toString().padStart(3, '0')}`
+        }
+      ] : messageType === 'wo_template_created' ? [
+        {
+          id: 'deploy_template',
+          label: 'Deploy Template',
+          type: 'primary' as const,
+          actionType: 'route' as const,
+          target: `/work-orders/create-from-template/${template!.name.toLowerCase().replace(/\s+/g, '_')}`
+        }
+      ] : undefined;
+
+      additionalMessages.push({
+        id: `gaming_additional_${i}`,
+        subject,
+        content,
+        type: messageType,
+        priority: i % 4 === 0 ? 'urgent' : i % 3 === 0 ? 'high' : 'normal',
+        senderId: messageType === 'wo_template_created' ? 'supervisor1' : 'system',
+        recipientIds: [currentUserId],
+        threadId: `gaming_additional_thread_${i}`,
+        attachments: [],
+        actionButtons,
+        relatedEntity: {
+          type: messageType === 'inventory_alert' ? 'inventory' : 
+                messageType === 'wo_template_created' ? 'template' : 'work_order',
+          id: messageType === 'wo_template_created' ? 
+                template!.name.toLowerCase().replace(/\s+/g, '_') : 
+                `wo_${i.toString().padStart(3, '0')}`
+        },
+        status: 'delivered',
+        readBy: Math.random() > 0.7 ? [{ userId: currentUserId, readAt: new Date(now.getTime() - Math.random() * hoursAgo * 60 * 60 * 1000).toISOString() }] : [],
+        createdAt: new Date(now.getTime() - hoursAgo * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(now.getTime() - hoursAgo * 60 * 60 * 1000).toISOString()
+      });
+    }
+    
+    return additionalMessages;
   };
 
   const generateThreadsFromMessages = () => {
@@ -342,6 +620,43 @@ export const useMessageStore = defineStore('message', () => {
     }
   };
 
+  // Enhanced v2.0: Pagination functions
+  const paginateMessages = (messageList: Message[], page: number, pageSize: number) => {
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return messageList.slice(startIndex, endIndex);
+  };
+
+  const updatePagination = (messageList: Message[]) => {
+    pagination.value.totalMessages = messageList.length;
+    pagination.value.totalPages = Math.ceil(messageList.length / pagination.value.pageSize);
+    
+    // Ensure current page is within bounds
+    if (pagination.value.currentPage > pagination.value.totalPages) {
+      pagination.value.currentPage = Math.max(1, pagination.value.totalPages);
+    }
+  };
+
+  const setPaginationPage = (page: number) => {
+    if (page >= 1 && page <= pagination.value.totalPages) {
+      pagination.value.currentPage = page;
+    }
+  };
+
+  const setPaginationPageSize = (pageSize: 25 | 50 | 100) => {
+    pagination.value.pageSize = pageSize;
+    pagination.value.currentPage = 1; // Reset to first page when changing page size
+    
+    // Recalculate pagination for current folder
+    const userId = authStore.currentUser?.id;
+    if (userId) {
+      const currentFolderMessages = getMessagesByFolder(selectedFolder.value || 'inbox');
+      updatePagination(currentFolderMessages);
+    }
+  };
+
+  const selectedFolder = ref<string>('inbox');
+
   const updateFolderCounts = () => {
     const userId = authStore.currentUser?.id;
     if (!userId) return;
@@ -358,7 +673,15 @@ export const useMessageStore = defineStore('message', () => {
           break;
         case 'work_orders':
           folderMessages = messages.value.filter(m => 
-            m.type === 'work_order_comment' && m.recipientIds.includes(userId)
+            (m.type === 'work_order_comment' || 
+             m.type === 'wo_assignment' || 
+             m.type === 'wo_started' || 
+             m.type === 'wo_completed' || 
+             m.type === 'wo_revision_required' || 
+             m.type === 'wo_overdue' || 
+             m.type === 'wo_template_created' || 
+             m.type === 'admin_memo') && 
+            m.recipientIds.includes(userId)
           );
           break;
         case 'notifications':
@@ -368,7 +691,7 @@ export const useMessageStore = defineStore('message', () => {
           break;
         case 'inventory':
           folderMessages = messages.value.filter(m => 
-            m.relatedEntity?.type === 'inventory' && m.recipientIds.includes(userId)
+            (m.relatedEntity?.type === 'inventory' || m.type === 'inventory_alert') && m.recipientIds.includes(userId)
           );
           break;
       }
@@ -391,7 +714,15 @@ export const useMessageStore = defineStore('message', () => {
         return sentMessages.value;
       case 'work_orders':
         return messages.value.filter(m => 
-          m.type === 'work_order_comment' && m.recipientIds.includes(userId)
+          (m.type === 'work_order_comment' || 
+           m.type === 'wo_assignment' || 
+           m.type === 'wo_started' || 
+           m.type === 'wo_completed' || 
+           m.type === 'wo_revision_required' || 
+           m.type === 'wo_overdue' || 
+           m.type === 'wo_template_created' || 
+           m.type === 'admin_memo') && 
+          m.recipientIds.includes(userId)
         );
       case 'notifications':
         return messages.value.filter(m => 
@@ -399,7 +730,7 @@ export const useMessageStore = defineStore('message', () => {
         );
       case 'inventory':
         return messages.value.filter(m => 
-          m.relatedEntity?.type === 'inventory' && m.recipientIds.includes(userId)
+          (m.relatedEntity?.type === 'inventory' || m.type === 'inventory_alert') && m.recipientIds.includes(userId)
         );
       default:
         return [];
@@ -668,6 +999,12 @@ export const useMessageStore = defineStore('message', () => {
     notifyInvoiceGenerated,
     showSuccessMessage,
     showErrorMessage,
-    executeMessageAction
+    executeMessageAction,
+    // Enhanced v2.0: Pagination
+    pagination,
+    paginateMessages,
+    updatePagination,
+    setPaginationPage,
+    setPaginationPageSize
   };
 });

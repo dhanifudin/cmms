@@ -377,7 +377,7 @@ export interface Message {
   attachments: MessageAttachment[];
   actionButtons?: MessageAction[];
   relatedEntity?: {
-    type: 'work_order' | 'inventory' | 'invoice' | 'user';
+    type: 'work_order' | 'inventory' | 'invoice' | 'user' | 'template';
     id: string;
   };
   status: 'sent' | 'delivered' | 'read';
@@ -394,7 +394,32 @@ export type MessageType =
   | 'system_notification'
   | 'admin_broadcast'
   | 'supervisor_feedback'
-  | 'automated_reminder';
+  | 'automated_reminder'
+  // Gaming-style WO lifecycle message types
+  | 'wo_template_created'
+  | 'wo_assignment'
+  | 'wo_started'
+  | 'wo_completed'
+  | 'wo_revision_required'
+  | 'wo_overdue'
+  | 'admin_memo'
+  | 'admin_summary'
+  | 'supervisor_reminder'
+  | 'inventory_alert';
+
+// Enhanced v2.0: Pagination interfaces
+export interface MessagePagination {
+  currentPage: number;
+  pageSize: 25 | 50 | 100;
+  totalPages: number;
+  totalMessages: number;
+}
+
+export interface MessageStore {
+  messages: Message[];
+  pagination: MessagePagination;
+  isLoading: boolean;
+}
 
 export type MessageCategory = 
   | 'system'
@@ -428,7 +453,7 @@ export interface MessageThread {
   unreadCount: number;
   type: MessageType;
   relatedEntity?: {
-    type: 'work_order' | 'inventory' | 'invoice' | 'user';
+    type: 'work_order' | 'inventory' | 'invoice' | 'user' | 'template';
     id: string;
   };
   createdAt: string;
