@@ -10,38 +10,56 @@ export const useWorkOrderStore = defineStore('workorder', () => {
 
   const authStore = useAuthStore();
 
-  // Computed getters
-  const myWorkOrders = computed(() => {
+  // Terminal-based filtering helper
+  const getFilteredWorkOrders = computed(() => {
     if (!authStore.currentUser) return [];
 
-    if (authStore.isWorker) {
-      return workOrders.value.filter(wo => wo.assignedWorkerId === authStore.currentUser?.id);
+    // Workers: Only see work orders assigned to them in their terminal
+    if (authStore.isWorker && authStore.currentUser?.terminalId) {
+      return workOrders.value.filter(wo => 
+        wo.assignedWorkerId === authStore.currentUser?.id &&
+        wo.terminalId === authStore.currentUser?.terminalId
+      );
     }
 
+    // Admins: Only see work orders from their terminal
     if (authStore.isAdmin && authStore.currentUser?.terminalId) {
-      return workOrders.value.filter(wo => wo.terminalId === authStore.currentUser?.terminalId);
+      return workOrders.value.filter(wo => 
+        wo.terminalId === authStore.currentUser?.terminalId
+      );
     }
 
+    // Supervisors: See work orders from all terminals in their region
     if (authStore.isSupervisor && authStore.currentUser?.regionId) {
-      // Get work orders from terminals in the supervisor's region
-      // TODO: implement proper region-based filtering
-      return workOrders.value;
+      return workOrders.value.filter(wo => 
+        wo.regionId === authStore.currentUser?.regionId
+      );
     }
 
-    // Default: return all work orders
-    return workOrders.value;
+    // Leaders: Regional access (TBD scope - for now same as supervisor)
+    if (authStore.isLeader && authStore.currentUser?.regionId) {
+      return workOrders.value.filter(wo => 
+        wo.regionId === authStore.currentUser?.regionId
+      );
+    }
+
+    // Fallback: no access
+    return [];
   });
 
+  // Computed getters based on filtered data
+  const myWorkOrders = computed(() => getFilteredWorkOrders.value);
+
   const pendingApproval = computed(() => 
-    workOrders.value.filter(wo => wo.status === 'pending_approval')
+    getFilteredWorkOrders.value.filter(wo => wo.status === 'pending_approval')
   );
 
   const inProgress = computed(() => 
-    workOrders.value.filter(wo => wo.status === 'in_progress')
+    getFilteredWorkOrders.value.filter(wo => wo.status === 'in_progress')
   );
 
   const overdue = computed(() => 
-    workOrders.value.filter(wo => {
+    getFilteredWorkOrders.value.filter(wo => {
       const now = new Date();
       const dueDate = new Date(wo.dueDate);
       return dueDate < now && !['completed', 'rejected'].includes(wo.status);
@@ -49,7 +67,7 @@ export const useWorkOrderStore = defineStore('workorder', () => {
   );
 
   const submitForReview = computed(() =>
-    workOrders.value.filter(wo => wo.status === 'submitted_for_review')
+    getFilteredWorkOrders.value.filter(wo => wo.status === 'submitted_for_review')
   );
 
   // Actions

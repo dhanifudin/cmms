@@ -169,8 +169,6 @@ const handleReassign = async (workOrder: WorkOrderTableRow, newAssigneeId: strin
 
 // Lifecycle
 onMounted(() => {
-  // Set user role in store for permissions
-  workOrderStore.setUserRole(currentUserRole.value);
   
   // Fetch initial data if not already loaded
   if (workOrderStore.state.rows.length === 0) {

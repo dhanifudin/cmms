@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Invoice, InvoiceItem, WorkOrder, InventoryItem, User } from '@/types';
+import { useAuthStore } from './auth';
 
 export interface PricingRule {
   id: string;
@@ -11,23 +12,34 @@ export interface PricingRule {
   regionId?: string;
   userRole?: string;
   baseRate: number;
-  unit: 'hour' | 'item' | 'day' | 'percentage';
+  value?: number; // Additional property for mock data compatibility
+  unit: 'hour' | 'item' | 'day' | 'percentage' | 'multiplier';
   description: string;
   isActive: boolean;
+  active?: boolean; // Additional property for mock data compatibility
+  createdAt?: string; // Additional property for mock data compatibility
 }
 
 export interface PenaltyRule {
   id: string;
   name: string;
+  type?: string; // Additional property for mock data compatibility
   workOrderType?: 'preventive' | 'corrective';
   priority?: 'low' | 'normal' | 'high' | 'urgent';
-  calculationType: 'fixed' | 'percentage';
-  amount: number;
+  calculationType?: 'fixed' | 'percentage';
+  amount?: number;
+  value?: number; // Additional property for mock data compatibility
+  unit?: string; // Additional property for mock data compatibility
   baseType?: 'labor_cost' | 'total_cost' | 'fixed_amount';
   description: string;
+  category?: string; // Additional property for mock data compatibility
   terminalId?: string;
   regionId?: string;
-  isActive: boolean;
+  isActive?: boolean;
+  active?: boolean; // Additional property for mock data compatibility
+  createdAt?: string; // Additional property for mock data compatibility
+  maxPenalty?: number; // Additional property for mock data compatibility
+  gracePeriod?: number; // Additional property for mock data compatibility
 }
 
 export interface InvoiceGeneration {
@@ -53,22 +65,60 @@ export const useInvoiceStore = defineStore('invoice', () => {
   const penaltyRules = ref<PenaltyRule[]>([]);
   const isLoading = ref(false);
 
-  // Getters
+  const authStore = useAuthStore();
+
+  // Terminal-based filtering helper
+  const getFilteredInvoices = computed(() => {
+    if (!authStore.currentUser) return [];
+
+    // Workers: No access to invoices
+    if (authStore.isWorker) {
+      return [];
+    }
+
+    // Admins: Only see invoices from their terminal
+    if (authStore.isAdmin && authStore.currentUser.terminalId) {
+      return invoices.value.filter(invoice => 
+        invoice.terminalId === authStore.currentUser?.terminalId
+      );
+    }
+
+    // Supervisors: See invoices from all terminals in their region
+    if (authStore.isSupervisor && authStore.currentUser?.regionId) {
+      return invoices.value.filter(invoice => 
+        invoice.regionId === authStore.currentUser?.regionId
+      );
+    }
+
+    // Leaders: Regional access (TBD scope - for now same as supervisor)
+    if (authStore.isLeader && authStore.currentUser?.regionId) {
+      return invoices.value.filter(invoice => 
+        invoice.regionId === authStore.currentUser?.regionId
+      );
+    }
+
+    // Fallback: no access
+    return [];
+  });
+
+  // Getters based on filtered data
   const getInvoiceById = computed(() => (id: string) => 
-    invoices.value.find(invoice => invoice.id === id)
+    getFilteredInvoices.value.find(invoice => invoice.id === id)
   );
 
   const getInvoicesByTerminal = computed(() => (terminalId: string) =>
-    invoices.value.filter(invoice => invoice.terminalId === terminalId)
+    getFilteredInvoices.value.filter(invoice => invoice.terminalId === terminalId)
   );
 
   const getInvoicesByRegion = computed(() => (regionId: string) =>
-    invoices.value.filter(invoice => invoice.regionId === regionId)
+    getFilteredInvoices.value.filter(invoice => invoice.regionId === regionId)
   );
 
   const pendingInvoices = computed(() =>
-    invoices.value.filter(invoice => invoice.status === 'pending')
+    getFilteredInvoices.value.filter(invoice => invoice.status === 'draft' || invoice.status === 'pending')
   );
+
+  // All accessible invoices (removed unused myInvoices computed property)
 
   const getActivePricingRules = computed(() => (type: 'labor' | 'material' | 'penalty') =>
     pricingRules.value.filter(rule => rule.type === type && rule.isActive)
@@ -179,7 +229,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
     if (!rule) return 0;
     
     if (rule.calculationType === 'fixed') {
-      return rule.amount * daysOverdue;
+      return (rule.amount || 0) * daysOverdue;
     } else if (rule.baseType && rule.amount) {
       const baseAmount = rule.baseType === 'labor_cost' ? laborCost :
                        rule.baseType === 'total_cost' ? laborCost + materialCost :
@@ -274,7 +324,9 @@ export const useInvoiceStore = defineStore('invoice', () => {
           laborCost: totalLaborCost,
           materialCost: totalMaterialCost,
           penalties: totalPenalties,
+          penaltyCost: totalPenalties, // Added for type compatibility
           subtotal: totalLaborCost + totalMaterialCost,
+          tax: 0, // Added for type compatibility - no tax in current implementation
           total: totalLaborCost + totalMaterialCost + totalPenalties
         },
         status: 'pending',

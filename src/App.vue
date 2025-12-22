@@ -17,10 +17,17 @@ const route = useRoute();
 const authStore = useAuthStore();
 
 const showLogin = computed(() => {
-  return route.name === 'Login' || !authStore.isAuthenticated;
+  return route.name === 'Login' || 
+         route.name === 'TalentaSSO' || 
+         route.name === 'IdamanSSO' || 
+         route.name === 'SSOCallback' || 
+         !authStore.isAuthenticated;
 });
 
 onMounted(() => {
-  authStore.checkAuth();
+  // Only check auth if not on login-related pages
+  if (!showLogin.value) {
+    authStore.checkAuth();
+  }
 });
 </script>

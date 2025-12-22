@@ -58,23 +58,39 @@
           <AlertDescription>{{ error }}</AlertDescription>
         </Alert>
 
-        <!-- Demo Information -->
-        <Alert class="mt-6 bg-white/95 border-gray-300">
-          <Info class="h-4 w-4" />
-          <AlertTitle>SSO Provider Information</AlertTitle>
+        <!-- Demo Users Selection -->
+        <Alert class="mt-6 bg-blue-50 border-blue-200">
+          <Info class="h-4 w-4 text-blue-600" />
+          <AlertTitle class="text-blue-900">Demo Users Available</AlertTitle>
           <AlertDescription>
-            <div class="space-y-2 text-sm mt-2">
-              <div>
-                <strong class="text-[#E31E24]">Talenta (Mekari):</strong>
-                <p class="ml-2 mt-1 text-gray-700">Workers and Admin users</p>
+            <div class="space-y-3 text-sm mt-3">
+              <div class="space-y-2">
+                <div class="font-medium text-blue-900">Talenta Users (Terminal 1):</div>
+                <div class="ml-2 space-y-1">
+                  <div class="text-gray-700">• <strong>Candra Wijaya</strong> - Worker (has ongoing work orders)</div>
+                  <div class="text-gray-700">• <strong>Ahmad Sutrisno</strong> - Admin</div>
+                </div>
               </div>
-              <div>
-                <strong class="text-[#0066CC]">Idaman SSO:</strong>
-                <p class="ml-2 mt-1 text-gray-700">Supervisors and Leaders</p>
+              <div class="space-y-2">
+                <div class="font-medium text-blue-900">Idaman Users (Region 1):</div>
+                <div class="ml-2 space-y-1">
+                  <div class="text-gray-700">• <strong>Budi Santoso</strong> - Supervisor (manages Terminal 1 region)</div>
+                  <div class="text-gray-700">• <strong>Diana Sari</strong> - Leader (oversees Region 1)</div>
+                </div>
               </div>
             </div>
           </AlertDescription>
         </Alert>
+
+        <!-- Demo Mode Enabler -->
+        <div class="mt-4 text-center">
+          <button
+            @click="enableDemoMode"
+            class="text-sm text-gray-500 hover:text-gray-700 underline transition-colors"
+          >
+            Try Demo Mode (Skip Login)
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -101,8 +117,19 @@ const handleSSOClick = (provider: 'talenta' | 'idaman') => {
   router.push(`/auth/sso/${provider}`);
 };
 
+const enableDemoMode = () => {
+  authStore.enableDemoMode();
+  authStore.checkAuth();
+  if (authStore.isAuthenticated) {
+    router.push('/dashboard');
+  }
+};
+
 onMounted(() => {
-  // Check if user is already authenticated
+  // Reset logout flag when reaching login page
+  authStore.resetLogoutFlag();
+  
+  // Check if user is already authenticated (but not if they just logged out)
   authStore.checkAuth();
   if (authStore.isAuthenticated) {
     router.push('/dashboard');

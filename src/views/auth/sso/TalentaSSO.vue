@@ -106,52 +106,25 @@ interface TalentaUser {
   regionId: string;
 }
 
-// Mock Talenta users (Workers and Admin only)
+// Demo Talenta users - all at Terminal 1 for consistency
 const talentaUsers: TalentaUser[] = [
   {
-    id: 'admin1',
+    id: 'admin_demo',
     name: 'Ahmad Sutrisno',
-    email: 'admin@terminal1.com',
+    email: 'admin1@terminal1.com',
     role: 'admin',
     terminalId: 'terminal1',
     terminalName: 'Terminal 1 - Jakarta',
     regionId: 'region1'
   },
   {
-    id: 'worker1',
+    id: 'worker_demo',
     name: 'Candra Wijaya',
-    email: 'worker@terminal1.com',
+    email: 'candra.wijaya@terminal1.com',
     role: 'worker',
     terminalId: 'terminal1',
-    terminalName: 'Terminal 1 - Jakarta',
+    terminalName: 'Terminal 1 - Jakarta (has ongoing work orders)',
     regionId: 'region1'
-  },
-  {
-    id: 'worker2',
-    name: 'Eko Prasetyo',
-    email: 'worker2@terminal2.com',
-    role: 'worker',
-    terminalId: 'terminal2',
-    terminalName: 'Terminal 2 - Surabaya',
-    regionId: 'region1'
-  },
-  {
-    id: 'admin2',
-    name: 'Farah Amalia',
-    email: 'admin2@terminal3.com',
-    role: 'admin',
-    terminalId: 'terminal3',
-    terminalName: 'Terminal 3 - Bandung',
-    regionId: 'region2'
-  },
-  {
-    id: 'worker3',
-    name: 'Gilang Ramadhan',
-    email: 'worker3@terminal4.com',
-    role: 'worker',
-    terminalId: 'terminal4',
-    terminalName: 'Terminal 4 - Medan',
-    regionId: 'region2'
   }
 ];
 

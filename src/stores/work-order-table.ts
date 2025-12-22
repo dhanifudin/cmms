@@ -8,8 +8,11 @@ import type {
   WorkOrderTableSort,
   WorkOrderTableState,
   WorkOrderBulkAction,
-  WorkOrderActionPermissions
+  WorkOrderActionPermissions,
+  WorkOrder
 } from '@/types';
+import { useWorkOrderStore } from './workorder';
+import { useAuthStore } from './auth';
 
 // Helper function for urgency score calculation (used by mock data)
 const calculateUrgencyScore = (row: WorkOrderTableRow): number => {
@@ -50,6 +53,8 @@ const calculateUrgencyScore = (row: WorkOrderTableRow): number => {
 };
 
 export const useWorkOrderTableStore = defineStore('workOrderTable', () => {
+  const workOrderStore = useWorkOrderStore();
+  const authStore = useAuthStore();
   // State
   const state = ref<WorkOrderTableState>({
     rows: [],
@@ -85,7 +90,13 @@ export const useWorkOrderTableStore = defineStore('workOrderTable', () => {
     lastUpdated: new Date().toISOString()
   });
 
-  const currentUserRole = ref<'worker' | 'supervisor' | 'admin'>('worker'); // TODO: Get from auth store
+  // Get user role from auth store
+  const currentUserRole = computed(() => {
+    if (authStore.isAdmin) return 'admin';
+    if (authStore.isSupervisor) return 'supervisor';
+    if (authStore.isWorker) return 'worker';
+    return 'worker'; // default
+  });
 
   // Helper function to determine if a work order should be in ongoing vs history
   const shouldShowInOngoing = (row: WorkOrderTableRow): boolean => {
@@ -522,10 +533,109 @@ export const useWorkOrderTableStore = defineStore('workOrderTable', () => {
     }
   };
 
-  // Mock data generator
+  // Convert WorkOrder to WorkOrderTableRow
+  const convertToTableRow = async (wo: WorkOrder): Promise<WorkOrderTableRow> => {
+    // Import mock data to get related objects
+    const { mockUsers } = await import('@/mock/users');
+    const { mockTerminals } = await import('@/mock/terminals');
+    const { mockCategories } = await import('@/mock/categories');
+    
+    // Find related objects
+    const assignedWorker = wo.assignedWorkerId ? mockUsers.find((u: any) => u.id === wo.assignedWorkerId) : null;
+    const terminal = mockTerminals.find((t: any) => t.id === wo.terminalId);
+    const creator = mockUsers.find((u: any) => u.id === wo.createdBy);
+    const category = mockCategories.find((c: any) => c.id === wo.categoryId);
+    
+    // Calculate overdue status
+    const dueDate = new Date(wo.dueDate);
+    const now = new Date();
+    const isOverdue = dueDate < now && !['completed', 'rejected'].includes(wo.status);
+    const daysOverdue = isOverdue ? Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)) : undefined;
+    
+    // Calculate progress based on status
+    let progress = 0;
+    switch (wo.status) {
+      case 'draft': progress = 0; break;
+      case 'pending_approval': progress = 10; break;
+      case 'assigned': progress = 20; break;
+      case 'in_progress': progress = 50; break;
+      case 'submitted_for_review': progress = 90; break;
+      case 'completed': progress = 100; break;
+      default: progress = 0;
+    }
+    
+    // Map priority to table format
+    const mappedPriority: 'high' | 'medium' | 'low' = 
+      wo.priority === 'urgent' || wo.priority === 'critical' ? 'high' :
+      wo.priority === 'normal' ? 'medium' : 
+      wo.priority as 'high' | 'medium' | 'low';
+    
+    // Map status to table format
+    const mappedStatus = isOverdue ? 'overdue' as const : 
+      wo.status === 'pending_approval' ? 'draft' as const :
+      wo.status as 'draft' | 'assigned' | 'in_progress' | 'submitted_for_review' | 'completed';
+    
+    const tableRow: WorkOrderTableRow = {
+      id: wo.id,
+      code: `WO-${wo.id.replace('wo_', '')}`,
+      title: wo.title,
+      status: mappedStatus,
+      maintenanceType: wo.type,
+      priority: mappedPriority,
+      dueDate: wo.dueDate.split('T')[0] || wo.dueDate,
+      assignedTo: assignedWorker ? {
+        id: assignedWorker.id,
+        name: assignedWorker.name,
+        role: assignedWorker.role === 'leader' ? 'supervisor' : assignedWorker.role as 'admin' | 'supervisor' | 'worker'
+      } : null,
+      terminal: {
+        id: terminal?.id || 'unknown',
+        name: terminal?.name || 'Unknown Terminal',
+        region: terminal?.regionId || 'Unknown Region'
+      },
+      category: {
+        id: category?.id || 'general',
+        name: category?.name || 'General Maintenance',
+        level: category?.level || 1,
+        path: category?.name || 'General Maintenance'
+      },
+      progress,
+      isOverdue,
+      daysOverdue,
+      estimatedDuration: wo.estimatedDuration || 4,
+      createdAt: wo.createdAt,
+      createdBy: {
+        id: creator?.id || wo.createdBy,
+        name: creator?.name || 'System User',
+        role: (creator?.role === 'leader' ? 'supervisor' : creator?.role || 'admin') as 'admin' | 'supervisor'
+      },
+      templateUsed: wo.templateId ? {
+        id: wo.templateId,
+        name: `Template ${wo.templateId}`,
+        version: '1.0'
+      } : undefined,
+      lastUpdated: wo.updatedAt,
+      urgencyScore: 0, // Will be calculated
+      hasDocumentation: wo.beforePhotos.length > 0 || wo.afterPhotos.length > 0,
+      checklistProgress: {
+        completed: wo.checklist?.filter(item => item.afterValue !== undefined).length || 0,
+        total: wo.checklist?.length || 0
+      }
+    };
+    
+    return tableRow;
+  };
+
+  // Get work orders from main store with terminal filtering
   const fetchMockWorkOrders = async (): Promise<WorkOrderTableRow[]> => {
-    // This will be replaced with actual API call
-    return generateMockWorkOrders();
+    // Ensure work orders are loaded in main store
+    await workOrderStore.fetchWorkOrders();
+    
+    // Get filtered work orders based on user's terminal access
+    const filteredWorkOrders = workOrderStore.myWorkOrders;
+    
+    // Convert WorkOrder to WorkOrderTableRow format
+    return await Promise.all(filteredWorkOrders.map(wo => convertToTableRow(wo)));
   };
 
   // Watch for changes that should trigger re-sorting
@@ -569,92 +679,7 @@ export const useWorkOrderTableStore = defineStore('workOrderTable', () => {
     selectAll,
     clearSelection,
     executeBulkAction,
-    updateWorkOrder,
-    
-    // Utility
-    setUserRole: (role: 'worker' | 'supervisor' | 'admin') => {
-      currentUserRole.value = role;
-    }
+    updateWorkOrder
   };
 });
 
-// Mock data generator - will be removed in production
-const generateMockWorkOrders = (): WorkOrderTableRow[] => {
-  const mockData: WorkOrderTableRow[] = [];
-  const statuses = ['draft', 'assigned', 'in_progress', 'completed', 'overdue', 'submitted_for_review'] as const;
-  const priorities = ['high', 'medium', 'low'] as const;
-  const maintenanceTypes = ['preventive', 'corrective'] as const;
-  
-  for (let i = 1; i <= 100; i++) {
-    const dueDate = new Date();
-    // Make exactly 5% overdue (items 5, 25, 45, 65, 85 - every 20th starting from 5)
-    const isOverdue = i % 20 === 5;
-    if (isOverdue) {
-      // Set overdue by 1-10 days based on item index
-      dueDate.setDate(dueDate.getDate() - (1 + (i % 10)));
-    } else {
-      // Set future due date 1-30 days ahead based on item index
-      dueDate.setDate(dueDate.getDate() + (1 + (i % 30)));
-    }
-    
-    const createdDate = new Date();
-    createdDate.setDate(createdDate.getDate() - (1 + (i % 30)));
-    
-    const daysOverdue = isOverdue ? Math.floor((new Date().getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)) : undefined;
-    
-    const row: WorkOrderTableRow = {
-      id: `wo-${i.toString().padStart(3, '0')}`,
-      code: `WO-2024-${i.toString().padStart(3, '0')}`,
-      title: `Maintenance Task ${i} - ${['Pipeline Inspection', 'Compressor Service', 'Safety Check', 'Valve Maintenance', 'Pressure Test'][Math.floor(Math.random() * 5)]}`,
-      status: isOverdue ? 'overdue' : statuses[Math.floor(Math.random() * (statuses.length - 1))] || 'draft',
-      maintenanceType: maintenanceTypes[Math.floor(Math.random() * maintenanceTypes.length)] || 'preventive',
-      priority: priorities[Math.floor(Math.random() * priorities.length)] || 'medium',
-      dueDate: dueDate.toISOString().split('T')[0]!,
-      assignedTo: Math.random() > 0.2 ? {
-        id: `worker-${Math.floor(Math.random() * 20) + 1}`,
-        name: ['John Smith', 'Jane Doe', 'Mike Johnson', 'Sarah Wilson', 'David Brown'][Math.floor(Math.random() * 5)] || 'Worker',
-        role: 'worker' as const
-      } : null,
-      terminal: {
-        id: `terminal-${Math.floor(Math.random() * 116) + 1}`,
-        name: `Terminal ${Math.floor(Math.random() * 116) + 1}`,
-        region: `Region ${Math.floor(Math.random() * 8) + 1}`
-      },
-      category: {
-        id: `cat-${Math.floor(Math.random() * 10) + 1}`,
-        name: ['Pipeline Maintenance', 'Compressor Systems', 'Safety Equipment', 'Valve Operations', 'Control Systems'][Math.floor(Math.random() * 5)] || 'General Maintenance',
-        level: Math.floor(Math.random() * 3) + 1,
-        path: 'Category > Subcategory'
-      },
-      progress: Math.floor(Math.random() * 101),
-      isOverdue,
-      daysOverdue,
-      estimatedDuration: Math.floor(Math.random() * 16) + 1, // 1-16 hours
-      createdAt: createdDate.toISOString(),
-      createdBy: {
-        id: `admin-${Math.floor(Math.random() * 5) + 1}`,
-        name: ['Admin User', 'Supervisor One', 'Manager Two'][Math.floor(Math.random() * 3)] || 'System Admin',
-        role: Math.random() > 0.5 ? 'admin' as const : 'supervisor' as const
-      },
-      templateUsed: Math.random() > 0.4 ? {
-        id: `template-${Math.floor(Math.random() * 20) + 1}`,
-        name: `Standard Template ${Math.floor(Math.random() * 20) + 1}`,
-        version: '1.0'
-      } : undefined,
-      lastUpdated: new Date().toISOString(),
-      urgencyScore: 0, // Will be calculated
-      hasDocumentation: Math.random() > 0.3,
-      checklistProgress: {
-        completed: Math.floor(Math.random() * 10),
-        total: 10
-      }
-    };
-    
-    // Calculate urgency score after creating the row
-    row.urgencyScore = calculateUrgencyScore(row);
-    
-    mockData.push(row);
-  }
-  
-  return mockData;
-};

@@ -6,6 +6,7 @@ import { mockUsers } from '@/mock/users';
 export const useAuthStore = defineStore('auth', () => {
   const currentUser = ref<User | null>(null);
   const isLoading = ref(false);
+  const isLoggingOut = ref(false);
 
   const isAuthenticated = computed(() => currentUser.value !== null);
   const userRole = computed(() => currentUser.value?.role);
@@ -80,8 +81,9 @@ export const useAuthStore = defineStore('auth', () => {
 
       currentUser.value = user;
       
-      // Store in localStorage for persistence
+      // Store in localStorage for persistence and enable auto-login for future sessions
       localStorage.setItem('cmms_user', JSON.stringify(user));
+      localStorage.setItem('cmms_auto_login_enabled', 'true');
       
       return { success: true, user };
     } catch (error) {
@@ -148,9 +150,10 @@ export const useAuthStore = defineStore('auth', () => {
         lastLogin: new Date().toISOString()
       };
 
-      // Persist to localStorage
+      // Persist to localStorage and enable auto-login for future sessions
       localStorage.setItem('cmms_user', JSON.stringify(currentUser.value));
       localStorage.setItem('cmms_sso_provider', provider);
+      localStorage.setItem('cmms_auto_login_enabled', 'true');
 
       return { success: true, user: currentUser.value };
     } catch (error) {
@@ -167,123 +170,58 @@ export const useAuthStore = defineStore('auth', () => {
     provider: 'talenta' | 'idaman',
     userId: string
   ): User | null => {
-    // Mock user databases matching SSO providers
+    // Simple demo users all at Terminal 1 for consistency
     const talentaUsers: Record<string, User> = {
-      'admin1': {
-        id: 'admin1',
-        name: 'Ahmad Sutrisno',
-        email: 'admin@terminal1.com',
-        role: 'admin',
-        terminalId: 'terminal1',
-        regionId: 'region1',
-        status: 'active',
-        avatar: '/avatars/admin.jpg',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z'
-      },
-      'worker1': {
-        id: 'worker1',
+      // Candra Wijaya - Worker with ongoing work orders (Terminal 1)
+      'worker_demo': {
+        id: 'worker1_1',
         name: 'Candra Wijaya',
-        email: 'worker@terminal1.com',
+        email: 'candra.wijaya@terminal1.com',
         role: 'worker',
         terminalId: 'terminal1',
         regionId: 'region1',
         status: 'active',
-        avatar: '/avatars/worker.jpg',
+        avatar: '/avatars/worker_candra.jpg',
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-01T00:00:00Z'
       },
-      'worker2': {
-        id: 'worker2',
-        name: 'Eko Prasetyo',
-        email: 'worker2@terminal2.com',
-        role: 'worker',
-        terminalId: 'terminal2',
+      // Admin at Terminal 1
+      'admin_demo': {
+        id: 'admin1_1',
+        name: 'Ahmad Sutrisno',
+        email: 'admin1@terminal1.com',
+        role: 'admin',
+        terminalId: 'terminal1',
         regionId: 'region1',
         status: 'active',
-        avatar: '/avatars/worker2.jpg',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z'
-      },
-      'admin2': {
-        id: 'admin2',
-        name: 'Farah Amalia',
-        email: 'admin2@terminal3.com',
-        role: 'admin',
-        terminalId: 'terminal3',
-        regionId: 'region2',
-        status: 'active',
-        avatar: '/avatars/admin2.jpg',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z'
-      },
-      'worker3': {
-        id: 'worker3',
-        name: 'Gilang Ramadhan',
-        email: 'worker3@terminal4.com',
-        role: 'worker',
-        terminalId: 'terminal4',
-        regionId: 'region2',
-        status: 'active',
-        avatar: '/avatars/worker3.jpg',
+        avatar: '/avatars/admin1.jpg',
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-01T00:00:00Z'
       }
     };
 
     const idamanUsers: Record<string, User> = {
-      'supervisor1': {
-        id: 'supervisor1',
+      // Regional Supervisor covering multiple terminals  
+      'supervisor_demo': {
+        id: 'supervisor1_1',
         name: 'Budi Santoso',
-        email: 'supervisor@pertamc.com',
+        email: 'supervisor1@pertamc.com',
         role: 'supervisor',
         regionId: 'region1',
         status: 'active',
-        avatar: '/avatars/supervisor.jpg',
+        avatar: '/avatars/supervisor1.jpg',
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-01T00:00:00Z'
       },
-      'leader1': {
+      // Regional Leader
+      'leader_demo': {
         id: 'leader1',
         name: 'Diana Sari',
-        email: 'leader@pertamc.com',
+        email: 'leader1@pertamc.com',
         role: 'leader',
         regionId: 'region1',
         status: 'active',
-        avatar: '/avatars/leader.jpg',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z'
-      },
-      'supervisor2': {
-        id: 'supervisor2',
-        name: 'Fikri Rahman',
-        email: 'supervisor@patraniaga.com',
-        role: 'supervisor',
-        regionId: 'region2',
-        status: 'active',
-        avatar: '/avatars/supervisor2.jpg',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z'
-      },
-      'leader2': {
-        id: 'leader2',
-        name: 'Hani Wijayanti',
-        email: 'leader2@pertamc.com',
-        role: 'leader',
-        regionId: 'region3',
-        status: 'active',
-        avatar: '/avatars/leader2.jpg',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z'
-      },
-      'supervisor3': {
-        id: 'supervisor3',
-        name: 'Indra Kurniawan',
-        email: 'supervisor3@patraniaga.com',
-        role: 'supervisor',
-        regionId: 'region4',
-        status: 'active',
-        avatar: '/avatars/supervisor3.jpg',
+        avatar: '/avatars/leader1.jpg',
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-01T00:00:00Z'
       }
@@ -314,14 +252,22 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   const logout = () => {
+    isLoggingOut.value = true;
     currentUser.value = null;
     localStorage.removeItem('cmms_user');
     localStorage.removeItem('cmms_sso_provider');
+    localStorage.removeItem('cmms_auto_login_enabled');
     sessionStorage.removeItem('sso_state');
     sessionStorage.removeItem('sso_nonce');
+    sessionStorage.removeItem('cmms_demo_mode');
   };
 
   const checkAuth = () => {
+    // Skip auto-login if user is logging out
+    if (isLoggingOut.value) {
+      return;
+    }
+
     const stored = localStorage.getItem('cmms_user');
     const ssoProvider = localStorage.getItem('cmms_sso_provider');
 
@@ -340,27 +286,47 @@ export const useAuthStore = defineStore('auth', () => {
         sessionStorage.removeItem('sso_nonce');
       }
     } else {
-      // Auto-login for development/demo - set a default admin user
-      const defaultUser = {
-        id: 'admin1',
-        name: 'Ahmad Sutrisno',
-        email: 'admin@terminal1.com',
-        role: 'admin' as const,
-        terminalId: 'terminal1',
-        regionId: 'region1',
-        status: 'active' as const,
-        avatar: '/avatars/admin.jpg',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z'
-      };
-      currentUser.value = defaultUser;
-      localStorage.setItem('cmms_user', JSON.stringify(defaultUser));
+      // Check if this should auto-login (only for development/demo when explicitly enabled)
+      const enableAutoLogin = localStorage.getItem('cmms_auto_login_enabled') || 
+                              sessionStorage.getItem('cmms_demo_mode') ||
+                              window.location.search.includes('demo=true');
+      
+      if (enableAutoLogin) {
+        // Auto-login for development/demo - set a default admin user
+        const defaultUser = {
+          id: 'admin1',
+          name: 'Ahmad Sutrisno',
+          email: 'admin@terminal1.com',
+          role: 'admin' as const,
+          terminalId: 'terminal1',
+          regionId: 'region1',
+          status: 'active' as const,
+          avatar: '/avatars/admin.jpg',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z'
+        };
+        currentUser.value = defaultUser;
+        localStorage.setItem('cmms_user', JSON.stringify(defaultUser));
+        localStorage.setItem('cmms_auto_login_enabled', 'true');
+      }
     }
   };
 
   const switchUser = (user: User) => {
+    isLoggingOut.value = false; // Reset logout flag when switching users
     currentUser.value = user;
     localStorage.setItem('cmms_user', JSON.stringify(user));
+    localStorage.setItem('cmms_auto_login_enabled', 'true');
+    sessionStorage.setItem('cmms_demo_mode', 'true'); // Mark as demo mode for this session
+  };
+
+  const resetLogoutFlag = () => {
+    isLoggingOut.value = false;
+  };
+
+  const enableDemoMode = () => {
+    sessionStorage.setItem('cmms_demo_mode', 'true');
+    localStorage.setItem('cmms_auto_login_enabled', 'true');
   };
 
   const hasPermission = (permission: string): boolean => {
@@ -431,6 +397,8 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     checkAuth,
     switchUser,
+    resetLogoutFlag,
+    enableDemoMode,
     hasPermission,
     // SSO methods
     handleSSOCallback,

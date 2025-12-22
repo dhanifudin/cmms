@@ -43,9 +43,43 @@ export const useUserManagementStore = defineStore('userManagement', () => {
   // Auth store reference
   const authStore = useAuthStore();
 
+  // Terminal-based filtering helper
+  const getAccessibleUsers = computed(() => {
+    if (!authStore.currentUser) return [];
+
+    // Workers: Cannot access user management
+    if (authStore.isWorker) {
+      return [];
+    }
+
+    // Admins: Can only manage users from their terminal
+    if (authStore.isAdmin && authStore.currentUser.terminalId) {
+      return users.value.filter(user => 
+        user.terminalId === authStore.currentUser?.terminalId
+      );
+    }
+
+    // Supervisors: Can manage users from all terminals in their region
+    if (authStore.isSupervisor && authStore.currentUser?.regionId) {
+      return users.value.filter(user => 
+        user.regionId === authStore.currentUser?.regionId
+      );
+    }
+
+    // Leaders: Regional access (TBD scope - for now same as supervisor)
+    if (authStore.isLeader && authStore.currentUser?.regionId) {
+      return users.value.filter(user => 
+        user.regionId === authStore.currentUser?.regionId
+      );
+    }
+
+    // Fallback: no access
+    return [];
+  });
+
   // Getters
   const filteredUsers = computed(() => {
-    let result = users.value;
+    let result = getAccessibleUsers.value;
 
     if (filters.value.search) {
       const search = filters.value.search.toLowerCase();

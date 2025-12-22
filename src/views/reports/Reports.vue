@@ -195,7 +195,7 @@
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
-                  ${{ terminal.totalCost.toLocaleString() }}
+                  Rp {{ terminal.totalCost.toLocaleString('id-ID') }}
                 </td>
               </tr>
             </tbody>
@@ -322,7 +322,7 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-red-600">
-                ${{ item.estimatedPenalty }}
+                Rp {{ item.estimatedPenalty.toLocaleString('id-ID') }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-center">
                 <router-link 
@@ -346,12 +346,12 @@
       <div class="p-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div class="text-center">
-            <p class="text-3xl font-bold text-gray-900">${{ costAnalysis.total.toLocaleString() }}</p>
+            <p class="text-3xl font-bold text-gray-900">Rp {{ costAnalysis.total.toLocaleString('id-ID') }}</p>
             <p class="text-sm text-gray-500">Total Cost</p>
           </div>
           <div class="text-center">
             <p class="text-2xl font-semibold text-gray-900">
-              ${{ costAnalysis.breakdown.labor.amount.toLocaleString() }}
+              Rp {{ costAnalysis.breakdown.labor.amount.toLocaleString('id-ID') }}
               <span class="text-sm text-gray-500">({{ costAnalysis.breakdown.labor.percentage }}%)</span>
             </p>
             <p class="text-sm text-gray-500">Labor Cost</p>
@@ -364,7 +364,7 @@
           </div>
           <div class="text-center">
             <p class="text-2xl font-semibold text-gray-900">
-              ${{ costAnalysis.breakdown.materials.amount.toLocaleString() }}
+              Rp {{ costAnalysis.breakdown.materials.amount.toLocaleString('id-ID') }}
               <span class="text-sm text-gray-500">({{ costAnalysis.breakdown.materials.percentage }}%)</span>
             </p>
             <p class="text-sm text-gray-500">Materials Cost</p>
@@ -377,7 +377,7 @@
           </div>
           <div class="text-center">
             <p class="text-2xl font-semibold text-gray-900">
-              ${{ costAnalysis.breakdown.penalties.amount.toLocaleString() }}
+              Rp {{ costAnalysis.breakdown.penalties.amount.toLocaleString('id-ID') }}
               <span class="text-sm text-gray-500">({{ costAnalysis.breakdown.penalties.percentage }}%)</span>
             </p>
             <p class="text-sm text-gray-500">Penalties</p>

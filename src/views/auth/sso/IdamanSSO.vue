@@ -140,54 +140,24 @@ interface IdamanUser {
 // Mock Idaman users (Supervisors and Leaders only)
 const idamanUsers: IdamanUser[] = [
   {
-    id: 'supervisor1',
+    id: 'supervisor_demo',
     name: 'Budi Santoso',
-    email: 'supervisor@pertamc.com',
+    email: 'supervisor1@pertamc.com',
     role: 'supervisor',
     organization: 'PertaMC',
     regionId: 'region1',
-    regionName: 'Region 1 - Jawa Barat',
+    regionName: 'Region 1 - Jawa Barat (includes Terminal 1)',
     position: 'Regional Supervisor'
   },
   {
-    id: 'leader1',
+    id: 'leader_demo',
     name: 'Diana Sari',
-    email: 'leader@pertamc.com',
+    email: 'leader1@pertamc.com',
     role: 'leader',
     organization: 'PertaMC',
     regionId: 'region1',
-    regionName: 'Region 1 - Jawa Barat',
+    regionName: 'Region 1 - Jawa Barat (oversees Terminal 1)',
     position: 'Regional Leader'
-  },
-  {
-    id: 'supervisor2',
-    name: 'Fikri Rahman',
-    email: 'supervisor@patraniaga.com',
-    role: 'supervisor',
-    organization: 'PatraNiaga',
-    regionId: 'region2',
-    regionName: 'Region 2 - Jawa Timur',
-    position: 'Regional Supervisor'
-  },
-  {
-    id: 'leader2',
-    name: 'Hani Wijayanti',
-    email: 'leader2@pertamc.com',
-    role: 'leader',
-    organization: 'PertaMC',
-    regionId: 'region3',
-    regionName: 'Region 3 - Sumatra',
-    position: 'Regional Operations Leader'
-  },
-  {
-    id: 'supervisor3',
-    name: 'Indra Kurniawan',
-    email: 'supervisor3@patraniaga.com',
-    role: 'supervisor',
-    organization: 'PatraNiaga',
-    regionId: 'region4',
-    regionName: 'Region 4 - Kalimantan',
-    position: 'Area Supervisor'
   }
 ];
 

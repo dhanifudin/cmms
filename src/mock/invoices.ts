@@ -1,445 +1,428 @@
 import type { Invoice } from '@/types';
 import type { PricingRule, PenaltyRule } from '@/stores/invoice';
+import { getWorkOrdersByTerminal } from './workorders';
+import { mockTerminals } from './terminals';
 
-export const mockInvoices: Invoice[] = [
-  {
-    id: 'inv1',
-    invoiceNumber: 'INV-2024-0001',
-    workOrderIds: ['wo1', 'wo2'],
-    terminalId: 'terminal1',
-    regionId: 'region1',
-    recipientType: 'terminal',
-    recipientDetails: {
-      name: 'Terminal Tanjung Priok Manager',
-      email: 'manager@terminal-tanjung-priok.com',
-      address: 'Jl. Raya Pelabuhan, Tanjung Priok, Jakarta Utara',
-      company: 'PT Terminal Petrokimia Tanjung Priok'
-    },
-    items: [
-      {
-        id: 'item1',
-        workOrderId: 'wo1',
-        type: 'labor',
-        description: 'Labor - Gas Compressor Unit C2 Monthly Maintenance',
-        quantity: 6,
-        unit: 'hours',
-        unitPrice: 75000,
-        totalPrice: 450000,
-        category: 'preventive'
-      },
-      {
-        id: 'item2',
-        workOrderId: 'wo1',
-        type: 'material',
-        description: 'Material - Compressor Oil Filter',
-        quantity: 2,
-        unit: 'pcs',
-        unitPrice: 125000,
-        totalPrice: 250000,
-        category: 'filters'
-      },
-      {
-        id: 'item3',
-        workOrderId: 'wo1',
-        type: 'material',
-        description: 'Material - Hydraulic Oil (High Grade)',
-        quantity: 20,
-        unit: 'liter',
-        unitPrice: 45000,
-        totalPrice: 900000,
-        category: 'fluids'
-      },
-      {
-        id: 'item4',
-        workOrderId: 'wo2',
-        type: 'labor',
-        description: 'Labor - Pipeline Pressure Test Section A1',
-        quantity: 4,
-        unit: 'hours',
-        unitPrice: 85000,
-        totalPrice: 340000,
-        category: 'corrective'
-      },
-      {
-        id: 'item5',
-        workOrderId: 'wo2',
-        type: 'material',
-        description: 'Material - Pressure Test Equipment Rental',
-        quantity: 1,
-        unit: 'day',
-        unitPrice: 500000,
-        totalPrice: 500000,
-        category: 'equipment_rental'
-      }
-    ],
-    summary: {
-      laborCost: 790000,
-      materialCost: 1650000,
-      penalties: 0,
-      subtotal: 2440000,
-      total: 2440000
-    },
-    status: 'sent',
-    generatedAt: '2024-12-15T10:00:00Z',
-    sentAt: '2024-12-15T14:30:00Z',
-    dueDate: '2025-01-15T00:00:00Z',
-    generatedBy: 'admin1',
-    notes: 'Monthly maintenance invoice for December 2024'
-  },
-  {
-    id: 'inv2',
-    invoiceNumber: 'INV-2024-0002',
-    workOrderIds: ['wo3'],
-    terminalId: 'terminal2',
-    regionId: 'region1',
-    recipientType: 'terminal',
-    recipientDetails: {
-      name: 'Terminal Cilacap Operations Manager',
-      email: 'operations@terminal-cilacap.com',
-      address: 'Jl. Industri Petrokimia, Cilacap, Jawa Tengah',
-      company: 'PT Kilang Pertamina Cilacap'
-    },
-    items: [
-      {
-        id: 'item6',
-        workOrderId: 'wo3',
-        type: 'labor',
-        description: 'Labor - Emergency Gas Leak Detection and Repair',
-        quantity: 8,
-        unit: 'hours',
-        unitPrice: 95000,
-        totalPrice: 760000,
-        category: 'corrective'
-      },
-      {
-        id: 'item7',
-        workOrderId: 'wo3',
-        type: 'material',
-        description: 'Material - Gas Detector Sensors (High Sensitivity)',
-        quantity: 4,
-        unit: 'pcs',
-        unitPrice: 850000,
-        totalPrice: 3400000,
-        category: 'safety_equipment'
-      },
-      {
-        id: 'item8',
-        workOrderId: 'wo3',
-        type: 'material',
-        description: 'Material - Emergency Response Kit',
-        quantity: 1,
-        unit: 'set',
-        unitPrice: 1250000,
-        totalPrice: 1250000,
-        category: 'safety_equipment'
-      },
-      {
-        id: 'item9',
-        workOrderId: 'wo3',
-        type: 'penalty',
-        description: 'Penalty - Emergency Response Delay (2 days overdue)',
-        quantity: 1,
-        unit: 'item',
-        unitPrice: 500000,
-        totalPrice: 500000,
-        category: 'penalty'
-      }
-    ],
-    summary: {
-      laborCost: 760000,
-      materialCost: 4650000,
-      penalties: 500000,
-      subtotal: 5410000,
-      total: 5910000
-    },
-    status: 'pending',
-    generatedAt: '2024-12-16T08:00:00Z',
-    dueDate: '2025-01-16T00:00:00Z',
-    generatedBy: 'admin1',
-    notes: 'Emergency maintenance - gas leak response with penalty due to delayed completion'
-  },
-  {
-    id: 'inv3',
-    invoiceNumber: 'INV-2024-0003',
-    workOrderIds: ['wo4', 'wo5', 'wo6'],
-    terminalId: 'terminal3',
-    regionId: 'region2',
-    recipientType: 'region',
-    recipientDetails: {
-      name: 'Regional Manager - Sumatra Region',
-      email: 'regional.manager@pertamina-sumatra.com',
-      address: 'Jl. Regional Office Sumatra, Medan, Sumatera Utara',
-      company: 'Pertamina Regional Sumatra'
-    },
-    items: [
-      {
-        id: 'item10',
-        workOrderId: 'wo4',
-        type: 'labor',
-        description: 'Labor - Storage Tank Inspection Terminal Dumai',
-        quantity: 12,
-        unit: 'hours',
-        unitPrice: 70000,
-        totalPrice: 840000,
-        category: 'preventive'
-      },
-      {
-        id: 'item11',
-        workOrderId: 'wo5',
-        type: 'labor',
-        description: 'Labor - Pipeline Valve Replacement Terminal Plaju',
-        quantity: 16,
-        unit: 'hours',
-        unitPrice: 80000,
-        totalPrice: 1280000,
-        category: 'corrective'
-      },
-      {
-        id: 'item12',
-        workOrderId: 'wo6',
-        type: 'labor',
-        description: 'Labor - Safety System Calibration Terminal Balongan',
-        quantity: 8,
-        unit: 'hours',
-        unitPrice: 90000,
-        totalPrice: 720000,
-        category: 'preventive'
-      },
-      {
-        id: 'item13',
-        workOrderId: 'wo5',
-        type: 'material',
-        description: 'Material - Industrial Ball Valve 6 inch',
-        quantity: 2,
-        unit: 'pcs',
-        unitPrice: 2500000,
-        totalPrice: 5000000,
-        category: 'valves'
-      },
-      {
-        id: 'item14',
-        workOrderId: 'wo6',
-        type: 'material',
-        description: 'Material - Calibration Gas Cylinders',
-        quantity: 6,
-        unit: 'pcs',
-        unitPrice: 450000,
-        totalPrice: 2700000,
-        category: 'calibration_equipment'
-      }
-    ],
-    summary: {
-      laborCost: 2840000,
-      materialCost: 7700000,
-      penalties: 0,
-      subtotal: 10540000,
-      total: 10540000
-    },
-    status: 'paid',
-    generatedAt: '2024-12-10T09:00:00Z',
-    sentAt: '2024-12-10T16:00:00Z',
-    paidAt: '2024-12-20T11:30:00Z',
-    dueDate: '2025-01-10T00:00:00Z',
-    generatedBy: 'admin2',
-    notes: 'Regional monthly consolidated invoice - Multiple terminals'
-  },
-  {
-    id: 'inv4',
-    invoiceNumber: 'INV-2024-0004',
-    workOrderIds: ['wo7'],
-    terminalId: 'terminal1',
-    regionId: 'region1',
-    recipientType: 'external_client',
-    recipientDetails: {
-      name: 'PT Contractor Maintenance Specialist',
-      email: 'finance@maintenance-specialist.com',
-      address: 'Jl. Industri Raya No. 45, Jakarta Selatan',
-      company: 'PT Contractor Maintenance Specialist'
-    },
-    items: [
-      {
-        id: 'item15',
-        workOrderId: 'wo7',
-        type: 'labor',
-        description: 'Labor - Specialized Turbine Overhaul',
-        quantity: 24,
-        unit: 'hours',
-        unitPrice: 150000,
-        totalPrice: 3600000,
-        category: 'specialized'
-      },
-      {
-        id: 'item16',
-        workOrderId: 'wo7',
-        type: 'material',
-        description: 'Material - Turbine Blade Set (High Performance)',
-        quantity: 1,
-        unit: 'set',
-        unitPrice: 15000000,
-        totalPrice: 15000000,
-        category: 'turbine_parts'
-      },
-      {
-        id: 'item17',
-        workOrderId: 'wo7',
-        type: 'material',
-        description: 'Material - Specialized Tools and Equipment',
-        quantity: 1,
-        unit: 'set',
-        unitPrice: 2500000,
-        totalPrice: 2500000,
-        category: 'specialized_tools'
-      }
-    ],
-    summary: {
-      laborCost: 3600000,
-      materialCost: 17500000,
-      penalties: 0,
-      subtotal: 21100000,
-      total: 21100000
-    },
-    status: 'pending',
-    generatedAt: '2024-12-17T07:00:00Z',
-    dueDate: '2025-01-17T00:00:00Z',
-    generatedBy: 'admin1',
-    notes: 'Specialized turbine maintenance - External contractor services'
+// Terminal-based invoice distribution
+// Each terminal generates invoices based on their completed work orders
+// Invoices are terminal-specific and contain only work orders from that terminal
+
+// Helper function to get region from terminal number
+function getRegionIdFromTerminal(terminalNum: number): string {
+  if (terminalNum <= 15) return 'region1';
+  if (terminalNum <= 30) return 'region2';
+  if (terminalNum <= 45) return 'region3';
+  if (terminalNum <= 60) return 'region4';
+  if (terminalNum <= 75) return 'region5';
+  if (terminalNum <= 90) return 'region6';
+  if (terminalNum <= 105) return 'region7';
+  return 'region8';
+}
+
+// Get terminal information
+function getTerminalInfo(terminalId: string) {
+  const terminal = mockTerminals.find(t => t.id === terminalId);
+  return terminal || {
+    id: terminalId,
+    name: `Terminal ${terminalId.replace('terminal', '')}`,
+    location: 'Unknown Location',
+    type: 'depot' as const
+  };
+}
+
+// Generate recipient details for terminal
+function generateRecipientDetails(terminalNum: number, terminalInfo: any) {
+  return {
+    name: `${terminalInfo.name} - Operations Manager`,
+    email: `manager@terminal${terminalNum}.pertamc.com`,
+    address: terminalInfo.location || `Terminal ${terminalNum} Operations Center`,
+    company: `PT Pertamina Terminal ${terminalNum}`
+  };
+}
+
+// Calculate labor costs based on work order
+function calculateLaborCost(workOrder: any): number {
+  const baseHourlyRate = 75000; // Base rate per hour
+  
+  // Rate varies by priority and type
+  let rateMultiplier = 1.0;
+  
+  if (workOrder.priority === 'critical') rateMultiplier = 2.0;
+  else if (workOrder.priority === 'high') rateMultiplier = 1.5;
+  else if (workOrder.priority === 'normal') rateMultiplier = 1.0;
+  else if (workOrder.priority === 'low') rateMultiplier = 0.8;
+  
+  // Corrective maintenance has higher rates
+  if (workOrder.type === 'corrective') rateMultiplier *= 1.3;
+  
+  const hourlyRate = Math.round(baseHourlyRate * rateMultiplier);
+  return hourlyRate * workOrder.estimatedDuration;
+}
+
+// Calculate material costs from work order materials
+function calculateMaterialCost(workOrder: any): { totalCost: number; materials: any[] } {
+  const materialPrices: Record<string, number> = {
+    'item001': 900000, // Pipeline gasket
+    'item002': 4800000, // Gas detector sensor
+    'item003': 540000, // Compressor oil
+    'item004': 3200000, // Industrial valve
+    'item005': 1200000, // Pressure gauge
+    'item006': 125000, // Electrical cable
+    'item007': 380000, // Oil filter
+    'item008': 280000, // Safety helmet
+    'item009': 950000, // Pump seal kit
+    'item010': 7500000 // Calibration kit
+  };
+  
+  let totalCost = 0;
+  const materials: any[] = [];
+  
+  if (workOrder.materials && workOrder.materials.length > 0) {
+    workOrder.materials.forEach((material: any) => {
+      const unitPrice = materialPrices[material.itemId] || 100000; // Default price
+      const itemCost = unitPrice * material.plannedQuantity;
+      totalCost += itemCost;
+      
+      materials.push({
+        itemId: material.itemId,
+        description: `Material - Item ${material.itemId}`,
+        quantity: material.plannedQuantity,
+        unitPrice,
+        totalPrice: itemCost
+      });
+    });
   }
-];
+  
+  return { totalCost, materials };
+}
 
+// Calculate penalties for overdue work orders
+function calculatePenalty(workOrder: any): number {
+  if (workOrder.status !== 'completed') return 0;
+  
+  const dueDate = new Date(workOrder.dueDate);
+  const completedDate = new Date(workOrder.updatedAt || workOrder.createdAt);
+  
+  if (completedDate <= dueDate) return 0; // No penalty if completed on time
+  
+  const daysOverdue = Math.ceil((completedDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Penalty calculation: 5% of total work order value per day overdue
+  const laborCost = calculateLaborCost(workOrder);
+  const { totalCost: materialCost } = calculateMaterialCost(workOrder);
+  const totalWorkOrderValue = laborCost + materialCost;
+  
+  const penaltyRate = 0.05; // 5% per day
+  return Math.round(totalWorkOrderValue * penaltyRate * daysOverdue);
+}
+
+// Generate invoice items from work order
+function generateInvoiceItems(workOrder: any): any[] {
+  const items: any[] = [];
+  let itemId = 1;
+  
+  // Add labor item
+  const laborCost = calculateLaborCost(workOrder);
+  items.push({
+    id: `labor_${workOrder.id}_${itemId++}`,
+    workOrderId: workOrder.id,
+    type: 'labor',
+    description: `Labor - ${workOrder.title}`,
+    quantity: workOrder.estimatedDuration,
+    unit: 'hours',
+    unitPrice: Math.round(laborCost / workOrder.estimatedDuration),
+    totalPrice: laborCost,
+    category: workOrder.type
+  });
+  
+  // Add material items
+  const { materials } = calculateMaterialCost(workOrder);
+  materials.forEach(material => {
+    items.push({
+      id: `material_${workOrder.id}_${itemId++}`,
+      workOrderId: workOrder.id,
+      type: 'material',
+      description: material.description,
+      quantity: material.quantity,
+      unit: 'pcs',
+      unitPrice: material.unitPrice,
+      totalPrice: material.totalPrice,
+      category: 'materials'
+    });
+  });
+  
+  // Add penalty if applicable
+  const penalty = calculatePenalty(workOrder);
+  if (penalty > 0) {
+    const dueDate = new Date(workOrder.dueDate);
+    const completedDate = new Date(workOrder.updatedAt || workOrder.createdAt);
+    const daysOverdue = Math.ceil((completedDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    items.push({
+      id: `penalty_${workOrder.id}_${itemId++}`,
+      workOrderId: workOrder.id,
+      type: 'penalty',
+      description: `Penalty - Late completion (${daysOverdue} days overdue)`,
+      quantity: daysOverdue,
+      unit: 'days',
+      unitPrice: Math.round(penalty / daysOverdue),
+      totalPrice: penalty,
+      category: 'penalties'
+    });
+  }
+  
+  return items;
+}
+
+// Generate terminal-based invoices
+function generateTerminalInvoices(): Invoice[] {
+  const invoices: Invoice[] = [];
+  let invoiceNumber = 1;
+  
+  // Generate invoices for terminals that have completed work orders
+  for (let terminalNum = 1; terminalNum <= 116; terminalNum++) {
+    const terminalId = `terminal${terminalNum}`;
+    const regionId = getRegionIdFromTerminal(terminalNum);
+    const terminalWorkOrders = getWorkOrdersByTerminal(terminalId);
+    
+    // Only generate invoices for terminals with completed work orders
+    const completedWorkOrders = terminalWorkOrders.filter(wo => wo.status === 'completed');
+    
+    if (completedWorkOrders.length > 0) {
+      // Group work orders by month for separate invoices
+      const workOrdersByMonth: Record<string, any[]> = {};
+      
+      completedWorkOrders.forEach(wo => {
+        const completedDate = new Date(wo.updatedAt || wo.createdAt);
+        const monthKey = `${completedDate.getFullYear()}-${(completedDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        
+        if (!workOrdersByMonth[monthKey]) {
+          workOrdersByMonth[monthKey] = [];
+        }
+        workOrdersByMonth[monthKey].push(wo);
+      });
+      
+      // Generate invoice for each month
+      Object.keys(workOrdersByMonth).forEach(monthKey => {
+        const monthWorkOrders = workOrdersByMonth[monthKey];
+        if (!monthWorkOrders) return;
+        
+        const terminalInfo = getTerminalInfo(terminalId);
+        
+        // Generate all invoice items
+        const allItems: any[] = [];
+        monthWorkOrders.forEach(wo => {
+          allItems.push(...generateInvoiceItems(wo));
+        });
+        
+        // Calculate totals
+        const laborTotal = allItems.filter(item => item.type === 'labor').reduce((sum, item) => sum + item.totalPrice, 0);
+        const materialTotal = allItems.filter(item => item.type === 'material').reduce((sum, item) => sum + item.totalPrice, 0);
+        const penaltyTotal = allItems.filter(item => item.type === 'penalty').reduce((sum, item) => sum + item.totalPrice, 0);
+        const total = laborTotal + materialTotal + penaltyTotal;
+        
+        // Generate invoice
+        const invoice: Invoice = {
+          id: `inv_t${terminalNum}_${monthKey}`,
+          invoiceNumber: `INV-2024-${invoiceNumber.toString().padStart(4, '0')}`,
+          workOrderIds: monthWorkOrders.map(wo => wo.id),
+          terminalId,
+          regionId,
+          recipientType: 'terminal',
+          recipientDetails: generateRecipientDetails(terminalNum, terminalInfo),
+          items: allItems,
+          summary: {
+            laborCost: laborTotal,
+            materialCost: materialTotal,
+            penalties: penaltyTotal,
+            penaltyCost: penaltyTotal,
+            subtotal: total,
+            tax: Math.round(total * 0.11), // 11% VAT
+            total: Math.round(total * 1.11)
+          },
+          status: Math.random() > 0.3 ? 'sent' : 'draft', // 70% sent, 30% draft
+          generatedBy: `admin${terminalNum}_1`,
+          generatedAt: new Date().toISOString(),
+          sentAt: Math.random() > 0.3 ? new Date().toISOString() : undefined,
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+          period: {
+            startDate: `${monthKey}-01T00:00:00Z`,
+            endDate: `${monthKey}-${new Date(parseInt(monthKey.split('-')[0] || '2024'), parseInt(monthKey.split('-')[1] || '1'), 0).getDate()}T23:59:59Z`
+          },
+          notes: `Monthly invoice for terminal maintenance services - ${monthKey}`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        invoices.push(invoice);
+        invoiceNumber++;
+      });
+    }
+  }
+  
+  return invoices;
+}
+
+// Generate the terminal-based invoices
+export const mockInvoices: Invoice[] = generateTerminalInvoices();
+
+// Helper functions for terminal-based invoice operations
+export const getInvoicesByTerminal = (terminalId: string): Invoice[] => {
+  return mockInvoices.filter(invoice => invoice.terminalId === terminalId);
+};
+
+export const getInvoicesByRegion = (regionId: string): Invoice[] => {
+  return mockInvoices.filter(invoice => invoice.regionId === regionId);
+};
+
+export const getInvoicesByStatus = (status: string): Invoice[] => {
+  return mockInvoices.filter(invoice => invoice.status === status);
+};
+
+export const getInvoicesForPeriod = (startDate: string, endDate: string, terminalId?: string): Invoice[] => {
+  let filteredInvoices = mockInvoices;
+  
+  if (terminalId) {
+    filteredInvoices = filteredInvoices.filter(inv => inv.terminalId === terminalId);
+  }
+  
+  return filteredInvoices.filter(invoice => {
+    const invoiceDate = new Date(invoice.generatedAt);
+    return invoiceDate >= new Date(startDate) && invoiceDate <= new Date(endDate);
+  });
+};
+
+// Invoice statistics
+export const getInvoiceStatistics = (terminalId?: string) => {
+  let invoices = mockInvoices;
+  if (terminalId) {
+    invoices = invoices.filter(inv => inv.terminalId === terminalId);
+  }
+  
+  const stats = {
+    totalInvoices: invoices.length,
+    totalValue: invoices.reduce((sum, inv) => sum + (inv.summary?.total || 0), 0),
+    totalLaborCost: invoices.reduce((sum, inv) => sum + (inv.summary?.laborCost || 0), 0),
+    totalMaterialCost: invoices.reduce((sum, inv) => sum + (inv.summary?.materialCost || 0), 0),
+    totalPenalties: invoices.reduce((sum, inv) => sum + (inv.summary?.penaltyCost || 0), 0),
+    statusCounts: {
+      draft: invoices.filter(inv => inv.status === 'draft').length,
+      sent: invoices.filter(inv => inv.status === 'sent').length,
+      paid: invoices.filter(inv => inv.status === 'paid').length
+    },
+    averageInvoiceValue: 0,
+    byTerminal: {} as Record<string, number>,
+    byRegion: {} as Record<string, number>
+  };
+  
+  // Calculate average
+  stats.averageInvoiceValue = stats.totalInvoices > 0 ? Math.round(stats.totalValue / stats.totalInvoices) : 0;
+  
+  // Count by terminal
+  invoices.forEach(inv => {
+    if (inv.terminalId) {
+      stats.byTerminal[inv.terminalId] = (stats.byTerminal[inv.terminalId] || 0) + 1;
+    }
+    if (inv.regionId) {
+      stats.byRegion[inv.regionId] = (stats.byRegion[inv.regionId] || 0) + 1;
+    }
+  });
+  
+  return stats;
+};
+
+// Mock pricing and penalty rules for terminal-based system
 export const mockPricingRules: PricingRule[] = [
   {
-    id: 'pr1',
-    name: 'Standard Worker Hourly Rate - Jakarta',
+    id: 'labor_base',
+    name: 'Base Labor Rate',
     type: 'labor',
     category: 'general',
-    terminalId: 'terminal1',
-    userRole: 'worker',
+    value: 75000,
     baseRate: 75000,
     unit: 'hour',
-    description: 'Standard hourly rate for workers at Jakarta terminals',
-    isActive: true
+    description: 'Standard hourly rate for maintenance work',
+    terminalId: undefined, // Global rule
+    regionId: undefined,
+    active: true,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'pr2',
-    name: 'Supervisor Hourly Rate - Jakarta',
+    id: 'labor_high_priority',
+    name: 'High Priority Labor Rate',
     type: 'labor',
-    category: 'general',
-    terminalId: 'terminal1',
-    userRole: 'supervisor',
-    baseRate: 95000,
+    category: 'high_priority',
+    value: 112500, // 1.5x base rate
+    baseRate: 112500,
     unit: 'hour',
-    description: 'Hourly rate for supervisors at Jakarta terminals',
-    isActive: true
+    description: 'Hourly rate for high priority maintenance work',
+    terminalId: undefined,
+    regionId: undefined,
+    active: true,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'pr3',
-    name: 'Regional Worker Rate - Sumatra',
+    id: 'labor_critical_priority',
+    name: 'Critical Priority Labor Rate',
     type: 'labor',
-    category: 'general',
-    regionId: 'region2',
-    userRole: 'worker',
-    baseRate: 70000,
+    category: 'critical_priority',
+    value: 150000, // 2x base rate
+    baseRate: 150000,
     unit: 'hour',
-    description: 'Standard hourly rate for workers in Sumatra region',
-    isActive: true
+    description: 'Hourly rate for critical priority maintenance work',
+    terminalId: undefined,
+    regionId: undefined,
+    active: true,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'pr4',
-    name: 'Emergency Response Premium',
+    id: 'corrective_multiplier',
+    name: 'Corrective Maintenance Multiplier',
     type: 'labor',
-    category: 'emergency',
-    baseRate: 125000,
-    unit: 'hour',
-    description: 'Premium rate for emergency response work (all terminals)',
-    isActive: true
-  },
-  {
-    id: 'pr5',
-    name: 'Safety Equipment Premium',
-    type: 'material',
-    category: 'safety_equipment',
-    baseRate: 1.15, // 15% markup
-    unit: 'percentage',
-    description: '15% markup on safety equipment due to certification requirements',
-    isActive: true
-  },
-  {
-    id: 'pr6',
-    name: 'Specialized Tools Markup',
-    type: 'material',
-    category: 'specialized_tools',
-    baseRate: 1.25, // 25% markup
-    unit: 'percentage',
-    description: '25% markup on specialized tools and equipment',
-    isActive: true
-  },
-  {
-    id: 'pr7',
-    name: 'Standard Materials Base Rate',
-    type: 'material',
-    baseRate: 1.0, // No markup
-    unit: 'percentage',
-    description: 'Base material pricing with no markup',
-    isActive: true
+    category: 'corrective',
+    value: 1.3,
+    baseRate: 1.3,
+    unit: 'multiplier',
+    description: 'Multiplier for corrective maintenance labor costs',
+    terminalId: undefined,
+    regionId: undefined,
+    active: true,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z'
   }
 ];
 
 export const mockPenaltyRules: PenaltyRule[] = [
   {
-    id: 'pen1',
-    name: 'Standard Work Order Penalty',
-    workOrderType: 'preventive',
-    calculationType: 'fixed',
-    amount: 100000,
-    description: 'Fixed penalty of Rp 100,000 per day for overdue preventive maintenance',
-    isActive: true
+    id: 'overdue_percentage',
+    name: 'Overdue Work Order Penalty',
+    type: 'percentage',
+    value: 5,
+    unit: 'percent_per_day',
+    description: '5% of work order value per day overdue',
+    terminalId: undefined, // Global rule
+    regionId: undefined,
+    active: true,
+    maxPenalty: 50, // Maximum 50% penalty
+    gracePeriod: 0, // No grace period
+    createdAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'pen2',
-    name: 'Corrective Maintenance Penalty',
-    workOrderType: 'corrective',
-    calculationType: 'percentage',
-    amount: 5,
-    baseType: 'labor_cost',
-    description: '5% of labor cost per day for overdue corrective maintenance',
-    isActive: true
-  },
-  {
-    id: 'pen3',
-    name: 'High Priority Work Order Penalty',
-    priority: 'high',
-    calculationType: 'fixed',
-    amount: 250000,
-    description: 'Fixed penalty of Rp 250,000 per day for overdue high priority work',
-    isActive: true
-  },
-  {
-    id: 'pen4',
-    name: 'Urgent Priority Work Order Penalty',
-    priority: 'urgent',
-    calculationType: 'percentage',
-    amount: 10,
-    baseType: 'total_cost',
-    description: '10% of total cost per day for overdue urgent priority work',
-    isActive: true
-  },
-  {
-    id: 'pen5',
-    name: 'Safety Critical Terminal Penalty',
-    terminalId: 'terminal1',
-    calculationType: 'fixed',
-    amount: 500000,
-    description: 'Enhanced penalty for safety critical terminal (Tanjung Priok)',
-    isActive: true
-  },
-  {
-    id: 'pen6',
-    name: 'Regional Compliance Penalty - Sumatra',
-    regionId: 'region2',
-    calculationType: 'percentage',
-    amount: 3,
-    baseType: 'total_cost',
-    description: '3% total cost penalty per day for Sumatra region compliance',
-    isActive: true
+    id: 'critical_overdue',
+    name: 'Critical Priority Overdue Penalty',
+    type: 'percentage',
+    value: 10,
+    unit: 'percent_per_day',
+    description: '10% of work order value per day overdue for critical priority items',
+    category: 'critical_priority',
+    terminalId: undefined,
+    regionId: undefined,
+    active: true,
+    maxPenalty: 100, // Maximum 100% penalty for critical items
+    gracePeriod: 0,
+    createdAt: '2024-01-01T00:00:00Z'
   }
 ];

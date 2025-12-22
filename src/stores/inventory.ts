@@ -11,18 +11,56 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   const authStore = useAuthStore();
 
-  // Computed getters
+  // Terminal-based filtering helper
+  const getFilteredInventory = computed(() => {
+    if (!authStore.currentUser) return [];
+
+    // Workers: Only see inventory from their terminal (read-only)
+    if (authStore.isWorker && authStore.currentUser.terminalId) {
+      return items.value.filter(item => 
+        item.terminalId === authStore.currentUser?.terminalId
+      );
+    }
+
+    // Admins: Only see inventory from their terminal (full CRUD)
+    if (authStore.isAdmin && authStore.currentUser?.terminalId) {
+      return items.value.filter(item => 
+        item.terminalId === authStore.currentUser?.terminalId
+      );
+    }
+
+    // Supervisors: See inventory from all terminals in their region
+    if (authStore.isSupervisor && authStore.currentUser?.regionId) {
+      return items.value.filter(item => 
+        item.regionId === authStore.currentUser?.regionId
+      );
+    }
+
+    // Leaders: Regional access (TBD scope - for now same as supervisor)
+    if (authStore.isLeader && authStore.currentUser?.regionId) {
+      return items.value.filter(item => 
+        item.regionId === authStore.currentUser?.regionId
+      );
+    }
+
+    // Fallback: no access
+    return [];
+  });
+
+  // Computed getters based on filtered data
   const lowStockItems = computed(() => 
-    items.value.filter(item => item.currentStock <= item.minThreshold && item.status === 'active')
+    getFilteredInventory.value.filter(item => 
+      item.currentStock <= item.minThreshold && item.status === 'active'
+    )
   );
 
   const activeItems = computed(() => 
-    items.value.filter(item => item.status === 'active')
+    getFilteredInventory.value.filter(item => item.status === 'active')
   );
 
   const itemsByCategory = computed(() => {
     const categories: Record<string, InventoryItem[]> = {};
-    items.value.forEach(item => {
+    getFilteredInventory.value.forEach(item => {
       if (!categories[item.category]) {
         categories[item.category] = [];
       }
@@ -32,7 +70,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   });
 
   const totalValue = computed(() => 
-    items.value.reduce((total, item) => total + (item.currentStock * item.unitPrice), 0)
+    getFilteredInventory.value.reduce((total, item) => total + (item.currentStock * item.unitPrice), 0)
   );
 
   // Actions
@@ -147,6 +185,9 @@ export const useInventoryStore = defineStore('inventory', () => {
         itemId,
         type,
         quantity,
+        reason: notes || `Stock ${type}`,
+        performedBy: authStore.currentUser?.id || '',
+        timestamp: new Date().toISOString(),
         reference,
         notes,
         createdBy: authStore.currentUser?.id || '',

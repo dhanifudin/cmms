@@ -1,5 +1,19 @@
 import type { WorkOrder, ChecklistItem } from '@/types';
+import { getUsersByTerminal, getUsersByRole } from './users';
 
+// Terminal-based work order distribution: 100 work orders total across 116 terminals
+// Distribution strategy: 0-2 work orders per terminal
+// Regional distribution per PRD:
+// Region 1: 15 work orders (terminals 1-15)
+// Region 2: 13 work orders (terminals 16-30)
+// Region 3: 12 work orders (terminals 31-45)
+// Region 4: 14 work orders (terminals 46-60)
+// Region 5: 13 work orders (terminals 61-75)
+// Region 6: 11 work orders (terminals 76-90)
+// Region 7: 12 work orders (terminals 91-105)
+// Region 8: 10 work orders (terminals 106-116)
+
+// Reusable checklist templates
 const pipelineChecklistItems: ChecklistItem[] = [
   {
     id: 'pressure_test',
@@ -98,360 +112,421 @@ const safetyChecklistItems: ChecklistItem[] = [
   },
   {
     id: 'safety_barriers',
-    label: 'Safety Barriers Condition',
+    label: 'Physical Safety Barriers',
     type: 'dropdown',
     required: true,
-    options: ['Good', 'Minor Damage', 'Major Damage', 'Missing']
+    options: ['Good', 'Needs Repair', 'Missing']
   }
 ];
 
-export const mockWorkOrders: WorkOrder[] = [
+const electricalChecklistItems: ChecklistItem[] = [
   {
-    id: 'wo001',
-    title: 'Gas Pipeline Pressure Test - Main Line A',
-    description: 'Monthly pressure testing of the main gas pipeline system to ensure operational safety and detect any potential leaks or pressure drops.',
-    type: 'preventive',
-    status: 'assigned',
-    priority: 'high',
-    terminalId: 'terminal1',
-    assignedWorkerId: 'worker1',
-    createdBy: 'admin1',
-    startDate: '2024-12-18T08:00:00Z',
-    dueDate: '2024-12-20T17:00:00Z',
-    estimatedDuration: 4,
-    
-    // Template integration fields
-    inheritedFromTemplate: false,
-    customizations: [],
-    checklistLocked: false,
-    
-    checklist: pipelineChecklistItems,
-    beforePhotos: [],
-    afterPhotos: [],
-    materials: [
-      { itemId: 'item001', plannedQuantity: 2 }, // Pipeline gaskets
-      { itemId: 'item005', plannedQuantity: 1 }  // Pressure gauge
-    ],
-    createdAt: '2024-12-17T10:00:00Z',
-    updatedAt: '2024-12-17T10:00:00Z'
+    id: 'voltage_reading',
+    label: 'Voltage Reading (V)',
+    type: 'number',
+    required: true,
+    unit: 'V',
+    minValue: 0,
+    maxValue: 500
   },
   {
-    id: 'wo002',
-    title: 'Gas Compressor Monthly Inspection - Unit C2',
-    description: 'Comprehensive monthly inspection of gas compressor unit C2 including lubrication system check, pressure monitoring, and vibration analysis.',
-    type: 'preventive',
-    status: 'in_progress',
-    priority: 'normal',
-    terminalId: 'terminal1',
-    assignedWorkerId: 'worker1',
-    createdBy: 'admin1',
-    approvedBy: 'supervisor1',
-    startDate: '2024-12-17T09:00:00Z',
-    dueDate: '2024-12-19T16:00:00Z',
-    estimatedDuration: 6,
-    
-    // Template integration fields
-    inheritedFromTemplate: false,
-    customizations: [],
-    checklistLocked: false,
-    
-    checklist: compressorChecklistItems.map(item => ({
-      ...item,
-      beforeValue: item.id === 'oil_level' ? 'Low' : 
-                   item.id === 'suction_pressure' ? 15 :
-                   item.id === 'discharge_pressure' ? 45 :
-                   item.id === 'vibration_level' ? 'Normal' :
-                   item.id === 'temperature' ? 85 : undefined
-    })),
-    beforePhotos: [],
-    afterPhotos: [],
-    beforeNotes: 'Initial inspection shows oil level is low, needs topping up. All other parameters within normal range.',
-    materials: [
-      { itemId: 'item003', plannedQuantity: 5 }, // Compressor oil
-      { itemId: 'item007', plannedQuantity: 1 }  // Oil filter
-    ],
-    createdAt: '2024-12-16T14:00:00Z',
-    updatedAt: '2024-12-17T09:30:00Z'
+    id: 'insulation_test',
+    label: 'Insulation Test',
+    type: 'dropdown',
+    required: true,
+    options: ['Pass', 'Fail', 'Marginal']
   },
   {
-    id: 'wo003',
-    title: 'Fire & Gas Detection System Calibration',
-    description: 'Quarterly calibration of all fire and gas detection sensors in the main processing area to ensure accurate readings and proper alarm functionality.',
-    type: 'preventive',
-    status: 'submitted_for_review',
-    priority: 'high',
-    terminalId: 'terminal2',
-    assignedWorkerId: 'worker2',
-    createdBy: 'admin2',
-    approvedBy: 'supervisor1',
-    startDate: '2024-12-16T08:00:00Z',
-    dueDate: '2024-12-18T17:00:00Z',
-    estimatedDuration: 8,
-    completedAt: '2024-12-17T15:30:00Z',
-    
-    // Template integration fields
-    inheritedFromTemplate: false,
-    customizations: [],
-    checklistLocked: false,
-    
-    checklist: safetyChecklistItems.map(item => ({
-      ...item,
-      beforeValue: item.id === 'gas_detector_status' ? 'Needs Calibration' :
-                   item.id === 'emergency_valve_test' ? false :
-                   item.id === 'fire_suppression' ? 'Operational' :
-                   item.id === 'safety_barriers' ? 'Good' : undefined,
-      afterValue: item.id === 'gas_detector_status' ? 'Operational' :
-                  item.id === 'emergency_valve_test' ? true :
-                  item.id === 'fire_suppression' ? 'Operational' :
-                  item.id === 'safety_barriers' ? 'Good' : undefined
-    })),
-    beforePhotos: [],
-    afterPhotos: [],
-    beforeNotes: 'Gas detectors showing calibration required. Emergency valve needs testing. Fire suppression system operational.',
-    afterNotes: 'All gas detectors successfully calibrated and tested. Emergency valve test completed successfully. All safety systems operational.',
-    materials: [
-      { itemId: 'item002', plannedQuantity: 4, actualQuantity: 4 }, // Gas detector sensors
-      { itemId: 'item004', plannedQuantity: 2, actualQuantity: 2 }  // Safety equipment
-    ],
-    createdAt: '2024-12-15T11:00:00Z',
-    updatedAt: '2024-12-17T15:30:00Z'
-  },
-  {
-    id: 'wo004',
-    title: 'Emergency Gas Leak Repair - Pipeline Section B7',
-    description: 'URGENT: Gas leak detected in pipeline section B7. Immediate repair required to ensure safety compliance and prevent environmental hazards.',
-    type: 'corrective',
-    subType: 'incidental',
-    status: 'pending_approval',
-    priority: 'urgent',
-    terminalId: 'terminal1',
-    createdBy: 'admin1',
-    startDate: '2024-12-18T06:00:00Z',
-    dueDate: '2024-12-18T18:00:00Z',
-    estimatedDuration: 12,
-    
-    // Template integration fields
-    inheritedFromTemplate: false,
-    customizations: [],
-    checklistLocked: false,
-    
-    checklist: [
-      {
-        id: 'leak_location',
-        label: 'Leak Location Identified',
-        type: 'yes_no',
-        required: true
-      },
-      {
-        id: 'isolation_complete',
-        label: 'Pipeline Section Isolated',
-        type: 'yes_no',
-        required: true
-      },
-      {
-        id: 'repair_method',
-        label: 'Repair Method Used',
-        type: 'dropdown',
-        required: true,
-        options: ['Gasket Replacement', 'Pipe Clamp', 'Pipe Section Replacement', 'Welding Repair']
-      },
-      {
-        id: 'pressure_test_post',
-        label: 'Post-Repair Pressure Test (PSI)',
-        type: 'number',
-        required: true,
-        unit: 'PSI',
-        minValue: 0,
-        maxValue: 100
-      }
-    ],
-    beforePhotos: [],
-    afterPhotos: [],
-    materials: [
-      { itemId: 'item001', plannedQuantity: 4 }, // Pipeline gaskets
-      { itemId: 'item006', plannedQuantity: 1 }, // Pipe clamp
-      { itemId: 'item008', plannedQuantity: 1 }  // Emergency repair kit
-    ],
-    createdAt: '2024-12-18T05:30:00Z',
-    updatedAt: '2024-12-18T05:30:00Z'
-  },
-  {
-    id: 'wo005',
-    title: 'Pump Station P3 Routine Maintenance',
-    description: 'Weekly routine maintenance of pump station P3 including lubrication, filter replacement, and performance check.',
-    type: 'preventive',
-    status: 'completed',
-    priority: 'normal',
-    terminalId: 'terminal2',
-    assignedWorkerId: 'worker2',
-    createdBy: 'admin2',
-    approvedBy: 'supervisor1',
-    startDate: '2024-12-15T10:00:00Z',
-    dueDate: '2024-12-16T15:00:00Z',
-    estimatedDuration: 3,
-    completedAt: '2024-12-16T13:00:00Z',
-    
-    // Template integration fields
-    inheritedFromTemplate: false,
-    customizations: [],
-    checklistLocked: false,
-    
-    checklist: [
-      {
-        id: 'pump_pressure',
-        label: 'Pump Pressure (PSI)',
-        type: 'number',
-        required: true,
-        unit: 'PSI',
-        beforeValue: 32,
-        afterValue: 35
-      },
-      {
-        id: 'flow_rate',
-        label: 'Flow Rate (L/min)',
-        type: 'number',
-        required: true,
-        unit: 'L/min',
-        beforeValue: 150,
-        afterValue: 165
-      },
-      {
-        id: 'filter_condition',
-        label: 'Filter Condition',
-        type: 'dropdown',
-        required: true,
-        options: ['Clean', 'Dirty', 'Needs Replacement'],
-        beforeValue: 'Dirty',
-        afterValue: 'Clean'
-      }
-    ],
-    beforePhotos: [],
-    afterPhotos: [],
-    beforeNotes: 'Pump showing reduced pressure and flow rate. Filter appears dirty.',
-    afterNotes: 'Filter replaced, lubrication completed. Pump performance restored to normal levels.',
-    materials: [
-      { itemId: 'item007', plannedQuantity: 1, actualQuantity: 1 }, // Oil filter
-      { itemId: 'item009', plannedQuantity: 2, actualQuantity: 2 }  // Pump seals
-    ],
-    createdAt: '2024-12-14T09:00:00Z',
-    updatedAt: '2024-12-16T13:00:00Z'
-  },
-  {
-    id: 'wo006',
-    title: 'Tank T5 Inspection and Cleaning',
-    description: 'Quarterly inspection and cleaning of storage tank T5 including internal inspection, cleaning, and coating assessment.',
-    type: 'preventive',
-    status: 'draft',
-    priority: 'normal',
-    terminalId: 'terminal3',
-    createdBy: 'admin3',
-    startDate: '2024-12-20T08:00:00Z',
-    dueDate: '2024-12-22T17:00:00Z',
-    estimatedDuration: 16,
-    
-    // Template integration fields
-    inheritedFromTemplate: false,
-    customizations: [],
-    checklistLocked: false,
-    
-    checklist: [
-      {
-        id: 'tank_isolation',
-        label: 'Tank Properly Isolated',
-        type: 'yes_no',
-        required: true
-      },
-      {
-        id: 'internal_cleaning',
-        label: 'Internal Cleaning Complete',
-        type: 'yes_no',
-        required: true
-      },
-      {
-        id: 'coating_condition',
-        label: 'Internal Coating Condition',
-        type: 'dropdown',
-        required: true,
-        options: ['Excellent', 'Good', 'Fair', 'Poor', 'Needs Replacement']
-      },
-      {
-        id: 'inspection_findings',
-        label: 'Inspection Findings',
-        type: 'text',
-        required: false
-      }
-    ],
-    beforePhotos: [],
-    afterPhotos: [],
-    materials: [
-      { itemId: 'item010', plannedQuantity: 10 }, // Cleaning chemicals
-      { itemId: 'item004', plannedQuantity: 1 }   // Safety equipment
-    ],
-    createdAt: '2024-12-17T16:00:00Z',
-    updatedAt: '2024-12-17T16:00:00Z'
-  },
-  {
-    id: 'wo007',
-    title: 'Pipeline Valve Maintenance - Section A3',
-    description: 'Routine maintenance of pipeline valves in section A3, including lubrication, seal inspection, and operational testing.',
-    type: 'preventive',
-    status: 'in_progress',
-    priority: 'normal',
-    terminalId: 'terminal1',
-    assignedWorkerId: 'worker1',
-    createdBy: 'admin1',
-    approvedBy: 'supervisor1',
-    startDate: '2024-12-18T10:00:00Z',
-    dueDate: '2024-12-20T15:00:00Z',
-    estimatedDuration: 4,
-    checklist: [
-      {
-        id: 'valve_pressure_before',
-        label: 'Valve Inlet Pressure (PSI)',
-        type: 'number',
-        required: true,
-        unit: 'PSI',
-        minValue: 0,
-        maxValue: 100,
-        beforeValue: 32
-      },
-      {
-        id: 'valve_operation',
-        label: 'Valve Operation Test',
-        type: 'yes_no',
-        required: true,
-        beforeValue: false
-      },
-      {
-        id: 'seal_condition',
-        label: 'Seal Condition',
-        type: 'dropdown',
-        required: true,
-        options: ['Good', 'Fair', 'Poor', 'Replaced'],
-        beforeValue: 'Poor'
-      },
-      {
-        id: 'lubrication_status',
-        label: 'Lubrication Applied',
-        type: 'yes_no',
-        required: true,
-        beforeValue: false
-      }
-    ],
-    beforePhotos: [],
-    afterPhotos: [],
-    beforeNotes: 'Valve shows signs of wear, seal appears damaged and needs replacement. Lubrication required.',
-    
-    // Template integration fields
-    inheritedFromTemplate: false,
-    customizations: [],
-    checklistLocked: false,
-    
-    materials: [
-      { itemId: 'item001', plannedQuantity: 2 }, // Pipeline gaskets  
-      { itemId: 'item009', plannedQuantity: 1 }  // Pump seals (valve seals)
-    ],
-    createdAt: '2024-12-18T08:00:00Z',
-    updatedAt: '2024-12-18T10:30:00Z'
+    id: 'grounding_check',
+    label: 'Grounding System Check',
+    type: 'yes_no',
+    required: true
   }
 ];
+
+// Helper functions
+function getRegionIdFromTerminal(terminalNum: number): string {
+  if (terminalNum <= 15) return 'region1';
+  if (terminalNum <= 30) return 'region2';
+  if (terminalNum <= 45) return 'region3';
+  if (terminalNum <= 60) return 'region4';
+  if (terminalNum <= 75) return 'region5';
+  if (terminalNum <= 90) return 'region6';
+  if (terminalNum <= 105) return 'region7';
+  return 'region8';
+}
+
+function getWorkerForTerminal(terminalId: string): string {
+  const terminalUsers = getUsersByTerminal(terminalId);
+  const workers = terminalUsers.filter(user => user.role === 'worker');
+  
+  // For Terminal 1, prioritize Candra Wijaya (worker1_1)
+  if (terminalId === 'terminal1') {
+    const candraWijaya = workers.find(worker => worker.id === 'worker1_1');
+    if (candraWijaya) {
+      return candraWijaya.id;
+    }
+  }
+  
+  return workers.length > 0 ? (workers[0]?.id || 'worker1_1') : 'worker1_1'; // Fallback
+}
+
+function getAdminForTerminal(terminalId: string): string {
+  const terminalUsers = getUsersByTerminal(terminalId);
+  const admins = terminalUsers.filter(user => user.role === 'admin');
+  return admins.length > 0 ? (admins[0]?.id || 'admin1_1') : 'admin1_1'; // Fallback
+}
+
+function getSupervisorForRegion(regionId: string): string {
+  const supervisors = getUsersByRole('supervisor').filter(user => user.regionId === regionId);
+  return supervisors.length > 0 ? (supervisors[0]?.id || 'supervisor1_1') : 'supervisor1_1'; // Fallback
+}
+
+function generateWorkOrderTitle(terminalNum: number, index: number): string {
+  const titles = [
+    'Gas Pipeline Pressure Test - Main Line',
+    'Compressor Monthly Inspection - Unit',
+    'Fire & Gas Detection System Calibration',
+    'Safety System Maintenance Check',
+    'Electrical System Inspection',
+    'Emergency Valve Test & Maintenance',
+    'Pipeline Leak Detection Survey',
+    'Gas Meter Calibration',
+    'Pressure Relief Valve Test',
+    'Instrumentation Maintenance'
+  ];
+  
+  const baseTitle = titles[index % titles.length];
+  const terminalCode = `T${terminalNum.toString().padStart(3, '0')}`;
+  return `${baseTitle} - ${terminalCode}`;
+}
+
+function generateWorkOrderDescription(title: string, type: 'preventive' | 'corrective'): string {
+  if (type === 'preventive') {
+    return `Scheduled preventive maintenance for ${title.toLowerCase()} to ensure optimal performance, safety compliance, and operational reliability.`;
+  } else {
+    return `Corrective maintenance required for ${title.toLowerCase()} due to operational issues or equipment failure detected during routine monitoring.`;
+  }
+}
+
+function getChecklistForWorkOrder(index: number): ChecklistItem[] {
+  const checklists = [
+    pipelineChecklistItems,
+    compressorChecklistItems,
+    safetyChecklistItems,
+    electricalChecklistItems
+  ];
+  return checklists[index % checklists.length] || [];
+}
+
+function generateWorkOrderDates(): { startDate: string; dueDate: string } {
+  const now = new Date();
+  const startDaysOffset = Math.floor(Math.random() * 14) - 7; // -7 to +7 days from now
+  const durationDays = Math.floor(Math.random() * 5) + 1; // 1-5 days duration
+  
+  const startDate = new Date(now);
+  startDate.setDate(startDate.getDate() + startDaysOffset);
+  
+  const dueDate = new Date(startDate);
+  dueDate.setDate(dueDate.getDate() + durationDays);
+  
+  return {
+    startDate: startDate.toISOString(),
+    dueDate: dueDate.toISOString()
+  };
+}
+
+function getWorkOrderStatus(index: number): 'draft' | 'pending_approval' | 'assigned' | 'in_progress' | 'submitted_for_review' | 'completed' | 'rejected' {
+  // Distribute statuses for realistic scenarios
+  const statuses = [
+    'assigned', 'assigned', 'assigned', // Most common - 30%
+    'in_progress', 'in_progress', // 20%
+    'completed', 'completed', 'completed', // 30%
+    'pending_approval', // 10%
+    'submitted_for_review' // 10%
+  ];
+  return statuses[index % statuses.length] as any;
+}
+
+function getPriority(index: number): 'low' | 'normal' | 'high' | 'critical' {
+  const priorities = [
+    'normal', 'normal', 'normal', // 60%
+    'high', 'high', // 30%
+    'low', // 5%
+    'critical' // 5%
+  ];
+  return priorities[index % priorities.length] as any;
+}
+
+function getMaintenanceType(index: number): 'preventive' | 'corrective' {
+  // 70% preventive, 30% corrective
+  return index % 10 < 7 ? 'preventive' : 'corrective';
+}
+
+// Generate work orders for specific terminals based on regional distribution
+function generateTerminalWorkOrders(): WorkOrder[] {
+  const workOrders: WorkOrder[] = [];
+  
+  // Regional work order distribution pattern
+  const regionalDistribution = [
+    { regionNum: 1, terminalStart: 1, terminalEnd: 15, workOrderCount: 15 },
+    { regionNum: 2, terminalStart: 16, terminalEnd: 30, workOrderCount: 13 },
+    { regionNum: 3, terminalStart: 31, terminalEnd: 45, workOrderCount: 12 },
+    { regionNum: 4, terminalStart: 46, terminalEnd: 60, workOrderCount: 14 },
+    { regionNum: 5, terminalStart: 61, terminalEnd: 75, workOrderCount: 13 },
+    { regionNum: 6, terminalStart: 76, terminalEnd: 90, workOrderCount: 11 },
+    { regionNum: 7, terminalStart: 91, terminalEnd: 105, workOrderCount: 12 },
+    { regionNum: 8, terminalStart: 106, terminalEnd: 116, workOrderCount: 10 }
+  ];
+  
+  let workOrderIndex = 1;
+  
+  regionalDistribution.forEach(region => {
+    // Distribute work orders across terminals in this region
+    let remainingWorkOrders = region.workOrderCount;
+    
+    for (let terminalNum = region.terminalStart; terminalNum <= region.terminalEnd && remainingWorkOrders > 0; terminalNum++) {
+      // Each terminal gets 0-2 work orders (some get none for realistic distribution)
+      // Ensure terminal 1 (demo terminal) gets 2 work orders
+      const terminalWorkOrders = terminalNum === 1 ? Math.min(2, remainingWorkOrders) : // Terminal 1 gets priority
+                                 terminalNum % 3 === 0 ? 0 : // Every 3rd terminal gets 0
+                                 terminalNum % 2 === 0 ? 1 : // Even terminals get 1
+                                 Math.min(2, remainingWorkOrders); // Odd terminals get 2 or remaining
+      
+      for (let woIndex = 0; woIndex < terminalWorkOrders && remainingWorkOrders > 0; woIndex++) {
+        const terminalId = `terminal${terminalNum}`;
+        const regionId = getRegionIdFromTerminal(terminalNum);
+        const workerId = getWorkerForTerminal(terminalId);
+        const adminId = getAdminForTerminal(terminalId);
+        const supervisorId = getSupervisorForRegion(regionId);
+        
+        const title = generateWorkOrderTitle(terminalNum, workOrderIndex);
+        const type = getMaintenanceType(workOrderIndex);
+        const description = generateWorkOrderDescription(title, type);
+        const dates = generateWorkOrderDates();
+        const status = getWorkOrderStatus(workOrderIndex);
+        const priority = getPriority(workOrderIndex);
+        const checklist = getChecklistForWorkOrder(workOrderIndex);
+        
+        workOrders.push({
+          id: `wo${workOrderIndex.toString().padStart(3, '0')}`,
+          title,
+          description,
+          type,
+          status,
+          priority,
+          terminalId,
+          regionId,
+          assignedWorkerId: workerId,
+          createdBy: adminId,
+          approvedBy: status !== 'draft' && status !== 'pending_approval' ? supervisorId : undefined,
+          startDate: dates.startDate,
+          dueDate: dates.dueDate,
+          estimatedDuration: Math.floor(Math.random() * 6) + 2, // 2-8 hours
+          
+          // Template integration fields
+          inheritedFromTemplate: false,
+          customizations: [],
+          checklistLocked: false,
+          
+          checklist: checklist.map(item => ({
+            ...item,
+            // Add some before values for in-progress/completed work orders
+            beforeValue: (status === 'in_progress' || status === 'completed' || status === 'submitted_for_review') ? 
+              generateMockBeforeValue(item) : undefined,
+            afterValue: status === 'completed' ? generateMockAfterValue(item) : undefined
+          })),
+          
+          beforePhotos: [],
+          afterPhotos: [],
+          beforeNotes: status !== 'draft' && status !== 'pending_approval' ? 
+            generateMockNotes('before', workOrderIndex) : '',
+          afterNotes: status === 'completed' ? generateMockNotes('after', workOrderIndex) : '',
+          
+          materials: generateMockMaterials(workOrderIndex),
+          createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+        
+        workOrderIndex++;
+        remainingWorkOrders--;
+      }
+    }
+  });
+  
+  // Ensure Candra Wijaya (worker1_1) at Terminal 1 has ongoing work orders
+  workOrders.forEach(wo => {
+    if (wo.assignedWorkerId === 'worker1_1' && wo.terminalId === 'terminal1') {
+      // Give Candra ongoing work orders with various active statuses
+      const activeStatuses = ['assigned', 'in_progress', 'submitted_for_review'];
+      wo.status = activeStatuses[Math.floor(Math.random() * activeStatuses.length)] as any;
+    }
+  });
+  
+  return workOrders;
+}
+
+function generateMockBeforeValue(item: ChecklistItem): any {
+  switch (item.type) {
+    case 'number':
+      if (item.minValue !== undefined && item.maxValue !== undefined) {
+        return Math.floor(Math.random() * (item.maxValue - item.minValue)) + item.minValue;
+      }
+      return Math.floor(Math.random() * 100);
+    case 'yes_no':
+      return Math.random() > 0.5;
+    case 'dropdown':
+      if (item.options && item.options.length > 0) {
+        return item.options[Math.floor(Math.random() * item.options.length)];
+      }
+      return '';
+    default:
+      return '';
+  }
+}
+
+function generateMockAfterValue(item: ChecklistItem): any {
+  // After values are typically improved versions of before values
+  switch (item.type) {
+    case 'number':
+      const beforeValue = generateMockBeforeValue(item);
+      // Slightly improve the value for maintenance results
+      return typeof beforeValue === 'number' ? Math.min(beforeValue + Math.floor(Math.random() * 10), item.maxValue || 100) : beforeValue;
+    case 'yes_no':
+      return true; // Most maintenance results in positive outcomes
+    case 'dropdown':
+      if (item.options && item.options.length > 0) {
+        // Prefer better options (first options are typically better)
+        return item.options[Math.floor(Math.random() * Math.min(2, item.options.length))];
+      }
+      return '';
+    default:
+      return '';
+  }
+}
+
+function generateMockNotes(type: 'before' | 'after', index: number): string {
+  const beforeNotes = [
+    'Equipment inspection reveals normal wear patterns. All safety systems operational.',
+    'Initial assessment shows minor maintenance required. System functioning within parameters.',
+    'Routine inspection indicates good overall condition. Minor adjustments needed.',
+    'Pre-maintenance check complete. Equipment ready for scheduled service.',
+    'System assessment shows optimal performance. Preventive maintenance proceeding as planned.'
+  ];
+  
+  const afterNotes = [
+    'Maintenance completed successfully. All systems tested and operational.',
+    'Service completed according to schedule. Equipment performance optimized.',
+    'Maintenance tasks finished. System returned to normal operation.',
+    'All maintenance activities completed. Equipment certified for continued operation.',
+    'Scheduled maintenance concluded. System performance verified and documented.'
+  ];
+  
+  const notes = type === 'before' ? beforeNotes : afterNotes;
+  return notes[index % notes.length] || 'Default maintenance note.';
+}
+
+function generateMockMaterials(index: number): Array<{ itemId: string; plannedQuantity: number; actualQuantity?: number }> {
+  const materials = [
+    [{ itemId: 'item001', plannedQuantity: 2 }], // Pipeline gaskets
+    [{ itemId: 'item003', plannedQuantity: 5 }, { itemId: 'item007', plannedQuantity: 1 }], // Oil and filter
+    [{ itemId: 'item010', plannedQuantity: 1 }], // Calibration kit
+    [{ itemId: 'item002', plannedQuantity: 3 }], // Electrical components
+    [{ itemId: 'item005', plannedQuantity: 1 }, { itemId: 'item009', plannedQuantity: 2 }], // Gauge and seals
+  ];
+  
+  return materials[index % materials.length] || [];
+}
+
+// Generate the work orders lazily to ensure all dependencies are loaded
+let _mockWorkOrders: WorkOrder[] | null = null;
+
+export const mockWorkOrders: WorkOrder[] = new Proxy([], {
+  get(_target, prop) {
+    // Initialize work orders on first access
+    if (_mockWorkOrders === null) {
+      console.log('Initializing work orders...');
+      _mockWorkOrders = generateTerminalWorkOrders();
+    }
+    
+    // Proxy all array access to the initialized array
+    return Reflect.get(_mockWorkOrders, prop);
+  },
+  
+  has(_target, prop) {
+    if (_mockWorkOrders === null) {
+      _mockWorkOrders = generateTerminalWorkOrders();
+    }
+    return Reflect.has(_mockWorkOrders, prop);
+  },
+  
+  ownKeys(_target) {
+    if (_mockWorkOrders === null) {
+      _mockWorkOrders = generateTerminalWorkOrders();
+    }
+    return Reflect.ownKeys(_mockWorkOrders);
+  },
+  
+  getOwnPropertyDescriptor(_target, prop) {
+    if (_mockWorkOrders === null) {
+      _mockWorkOrders = generateTerminalWorkOrders();
+    }
+    return Reflect.getOwnPropertyDescriptor(_mockWorkOrders, prop);
+  }
+});
+
+// Export helper functions for terminal operations
+export const getWorkOrdersByTerminal = (terminalId: string): WorkOrder[] => {
+  return mockWorkOrders.filter(wo => wo.terminalId === terminalId);
+};
+
+export const getWorkOrdersByRegion = (regionId: string): WorkOrder[] => {
+  return mockWorkOrders.filter(wo => wo.regionId === regionId);
+};
+
+export const getWorkOrdersByWorker = (workerId: string): WorkOrder[] => {
+  return mockWorkOrders.filter(wo => wo.assignedWorkerId === workerId);
+};
+
+export const getOverdueWorkOrders = (): WorkOrder[] => {
+  const now = new Date();
+  return mockWorkOrders.filter(wo => 
+    new Date(wo.dueDate) < now && !['completed', 'rejected'].includes(wo.status)
+  );
+};
+
+// Statistics
+export const getWorkOrderStatistics = () => {
+  const stats = {
+    totalWorkOrders: mockWorkOrders.length,
+    byStatus: {} as Record<string, number>,
+    byType: {} as Record<string, number>,
+    byPriority: {} as Record<string, number>,
+    byRegion: {} as Record<string, number>,
+    byTerminal: {} as Record<string, number>,
+    overdueCount: 0
+  };
+  
+  mockWorkOrders.forEach(wo => {
+    // Count by status
+    stats.byStatus[wo.status] = (stats.byStatus[wo.status] || 0) + 1;
+    
+    // Count by type
+    stats.byType[wo.type] = (stats.byType[wo.type] || 0) + 1;
+    
+    // Count by priority
+    stats.byPriority[wo.priority] = (stats.byPriority[wo.priority] || 0) + 1;
+    
+    // Count by region
+    if (wo.regionId) {
+      stats.byRegion[wo.regionId] = (stats.byRegion[wo.regionId] || 0) + 1;
+    }
+    
+    // Count by terminal
+    stats.byTerminal[wo.terminalId] = (stats.byTerminal[wo.terminalId] || 0) + 1;
+  });
+  
+  stats.overdueCount = getOverdueWorkOrders().length;
+  
+  return stats;
+};

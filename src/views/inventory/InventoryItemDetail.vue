@@ -54,7 +54,7 @@
 
               <div>
                 <h3 class="text-sm font-medium text-muted-foreground mb-1">Unit Price</h3>
-                <p class="text-sm">${{ item.unitPrice.toFixed(2) }}</p>
+                <p class="text-sm">Rp {{ item.unitPrice.toLocaleString('id-ID') }}</p>
               </div>
 
               <div>
@@ -109,7 +109,7 @@
               <div class="flex items-center justify-between">
                 <span class="text-sm font-medium text-muted-foreground">Total Value</span>
                 <span class="text-lg font-semibold text-green-600">
-                  ${{ (item.currentStock * item.unitPrice).toFixed(2) }}
+                  Rp {{ (item.currentStock * item.unitPrice).toLocaleString('id-ID') }}
                 </span>
               </div>
 
@@ -207,7 +207,7 @@
                       {{ movement.type.replace('_', ' ') }}
                     </p>
                     <p class="text-xs text-muted-foreground">
-                      {{ formatDate(movement.createdAt) }}
+                      {{ formatDate(movement.createdAt || new Date().toISOString()) }}
                     </p>
                   </div>
                 </div>

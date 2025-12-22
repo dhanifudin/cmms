@@ -343,8 +343,12 @@ const switchDemoUser = (userId: string) => {
   }
 }
 
-const logout = () => {
-  authStore.logout()
-  router.push('/login')
+const logout = async () => {
+  try {
+    authStore.logout();
+    await router.push('/login');
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
 }
 </script>

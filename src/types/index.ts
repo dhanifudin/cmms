@@ -51,6 +51,7 @@ export interface UserRoleHistory {
   effectiveDate: string;
   trainingCompleted?: boolean;
   performanceScore?: number;
+  notes?: string;
 }
 
 export interface UserPermission {
@@ -189,13 +190,26 @@ export interface Terminal {
     lat: number;
     lng: number;
   };
+  // Additional properties used in mock data
+  type?: 'main' | 'secondary' | 'satellite' | 'depot' | 'station' | 'hub';
+  capacity?: number;
+  active?: boolean;
+  establishedDate?: string;
 }
 
 export interface Region {
   id: string;
   name: string;
-  code: string;
-  terminals: Terminal[];
+  displayName: string;
+  description?: string;
+  terminalIds: string[];
+  terminals?: Terminal[];
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
+  timezone: string;
+  active: boolean;
   manager?: User;
 }
 
@@ -209,6 +223,7 @@ export interface WorkOrder {
   status: WorkOrderStatus;
   priority: Priority;
   terminalId: string;
+  regionId?: string;
   assignedWorkerId?: string;
   createdBy: string;
   approvedBy?: string;
@@ -282,7 +297,7 @@ export type WorkOrderStatus =
   | 'rejected' 
   | 'revision_required';
 
-export type Priority = 'low' | 'normal' | 'high' | 'urgent';
+export type Priority = 'low' | 'normal' | 'high' | 'urgent' | 'critical';
 
 export interface ChecklistItem {
   id: string;
@@ -322,8 +337,10 @@ export interface InventoryItem {
   unitPrice: number;
   storageLocation?: string;
   supplier?: string;
+  terminalId?: string;
+  regionId?: string;
   lastUpdated: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'low_stock';
 }
 
 export interface MaterialRequirement {
@@ -341,12 +358,16 @@ export interface MaterialRequirement {
 export interface StockMovement {
   id: string;
   itemId: string;
-  type: 'inbound' | 'outbound' | 'adjustment';
+  type: 'in' | 'out' | 'adjustment' | 'inbound' | 'outbound';
   quantity: number;
-  reference?: string; // work order ID, purchase order ID, etc.
+  reason: string;
+  performedBy: string;
+  timestamp: string;
   notes?: string;
-  createdBy: string;
-  createdAt: string;
+  referenceNumber?: string;
+  reference?: string; // work order ID, purchase order ID, etc.
+  createdBy?: string;
+  createdAt?: string;
 }
 
 
@@ -502,7 +523,9 @@ export interface Invoice {
     laborCost: number;
     materialCost: number;
     penalties: number;
+    penaltyCost: number;
     subtotal: number;
+    tax: number;
     total: number;
   };
   status: 'draft' | 'pending' | 'sent' | 'paid' | 'overdue' | 'cancelled';
@@ -512,6 +535,12 @@ export interface Invoice {
   paidAt?: string;
   generatedBy: string;
   notes?: string;
+  period?: {
+    startDate: string;
+    endDate: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface InvoiceItem {
@@ -524,6 +553,23 @@ export interface InvoiceItem {
   unitPrice: number;
   totalPrice: number;
   category: string;
+}
+
+export interface PenaltyRule {
+  id: string;
+  name: string;
+  type?: string;
+  method?: 'item' | 'day' | 'hour' | 'percentage';
+  amount?: number;
+  percentage?: number;
+  value?: number;
+  unit?: string;
+  description?: string;
+  category?: string;
+  terminalId?: string | undefined;
+  regionId?: string | undefined;
+  active?: boolean;
+  createdAt?: string;
 }
 
 // Work Order Table Interface for new table view

@@ -204,10 +204,10 @@
                   </div>
                 </TableCell>
                 <TableCell class="text-sm">
-                  ${{ item.unitPrice.toFixed(2) }}
+                  Rp {{ item.unitPrice.toLocaleString('id-ID') }}
                 </TableCell>
                 <TableCell class="text-sm font-medium">
-                  ${{ (item.currentStock * item.unitPrice).toFixed(2) }}
+                  Rp {{ (item.currentStock * item.unitPrice).toLocaleString('id-ID') }}
                 </TableCell>
                 <TableCell>
                   <Badge :variant="item.currentStock <= item.minThreshold ? 'destructive' : 'default'">

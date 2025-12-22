@@ -109,7 +109,7 @@
           </div>
 
           <div class="space-y-2">
-            <Label for="unitPrice">Unit Price ($)</Label>
+            <Label for="unitPrice">Unit Price (IDR)</Label>
             <Input
               id="unitPrice"
               v-model.number="form.unitPrice"
