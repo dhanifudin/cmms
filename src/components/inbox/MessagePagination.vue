@@ -1,6 +1,6 @@
 <template>
-  <div class="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
-    <!-- Gaming-style pagination info -->
+  <!-- Desktop pagination - hidden on small screens -->
+  <div class="hidden sm:flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
     <div class="flex flex-1 items-center justify-between">
       <div class="flex items-center text-sm text-gray-700">
         <span>
@@ -83,39 +83,33 @@
     </div>
   </div>
   
-  <!-- Mobile pagination -->
-  <div class="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200 sm:hidden">
-    <div class="flex items-center text-sm text-gray-700">
-      <span>{{ currentPage }} / {{ totalPages }}</span>
-    </div>
-    
-    <div class="flex items-center space-x-2">
+  <!-- Mobile pagination - only navigation buttons, no metadata -->
+  <div class="flex items-center justify-center px-4 py-2 bg-gray-50 border-b border-gray-200 sm:hidden">
+    <div class="flex items-center space-x-3">
       <button
         @click="goToPreviousPage"
         :disabled="currentPage === 1"
-        class="inline-flex items-center px-3 py-1 text-sm rounded-md"
+        class="inline-flex items-center justify-center w-8 h-8 rounded-full transition-colors"
         :class="[
           currentPage === 1
-            ? 'text-gray-300 cursor-not-allowed'
-            : 'text-blue-600 hover:text-blue-800'
+            ? 'text-gray-300 bg-gray-100 cursor-not-allowed'
+            : 'text-gray-600 bg-white border border-gray-300 hover:bg-gray-50 hover:text-blue-600'
         ]"
+        title="Previous page"
       >
         <ChevronLeftIcon class="h-4 w-4" />
       </button>
       
-      <span class="text-sm text-gray-500">
-        {{ totalMessages }} notifications
-      </span>
-      
       <button
         @click="goToNextPage"
         :disabled="currentPage === totalPages"
-        class="inline-flex items-center px-3 py-1 text-sm rounded-md"
+        class="inline-flex items-center justify-center w-8 h-8 rounded-full transition-colors"
         :class="[
           currentPage === totalPages
-            ? 'text-gray-300 cursor-not-allowed'
-            : 'text-blue-600 hover:text-blue-800'
+            ? 'text-gray-300 bg-gray-100 cursor-not-allowed'
+            : 'text-gray-600 bg-white border border-gray-300 hover:bg-gray-50 hover:text-blue-600'
         ]"
+        title="Next page"
       >
         <ChevronRightIcon class="h-4 w-4" />
       </button>

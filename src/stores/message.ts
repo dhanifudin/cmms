@@ -73,20 +73,20 @@ export const useMessageStore = defineStore('message', () => {
         icon: 'Wrench'
       },
       {
-        id: 'notifications',
-        name: 'System Notifications',
-        type: 'system',
-        messageCount: 0,
-        unreadCount: 0,
-        icon: 'Bell'
-      },
-      {
         id: 'inventory',
         name: 'Inventory Alerts',
         type: 'system',
         messageCount: 0,
         unreadCount: 0,
         icon: 'Package'
+      },
+      {
+        id: 'notifications',
+        name: 'System Notifications',
+        type: 'system',
+        messageCount: 0,
+        unreadCount: 0,
+        icon: 'Bell'
       }
     ];
 

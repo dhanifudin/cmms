@@ -4,20 +4,11 @@
     <div class="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
       <!-- Header -->
       <div class="p-3 border-b border-gray-200 flex-shrink-0">
-        <div class="flex items-center justify-between mb-3">
+        <div class="mb-3">
           <div>
             <h1 class="text-base font-semibold text-gray-900">Inbox</h1>
             <p class="text-xs text-gray-500">System notifications</p>
           </div>
-          <!-- Compose only for system notifications (limited) -->
-          <button
-            v-if="authStore.isAdmin"
-            @click="showComposeModal = true"
-            class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <PlusIcon class="h-3 w-3 mr-1" />
-            New Announcement
-          </button>
         </div>
 
         <!-- Search -->
@@ -67,9 +58,9 @@
 
     <!-- Main Content -->
     <div class="flex-1 flex flex-col h-full">
-      <!-- Message Pagination - Top of main content area -->
+      <!-- Message Pagination - Only shown when needed and only on larger screens for full interface -->
       <MessagePagination
-        v-if="filteredMessages.length > 0"
+        v-if="filteredMessages.length > 0 && messageStore.pagination.totalPages > 1"
         :current-page="messageStore.pagination.currentPage"
         :total-pages="messageStore.pagination.totalPages"
         :total-messages="messageStore.pagination.totalMessages"
@@ -278,13 +269,6 @@
       </div>
     </div>
 
-    <!-- Compose Modal -->
-    <ComposeMessageModal
-      v-if="showComposeModal"
-      @close="showComposeModal = false"
-      @send="handleSendMessage"
-      :reply-to="replyToMessageData"
-    />
   </div>
 </template>
 
@@ -294,15 +278,12 @@ import { useMessageStore } from '@/stores/message';
 import { useAuthStore } from '@/stores/auth';
 import type { Message } from '@/types';
 import {
-  Plus as PlusIcon,
-  ChevronDown as ChevronDownIcon,
   Search as SearchIcon,
   Inbox as InboxIcon,
   Mail as MailIcon,
   Trash2 as TrashIcon,
   Paperclip as PaperclipIcon
 } from 'lucide-vue-next';
-import ComposeMessageModal from '@/components/inbox/ComposeMessageModal.vue';
 import MessagePagination from '@/components/inbox/MessagePagination.vue';
 import MessageActionButtons from '@/components/inbox/MessageActionButtons.vue';
 
@@ -312,8 +293,6 @@ const authStore = useAuthStore();
 const searchQuery = ref('');
 const selectedFolder = ref('inbox');
 const selectedMessage = ref<Message | null>(null);
-const showComposeModal = ref(false);
-const replyToMessageData = ref<Message | null>(null);
 
 const folders = computed(() => messageStore.folders);
 const isLoading = computed(() => messageStore.isLoading);
@@ -448,19 +427,8 @@ const deleteMessage = async (messageId: string) => {
   }
 };
 
-const handleSendMessage = async (messageData: any) => {
-  await messageStore.sendMessage(messageData);
-  showComposeModal.value = false;
-  replyToMessageData.value = null;
-};
 
-// Gaming-style: No reply functionality
-// const replyToMessage = () => {
-//   if (selectedMessage.value) {
-//     replyToMessageData.value = selectedMessage.value;
-//     showComposeModal.value = true;
-//   }
-// };
+// Gaming-style: No reply functionality - read-only inbox
 
 // Enhanced v2.0: Pagination event handlers
 const handlePageChange = (page: number) => {
