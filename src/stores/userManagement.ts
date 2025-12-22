@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, readonly } from 'vue';
 import type { 
   User, 
   UserFilter, 
@@ -14,6 +14,8 @@ import type {
   UserRole,
   UserAuditAction
 } from '@/types';
+import type { PaginationState, UserPaginationSizes } from '@/types/pagination';
+import { getPaginationConfig } from '@/config/pagination';
 import { useAuthStore } from './auth';
 
 export const useUserManagementStore = defineStore('userManagement', () => {
@@ -27,10 +29,23 @@ export const useUserManagementStore = defineStore('userManagement', () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
   
-  // Pagination
-  const currentPage = ref(1);
-  const pageSize = ref(20);
-  const totalUsers = ref(0);
+  // Standardized pagination state
+  const paginationConfig = getPaginationConfig('users');
+  const paginationState = ref<PaginationState>({
+    currentPage: 1,
+    pageSize: paginationConfig.defaultPageSize,
+    totalItems: 0,
+    totalPages: 0
+  });
+
+  // Search and filter state
+  const searchQuery = ref('');
+  const roleFilter = ref<string>('');
+  const statusFilter = ref<string>('');
+  const terminalFilter = ref<string>('');
+  const regionFilter = ref<string>('');
+  const sortBy = ref<'name' | 'email' | 'role' | 'status' | 'createdAt' | 'lastLogin'>('name');
+  const sortOrder = ref<'asc' | 'desc'>('asc');
 
   // Bulk operations
   const bulkOperationProgress = ref({
@@ -77,12 +92,13 @@ export const useUserManagementStore = defineStore('userManagement', () => {
     return [];
   });
 
-  // Getters
-  const filteredUsers = computed(() => {
+  // Search and filter computed properties
+  const filteredAndSearchedUsers = computed(() => {
     let result = getAccessibleUsers.value;
 
-    if (filters.value.search) {
-      const search = filters.value.search.toLowerCase();
+    // Apply search query
+    if (searchQuery.value.trim()) {
+      const search = searchQuery.value.trim().toLowerCase();
       result = result.filter(user => 
         user.name.toLowerCase().includes(search) ||
         user.email.toLowerCase().includes(search) ||
@@ -90,22 +106,27 @@ export const useUserManagementStore = defineStore('userManagement', () => {
       );
     }
 
-    if (filters.value.role) {
-      result = result.filter(user => user.role === filters.value.role);
+    // Apply role filter
+    if (roleFilter.value) {
+      result = result.filter(user => user.role === roleFilter.value);
     }
 
-    if (filters.value.status) {
-      result = result.filter(user => user.status === filters.value.status);
+    // Apply status filter
+    if (statusFilter.value) {
+      result = result.filter(user => user.status === statusFilter.value);
     }
 
-    if (filters.value.terminalId) {
-      result = result.filter(user => user.terminalId === filters.value.terminalId);
+    // Apply terminal filter
+    if (terminalFilter.value) {
+      result = result.filter(user => user.terminalId === terminalFilter.value);
     }
 
-    if (filters.value.regionId) {
-      result = result.filter(user => user.regionId === filters.value.regionId);
+    // Apply region filter
+    if (regionFilter.value) {
+      result = result.filter(user => user.regionId === regionFilter.value);
     }
 
+    // Apply legacy filters for backward compatibility
     if (filters.value.department) {
       result = result.filter(user => user.department === filters.value.department);
     }
@@ -118,21 +139,71 @@ export const useUserManagementStore = defineStore('userManagement', () => {
       result = result.filter(user => user.mfaEnabled === filters.value.mfaEnabled);
     }
 
+    // Apply sorting
+    result.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortBy.value) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'email':
+          aValue = a.email.toLowerCase();
+          bValue = b.email.toLowerCase();
+          break;
+        case 'role':
+          aValue = a.role;
+          bValue = b.role;
+          break;
+        case 'status':
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        case 'createdAt':
+          aValue = new Date(a.createdAt).getTime();
+          bValue = new Date(b.createdAt).getTime();
+          break;
+        case 'lastLogin':
+          aValue = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
+          bValue = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortOrder.value === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder.value === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // Update pagination total
+    paginationState.value.totalItems = result.length;
+    paginationState.value.totalPages = Math.ceil(result.length / paginationState.value.pageSize);
+    
+    // Ensure current page is valid
+    if (paginationState.value.currentPage > paginationState.value.totalPages && paginationState.value.totalPages > 0) {
+      paginationState.value.currentPage = paginationState.value.totalPages;
+    }
+
     return result;
   });
 
+  // Paginated users
   const paginatedUsers = computed(() => {
-    const start = (currentPage.value - 1) * pageSize.value;
-    const end = start + pageSize.value;
-    return filteredUsers.value.slice(start, end);
+    const startIndex = (paginationState.value.currentPage - 1) * paginationState.value.pageSize;
+    const endIndex = startIndex + paginationState.value.pageSize;
+    return filteredAndSearchedUsers.value.slice(startIndex, endIndex);
   });
 
-  const totalPages = computed(() => {
-    return Math.ceil(filteredUsers.value.length / pageSize.value);
-  });
+  // Backward compatibility
+  const filteredUsers = computed(() => filteredAndSearchedUsers.value);
+  const totalPages = computed(() => paginationState.value.totalPages);
 
+  // Legacy computed properties - maintained for backward compatibility
   const activeUsers = computed(() => {
-    return users.value.filter(user => user.status === 'active');
+    return getAccessibleUsers.value.filter(user => user.status === 'active');
   });
 
   const usersByRole = computed(() => {
@@ -143,7 +214,7 @@ export const useUserManagementStore = defineStore('userManagement', () => {
       worker: 0
     };
 
-    users.value.forEach(user => {
+    getAccessibleUsers.value.forEach(user => {
       counts[user.role]++;
     });
 
@@ -158,7 +229,7 @@ export const useUserManagementStore = defineStore('userManagement', () => {
       terminated: 0
     };
 
-    users.value.forEach(user => {
+    getAccessibleUsers.value.forEach(user => {
       counts[user.status]++;
     });
 
@@ -169,28 +240,73 @@ export const useUserManagementStore = defineStore('userManagement', () => {
     const now = new Date();
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     
+    // Use accessible users instead of all users for scoped stats
+    const accessibleUsers = getAccessibleUsers.value;
+    const accessibleActiveUsers = accessibleUsers.filter(user => user.status === 'active');
+    
+    // Calculate role distribution for accessible users only
+    const scopedUsersByRole = accessibleUsers.reduce((acc, user) => {
+      acc[user.role] = (acc[user.role] || 0) + 1;
+      return acc;
+    }, { admin: 0, supervisor: 0, leader: 0, worker: 0 } as Record<UserRole, number>);
+    
+    // Calculate status distribution for accessible users only
+    const scopedUsersByStatus = accessibleUsers.reduce((acc, user) => {
+      acc[user.status] = (acc[user.status] || 0) + 1;
+      return acc;
+    }, { active: 0, inactive: 0, suspended: 0, terminated: 0 } as Record<UserStatus, number>);
+    
     return {
-      totalUsers: users.value.length,
-      activeUsers: activeUsers.value.length,
-      newUsersThisMonth: users.value.filter(user => 
+      totalUsers: accessibleUsers.length,
+      activeUsers: accessibleActiveUsers.length,
+      newUsersThisMonth: accessibleUsers.filter(user => 
         new Date(user.createdAt) >= thisMonthStart
       ).length,
-      usersByRole: usersByRole.value,
-      usersByStatus: usersByStatus.value,
-      usersByTerminal: users.value.reduce((acc, user) => {
+      usersByRole: scopedUsersByRole,
+      usersByStatus: scopedUsersByStatus,
+      usersByTerminal: accessibleUsers.reduce((acc, user) => {
         if (user.terminalId) {
           acc[user.terminalId] = (acc[user.terminalId] || 0) + 1;
         }
         return acc;
       }, {} as Record<string, number>),
-      mfaAdoptionRate: users.value.length > 0 
-        ? (users.value.filter(user => user.mfaEnabled).length / users.value.length) * 100 
+      mfaAdoptionRate: accessibleUsers.length > 0 
+        ? (accessibleUsers.filter(user => user.mfaEnabled).length / accessibleUsers.length) * 100 
         : 0,
       averageSessionDuration: 120, // Mock value in minutes
-      recentLoginCount: users.value.filter(user => 
+      recentLoginCount: accessibleUsers.filter(user => 
         user.lastLogin && new Date(user.lastLogin) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
       ).length
     };
+  });
+
+  // Available filter options
+  const availableRoles = computed(() => {
+    const roles = new Set<string>();
+    getAccessibleUsers.value.forEach(user => roles.add(user.role));
+    return Array.from(roles).sort();
+  });
+
+  const availableStatuses = computed(() => {
+    const statuses = new Set<string>();
+    getAccessibleUsers.value.forEach(user => statuses.add(user.status));
+    return Array.from(statuses).sort();
+  });
+
+  const availableTerminals = computed(() => {
+    const terminals = new Set<string>();
+    getAccessibleUsers.value.forEach(user => {
+      if (user.terminalId) terminals.add(user.terminalId);
+    });
+    return Array.from(terminals).sort();
+  });
+
+  const availableRegions = computed(() => {
+    const regions = new Set<string>();
+    getAccessibleUsers.value.forEach(user => {
+      if (user.regionId) regions.add(user.regionId);
+    });
+    return Array.from(regions).sort();
   });
 
   // Actions
@@ -207,7 +323,6 @@ export const useUserManagementStore = defineStore('userManagement', () => {
       }
       
       // Users are loaded from mock data - this would be an API call in production
-      totalUsers.value = filteredUsers.value.length;
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch users';
     } finally {
@@ -672,25 +787,123 @@ export const useUserManagementStore = defineStore('userManagement', () => {
     }
   };
 
-  // Initialize with mock data
-  const initializeStore = (mockUsers: User[]) => {
-    users.value = mockUsers;
-    totalUsers.value = mockUsers.length;
-  };
-
-  const clearFilters = () => {
-    filters.value = {};
-    currentPage.value = 1;
-  };
-
+  // Pagination methods
   const setPage = (page: number) => {
-    if (page >= 1 && page <= totalPages.value) {
-      currentPage.value = page;
+    const newPage = Math.max(1, Math.min(page, paginationState.value.totalPages));
+    paginationState.value.currentPage = newPage;
+  };
+
+  const setPageSize = (pageSize: UserPaginationSizes) => {
+    // Calculate current first item index
+    const currentFirstItem = (paginationState.value.currentPage - 1) * paginationState.value.pageSize;
+    
+    // Update page size
+    paginationState.value.pageSize = pageSize;
+    
+    // Calculate new page to keep roughly the same position
+    const newPage = Math.floor(currentFirstItem / pageSize) + 1;
+    setPage(newPage);
+  };
+
+  const nextPage = () => {
+    if (paginationState.value.currentPage < paginationState.value.totalPages) {
+      setPage(paginationState.value.currentPage + 1);
     }
   };
 
+  const previousPage = () => {
+    if (paginationState.value.currentPage > 1) {
+      setPage(paginationState.value.currentPage - 1);
+    }
+  };
+
+  const firstPage = () => {
+    setPage(1);
+  };
+
+  const lastPage = () => {
+    setPage(paginationState.value.totalPages);
+  };
+
+  const resetPagination = () => {
+    paginationState.value.currentPage = 1;
+  };
+
+  // Search and filter methods
+  const setSearchQuery = (query: string) => {
+    searchQuery.value = query;
+    resetPagination(); // Reset to first page when search changes
+  };
+
+  const setRoleFilter = (role: string) => {
+    roleFilter.value = role;
+    resetPagination();
+  };
+
+  const setStatusFilter = (status: string) => {
+    statusFilter.value = status;
+    resetPagination();
+  };
+
+  const setTerminalFilter = (terminalId: string) => {
+    terminalFilter.value = terminalId;
+    resetPagination();
+  };
+
+  const setRegionFilter = (regionId: string) => {
+    regionFilter.value = regionId;
+    resetPagination();
+  };
+
+  const setSorting = (by: 'name' | 'email' | 'role' | 'status' | 'createdAt' | 'lastLogin', order: 'asc' | 'desc') => {
+    sortBy.value = by;
+    sortOrder.value = order;
+    resetPagination();
+  };
+
+  const clearAllFilters = () => {
+    searchQuery.value = '';
+    roleFilter.value = '';
+    statusFilter.value = '';
+    terminalFilter.value = '';
+    regionFilter.value = '';
+    sortBy.value = 'name';
+    sortOrder.value = 'asc';
+    filters.value = {};
+    resetPagination();
+  };
+
+  // Additional filter methods for compatibility
+  const setSsoFilter = (provider: string) => {
+    const validProvider = provider === 'talenta' || provider === 'idaman' ? provider : undefined;
+    filters.value = { ...filters.value, ssoProvider: validProvider };
+    resetPagination();
+  };
+
+  const toggleSort = (field: string) => {
+    const validFields = ['name', 'email', 'role', 'status', 'createdAt', 'lastLogin'];
+    if (validFields.includes(field)) {
+      if (sortBy.value === field) {
+        // Toggle order if same field
+        sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+      } else {
+        // Change field, default to ascending
+        sortBy.value = field as any;
+        sortOrder.value = 'asc';
+      }
+      resetPagination();
+    }
+  };
+
+  const clearFilters = clearAllFilters; // Alias for compatibility
+
+  // Initialize with mock data
+  const initializeStore = (mockUsers: User[]) => {
+    users.value = mockUsers;
+  };
+
   return {
-    // State
+    // Original state
     users,
     statusHistory,
     roleHistory,
@@ -699,21 +912,33 @@ export const useUserManagementStore = defineStore('userManagement', () => {
     filters,
     loading,
     error,
-    currentPage,
-    pageSize,
-    totalUsers,
     bulkOperationProgress,
 
-    // Getters
-    filteredUsers,
+    // New pagination and filtering properties
+    paginationState: readonly(paginationState),
     paginatedUsers,
+    filteredAndSearchedUsers,
+    availableRoles,
+    availableStatuses,
+    availableTerminals,
+    availableRegions,
+    searchQuery: readonly(searchQuery),
+    roleFilter: readonly(roleFilter),
+    statusFilter: readonly(statusFilter),
+    terminalFilter: readonly(terminalFilter),
+    regionFilter: readonly(regionFilter),
+    sortBy: readonly(sortBy),
+    sortOrder: readonly(sortOrder),
+
+    // Backward compatibility
+    filteredUsers,
     totalPages,
     activeUsers,
     usersByRole,
     usersByStatus,
     userManagementStats,
 
-    // Actions
+    // Original actions
     fetchUsers,
     fetchUserById,
     createUser,
@@ -725,8 +950,27 @@ export const useUserManagementStore = defineStore('userManagement', () => {
     exportUsers,
     fetchAuditTrail,
     initializeStore,
-    clearFilters,
+    logAuditAction,
+
+    // New pagination actions
     setPage,
-    logAuditAction
+    setPageSize,
+    nextPage,
+    previousPage,
+    firstPage,
+    lastPage,
+    resetPagination,
+
+    // New filter actions
+    setSearchQuery,
+    setRoleFilter,
+    setStatusFilter,
+    setTerminalFilter,
+    setRegionFilter,
+    setSorting,
+    clearAllFilters,
+    setSsoFilter,
+    toggleSort,
+    clearFilters
   };
 });

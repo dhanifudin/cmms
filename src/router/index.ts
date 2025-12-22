@@ -118,6 +118,16 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/memos',
+      name: 'MemoManagement',
+      component: () => import('@/views/memo/MemoManagement.vue'),
+      meta: { 
+        requiresAuth: true,
+        requiresRole: ['admin', 'supervisor'],
+        title: 'Work Order Memos'
+      }
+    },
+    {
       path: '/reports',
       name: 'Reports',
       component: () => import('@/views/reports/Reports.vue'),

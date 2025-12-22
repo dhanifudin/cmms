@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, readonly } from 'vue';
 import type { Invoice, InvoiceItem, WorkOrder, InventoryItem, User } from '@/types';
+import type { PaginationState } from '@/types/pagination';
+import type { InvoicePaginationSizes } from '@/types/pagination';
+import { getPaginationConfig } from '@/config/pagination';
 import { useAuthStore } from './auth';
 
 export interface PricingRule {
@@ -67,6 +70,23 @@ export const useInvoiceStore = defineStore('invoice', () => {
 
   const authStore = useAuthStore();
 
+  // Pagination state
+  const paginationConfig = getPaginationConfig('invoices');
+  const paginationState = ref<PaginationState>({
+    currentPage: 1,
+    pageSize: paginationConfig.defaultPageSize,
+    totalItems: 0,
+    totalPages: 0
+  });
+
+  // Search and filter state
+  const searchQuery = ref('');
+  const statusFilter = ref<'all' | 'draft' | 'pending' | 'sent' | 'paid' | 'overdue'>('all');
+  const terminalFilter = ref<string>('');
+  const regionFilter = ref<string>('');
+  const sortBy = ref<'invoiceNumber' | 'total' | 'generatedAt' | 'dueDate' | 'status'>('generatedAt');
+  const sortOrder = ref<'asc' | 'desc'>('desc');
+
   // Terminal-based filtering helper
   const getFilteredInvoices = computed(() => {
     if (!authStore.currentUser) return [];
@@ -118,7 +138,108 @@ export const useInvoiceStore = defineStore('invoice', () => {
     getFilteredInvoices.value.filter(invoice => invoice.status === 'draft' || invoice.status === 'pending')
   );
 
-  // All accessible invoices (removed unused myInvoices computed property)
+  // Search and filter computed properties
+  const filteredAndSearchedInvoices = computed(() => {
+    let items = getFilteredInvoices.value;
+
+    // Apply search query
+    if (searchQuery.value.trim()) {
+      const query = searchQuery.value.trim().toLowerCase();
+      items = items.filter(invoice =>
+        invoice.invoiceNumber.toLowerCase().includes(query) ||
+        invoice.recipientDetails.name.toLowerCase().includes(query) ||
+        invoice.recipientDetails.company?.toLowerCase().includes(query) ||
+        (invoice.terminalId && invoice.terminalId.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter.value !== 'all') {
+      items = items.filter(invoice => invoice.status === statusFilter.value);
+    }
+
+    // Apply terminal filter
+    if (terminalFilter.value) {
+      items = items.filter(invoice => invoice.terminalId === terminalFilter.value);
+    }
+
+    // Apply region filter
+    if (regionFilter.value) {
+      items = items.filter(invoice => invoice.regionId === regionFilter.value);
+    }
+
+    // Apply sorting
+    items.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortBy.value) {
+        case 'invoiceNumber':
+          aValue = a.invoiceNumber.toLowerCase();
+          bValue = b.invoiceNumber.toLowerCase();
+          break;
+        case 'total':
+          aValue = a.summary.total;
+          bValue = b.summary.total;
+          break;
+        case 'generatedAt':
+          aValue = new Date(a.generatedAt).getTime();
+          bValue = new Date(b.generatedAt).getTime();
+          break;
+        case 'dueDate':
+          aValue = new Date(a.dueDate).getTime();
+          bValue = new Date(b.dueDate).getTime();
+          break;
+        case 'status':
+          // Custom status order: draft, pending, sent, paid, overdue
+          const statusOrder = { draft: 0, pending: 1, sent: 2, paid: 3, overdue: 4 };
+          aValue = statusOrder[a.status as keyof typeof statusOrder] || 5;
+          bValue = statusOrder[b.status as keyof typeof statusOrder] || 5;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortOrder.value === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder.value === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // Update pagination total
+    paginationState.value.totalItems = items.length;
+    paginationState.value.totalPages = Math.ceil(items.length / paginationState.value.pageSize);
+    
+    // Ensure current page is valid
+    if (paginationState.value.currentPage > paginationState.value.totalPages && paginationState.value.totalPages > 0) {
+      paginationState.value.currentPage = paginationState.value.totalPages;
+    }
+
+    return items;
+  });
+
+  // Paginated invoices
+  const paginatedInvoices = computed(() => {
+    const startIndex = (paginationState.value.currentPage - 1) * paginationState.value.pageSize;
+    const endIndex = startIndex + paginationState.value.pageSize;
+    return filteredAndSearchedInvoices.value.slice(startIndex, endIndex);
+  });
+
+  // Available filter options
+  const availableTerminals = computed(() => {
+    const terminals = new Set<string>();
+    getFilteredInvoices.value.forEach(invoice => {
+      if (invoice.terminalId) terminals.add(invoice.terminalId);
+    });
+    return Array.from(terminals).sort();
+  });
+
+  const availableRegions = computed(() => {
+    const regions = new Set<string>();
+    getFilteredInvoices.value.forEach(invoice => {
+      if (invoice.regionId) regions.add(invoice.regionId);
+    });
+    return Array.from(regions).sort();
+  });
 
   const getActivePricingRules = computed(() => (type: 'labor' | 'material' | 'penalty') =>
     pricingRules.value.filter(rule => rule.type === type && rule.isActive)
@@ -389,14 +510,93 @@ export const useInvoiceStore = defineStore('invoice', () => {
     }
   };
 
+  // Pagination methods
+  const setPage = (page: number) => {
+    const newPage = Math.max(1, Math.min(page, paginationState.value.totalPages));
+    paginationState.value.currentPage = newPage;
+  };
+
+  const setPageSize = (pageSize: InvoicePaginationSizes) => {
+    // Calculate current first item index
+    const currentFirstItem = (paginationState.value.currentPage - 1) * paginationState.value.pageSize;
+    
+    // Update page size
+    paginationState.value.pageSize = pageSize;
+    
+    // Calculate new page to keep roughly the same position
+    const newPage = Math.floor(currentFirstItem / pageSize) + 1;
+    setPage(newPage);
+  };
+
+  const nextPage = () => {
+    if (paginationState.value.currentPage < paginationState.value.totalPages) {
+      setPage(paginationState.value.currentPage + 1);
+    }
+  };
+
+  const previousPage = () => {
+    if (paginationState.value.currentPage > 1) {
+      setPage(paginationState.value.currentPage - 1);
+    }
+  };
+
+  const firstPage = () => {
+    setPage(1);
+  };
+
+  const lastPage = () => {
+    setPage(paginationState.value.totalPages);
+  };
+
+  const resetPagination = () => {
+    paginationState.value.currentPage = 1;
+  };
+
+  // Search and filter methods
+  const setSearchQuery = (query: string) => {
+    searchQuery.value = query;
+    resetPagination(); // Reset to first page when search changes
+  };
+
+  const setStatusFilter = (status: 'all' | 'draft' | 'pending' | 'sent' | 'paid' | 'overdue') => {
+    statusFilter.value = status;
+    resetPagination();
+  };
+
+  const setTerminalFilter = (terminalId: string) => {
+    terminalFilter.value = terminalId;
+    resetPagination();
+  };
+
+  const setRegionFilter = (regionId: string) => {
+    regionFilter.value = regionId;
+    resetPagination();
+  };
+
+  const setSorting = (by: 'invoiceNumber' | 'total' | 'generatedAt' | 'dueDate' | 'status', order: 'asc' | 'desc') => {
+    sortBy.value = by;
+    sortOrder.value = order;
+    resetPagination();
+  };
+
+  const clearFilters = () => {
+    searchQuery.value = '';
+    statusFilter.value = 'all';
+    terminalFilter.value = '';
+    regionFilter.value = '';
+    sortBy.value = 'generatedAt';
+    sortOrder.value = 'desc';
+    resetPagination();
+  };
+
   return {
-    // State
+    // Original state
     invoices,
     pricingRules,
     penaltyRules,
     isLoading,
     
-    // Getters
+    // Original getters
     getInvoiceById,
     getInvoicesByTerminal,
     getInvoicesByRegion,
@@ -404,7 +604,20 @@ export const useInvoiceStore = defineStore('invoice', () => {
     getActivePricingRules,
     getActivePenaltyRules,
     
-    // Actions
+    // New pagination and filtering properties
+    paginationState: readonly(paginationState),
+    paginatedInvoices,
+    filteredAndSearchedInvoices,
+    availableTerminals,
+    availableRegions,
+    searchQuery: readonly(searchQuery),
+    statusFilter: readonly(statusFilter),
+    terminalFilter: readonly(terminalFilter),
+    regionFilter: readonly(regionFilter),
+    sortBy: readonly(sortBy),
+    sortOrder: readonly(sortOrder),
+    
+    // Original actions
     fetchInvoices,
     fetchPricingRules,
     generateInvoice,
@@ -415,6 +628,23 @@ export const useInvoiceStore = defineStore('invoice', () => {
     createPricingRule,
     updatePricingRule,
     createPenaltyRule,
-    updatePenaltyRule
+    updatePenaltyRule,
+    
+    // New pagination actions
+    setPage,
+    setPageSize,
+    nextPage,
+    previousPage,
+    firstPage,
+    lastPage,
+    resetPagination,
+    
+    // New filter actions
+    setSearchQuery,
+    setStatusFilter,
+    setTerminalFilter,
+    setRegionFilter,
+    setSorting,
+    clearFilters
   };
 });

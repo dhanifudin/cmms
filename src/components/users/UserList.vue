@@ -1,50 +1,52 @@
 <template>
   <Card>
-    <CardHeader>
-      <div class="flex items-center justify-between">
-        <CardTitle>User Directory</CardTitle>
-        <div class="flex items-center space-x-2">
+    <CardHeader class="pb-2 sm:pb-4">
+      <div class="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+        <CardTitle class="text-base sm:text-lg">User Directory</CardTitle>
+        <div class="flex items-center space-x-1 sm:space-x-2">
           <Button 
             variant="outline" 
             size="sm" 
+            class="px-2 text-xs sm:px-3 sm:text-sm"
             @click="clearFilters"
             :disabled="!hasActiveFilters"
           >
-            <X class="h-4 w-4 mr-1" />
-            Clear Filters
+            <X class="h-3 w-3" />
+            <span class="hidden sm:inline ml-1">Clear</span>
           </Button>
           <Button 
             variant="outline" 
-            size="sm" 
+            size="sm"
+            class="px-2 sm:px-3"
             @click="refreshUsers"
             :disabled="loading"
           >
-            <RotateCcw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
+            <RotateCcw class="h-3 w-3" :class="{ 'animate-spin': loading }" />
           </Button>
         </div>
       </div>
     </CardHeader>
 
-    <CardContent>
+    <CardContent class="pt-0">
       <!-- Filters -->
-      <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
-        <div class="md:col-span-2">
-          <Label>Search Users</Label>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div class="sm:col-span-2">
+          <Label class="text-xs sm:text-sm">Search Users</Label>
           <Input
             v-model="searchQuery"
-            placeholder="Search by name, email, or employee ID..."
-            class="mt-1"
+            placeholder="Search name, email, ID..."
+            class="mt-1 text-sm"
           >
             <template #prefix>
-              <Search class="h-4 w-4 text-muted-foreground" />
+              <Search class="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             </template>
           </Input>
         </div>
 
         <div>
-          <Label>Role</Label>
+          <Label class="text-xs sm:text-sm">Role</Label>
           <Select v-model="roleFilter">
-            <SelectTrigger class="mt-1">
+            <SelectTrigger class="mt-1 h-8 sm:h-9 text-sm">
               <SelectValue placeholder="All Roles" />
             </SelectTrigger>
             <SelectContent>
@@ -58,9 +60,9 @@
         </div>
 
         <div>
-          <Label>Status</Label>
+          <Label class="text-xs sm:text-sm">Status</Label>
           <Select v-model="statusFilter">
-            <SelectTrigger class="mt-1">
+            <SelectTrigger class="mt-1 h-8 sm:h-9 text-sm">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
@@ -73,10 +75,10 @@
           </Select>
         </div>
 
-        <div>
-          <Label>Terminal</Label>
+        <div class="hidden sm:block">
+          <Label class="text-xs sm:text-sm">Terminal</Label>
           <Select v-model="terminalFilter">
-            <SelectTrigger class="mt-1">
+            <SelectTrigger class="mt-1 h-8 sm:h-9 text-sm">
               <SelectValue placeholder="All Terminals" />
             </SelectTrigger>
             <SelectContent>
@@ -87,15 +89,32 @@
             </SelectContent>
           </Select>
         </div>
+      </div>
 
+      <!-- Mobile Additional Filters -->
+      <div class="grid grid-cols-2 gap-2 mb-3 sm:hidden">
         <div>
-          <Label>SSO Provider</Label>
-          <Select v-model="ssoFilter">
-            <SelectTrigger class="mt-1">
-              <SelectValue placeholder="All Providers" />
+          <Label class="text-xs">Terminal</Label>
+          <Select v-model="terminalFilter">
+            <SelectTrigger class="mt-1 h-8 text-sm">
+              <SelectValue placeholder="All Terminals" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__ALL__">All Providers</SelectItem>
+              <SelectItem value="__ALL__">All Terminals</SelectItem>
+              <SelectItem v-for="terminal in terminals" :key="terminal" :value="terminal">
+                {{ terminal }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label class="text-xs">SSO</Label>
+          <Select v-model="ssoFilter">
+            <SelectTrigger class="mt-1 h-8 text-sm">
+              <SelectValue placeholder="All SSO" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__ALL__">All SSO</SelectItem>
               <SelectItem value="talenta">Talenta</SelectItem>
               <SelectItem value="idaman">Idaman</SelectItem>
             </SelectContent>
@@ -104,25 +123,10 @@
       </div>
 
       <!-- Results Summary -->
-      <div class="flex items-center justify-between mb-4">
-        <div class="text-sm text-muted-foreground">
-          Showing {{ paginatedUsers.length }} of {{ filteredUsers.length }} users
-          <span v-if="hasActiveFilters">(filtered from {{ totalUsers }})</span>
-        </div>
-        
-        <div class="flex items-center space-x-2">
-          <Label class="text-sm">Rows per page:</Label>
-          <Select v-model="pageSizeStr">
-            <SelectTrigger class="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-            </SelectContent>
-          </Select>
+      <div class="flex items-center justify-between mb-3 sm:mb-4">
+        <div class="text-xs sm:text-sm text-muted-foreground">
+          {{ paginatedUsers.length }} of {{ paginationState.totalItems }} users
+          <span v-if="hasActiveFilters" class="hidden sm:inline">(filtered from {{ totalUsers }})</span>
         </div>
       </div>
 
@@ -131,20 +135,49 @@
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead class="w-12">
+              <TableHead class="w-8 sm:w-12">
                 <Checkbox
                   :checked="isAllSelected"
                   :indeterminate="isPartiallySelected"
                   @update:checked="toggleSelectAll"
                 />
               </TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Terminal</TableHead>
-              <TableHead>Last Login</TableHead>
-              <TableHead>MFA</TableHead>
-              <TableHead class="w-32">Actions</TableHead>
+              <TableHead class="cursor-pointer hover:bg-muted/50" @click="toggleSort('name')">
+                <div class="flex items-center space-x-1">
+                  <span class="text-xs sm:text-sm">User</span>
+                  <ArrowUpDown class="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                </div>
+              </TableHead>
+              <TableHead class="cursor-pointer hover:bg-muted/50" @click="toggleSort('role')">
+                <div class="flex items-center space-x-1">
+                  <span class="text-xs sm:text-sm">Role</span>
+                  <ArrowUpDown class="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                </div>
+              </TableHead>
+              <TableHead class="cursor-pointer hover:bg-muted/50" @click="toggleSort('status')">
+                <div class="flex items-center space-x-1">
+                  <span class="text-xs sm:text-sm">Status</span>
+                  <ArrowUpDown class="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                </div>
+              </TableHead>
+              <TableHead class="hidden sm:table-cell cursor-pointer hover:bg-muted/50" @click="toggleSort('terminalId')">
+                <div class="flex items-center space-x-1">
+                  <span class="text-xs sm:text-sm">Terminal</span>
+                  <ArrowUpDown class="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                </div>
+              </TableHead>
+              <TableHead class="hidden lg:table-cell cursor-pointer hover:bg-muted/50" @click="toggleSort('lastLogin')">
+                <div class="flex items-center space-x-1">
+                  <span class="text-xs sm:text-sm">Last Login</span>
+                  <ArrowUpDown class="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                </div>
+              </TableHead>
+              <TableHead class="hidden lg:table-cell">
+                <span class="text-xs sm:text-sm">MFA</span>
+              </TableHead>
+              <TableHead class="w-16 sm:w-24">
+                <span class="text-xs sm:text-sm">Actions</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -161,16 +194,16 @@
               </TableCell>
               
               <TableCell>
-                <div class="flex items-center space-x-3">
-                  <Avatar class="h-8 w-8">
-                    <AvatarFallback>
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                  <Avatar class="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0">
+                    <AvatarFallback class="text-xs">
                       {{ user.name.split(' ').map(n => n[0]).join('').toUpperCase() }}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <div class="font-medium text-gray-900">{{ user.name }}</div>
-                    <div class="text-sm text-gray-500">{{ user.email }}</div>
-                    <div v-if="user.employeeId" class="text-xs text-gray-400">
+                  <div class="min-w-0 flex-1">
+                    <div class="font-medium text-gray-900 text-sm sm:text-base truncate">{{ user.name }}</div>
+                    <div class="text-xs sm:text-sm text-gray-500 truncate">{{ user.email }}</div>
+                    <div v-if="user.employeeId" class="text-xs text-gray-400 sm:hidden">
                       ID: {{ user.employeeId }}
                     </div>
                   </div>
@@ -178,69 +211,70 @@
               </TableCell>
 
               <TableCell>
-                <Badge :variant="getRoleBadgeVariant(user.role)">
+                <Badge :variant="getRoleBadgeVariant(user.role)" class="text-xs px-1.5 py-0.5">
                   {{ user.role }}
                 </Badge>
               </TableCell>
 
               <TableCell>
-                <Badge :variant="getStatusBadgeVariant(user.status)">
+                <Badge :variant="getStatusBadgeVariant(user.status)" class="text-xs px-1.5 py-0.5">
                   {{ user.status }}
                 </Badge>
               </TableCell>
 
-              <TableCell>
-                <span v-if="user.terminalId" class="text-sm text-gray-600">
+              <TableCell class="hidden sm:table-cell">
+                <span v-if="user.terminalId" class="text-xs sm:text-sm text-gray-600">
                   {{ user.terminalId }}
                 </span>
-                <span v-else class="text-sm text-gray-400">—</span>
+                <span v-else class="text-xs sm:text-sm text-gray-400">—</span>
               </TableCell>
 
-              <TableCell>
-                <span v-if="user.lastLogin" class="text-sm text-gray-600">
+              <TableCell class="hidden lg:table-cell">
+                <span v-if="user.lastLogin" class="text-xs sm:text-sm text-gray-600">
                   {{ formatLastLogin(user.lastLogin) }}
                 </span>
-                <span v-else class="text-sm text-gray-400">Never</span>
+                <span v-else class="text-xs sm:text-sm text-gray-400">Never</span>
               </TableCell>
 
-              <TableCell>
-                <Badge v-if="user.mfaEnabled" variant="outline" class="text-green-600">
+              <TableCell class="hidden lg:table-cell">
+                <Badge v-if="user.mfaEnabled" variant="outline" class="text-green-600 text-xs px-1.5 py-0.5">
                   <Shield class="h-3 w-3 mr-1" />
                   MFA
                 </Badge>
-                <span v-else class="text-sm text-gray-400">—</span>
+                <span v-else class="text-xs text-gray-400">—</span>
               </TableCell>
 
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" class="h-8 w-8 p-0">
-                      <MoreHorizontal class="h-4 w-4" />
+                    <Button variant="ghost" size="sm" class="h-6 w-6 sm:h-8 sm:w-8 p-0">
+                      <MoreHorizontal class="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem @click="$emit('view-user', user)">
-                      <Eye class="h-4 w-4 mr-2" />
+                  <DropdownMenuContent align="end" class="w-40">
+                    <DropdownMenuItem @click="$emit('view-user', user)" class="text-sm">
+                      <Eye class="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                       View Details
                     </DropdownMenuItem>
                     
-                    <DropdownMenuItem @click="$emit('edit-user', user)">
-                      <Edit class="h-4 w-4 mr-2" />
+                    <DropdownMenuItem @click="$emit('edit-user', user)" class="text-sm">
+                      <Edit class="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                       Edit User
                     </DropdownMenuItem>
                     
                     <DropdownMenuSeparator />
                     
-                    <DropdownMenuItem @click="$emit('change-status', user)">
-                      <UserCheck class="h-4 w-4 mr-2" />
+                    <DropdownMenuItem @click="$emit('change-status', user)" class="text-sm">
+                      <UserCheck class="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                       Change Status
                     </DropdownMenuItem>
                     
                     <DropdownMenuItem 
                       v-if="canPromoteUser(user)"
                       @click="$emit('promote-user', user)"
+                      class="text-sm"
                     >
-                      <Crown class="h-4 w-4 mr-2" />
+                      <Crown class="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                       Promote
                     </DropdownMenuItem>
                     
@@ -249,9 +283,9 @@
                     <DropdownMenuItem 
                       @click="$emit('delete-user', user)"
                       :disabled="!canDeleteUser(user)"
-                      class="text-destructive focus:text-destructive"
+                      class="text-destructive focus:text-destructive text-sm"
                     >
-                      <Trash2 class="h-4 w-4 mr-2" />
+                      <Trash2 class="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -263,60 +297,16 @@
       </div>
 
       <!-- Pagination -->
-      <div v-if="totalPages > 1" class="flex items-center justify-between mt-4">
-        <div class="text-sm text-muted-foreground">
-          Page {{ currentPage }} of {{ totalPages }}
-        </div>
-        
-        <div class="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            @click="setPage(1)"
-            :disabled="currentPage === 1"
-          >
-            <ChevronsLeft class="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            @click="setPage(currentPage - 1)"
-            :disabled="currentPage === 1"
-          >
-            <ChevronLeft class="h-4 w-4" />
-          </Button>
-          
-          <div class="flex items-center space-x-1">
-            <Button
-              v-for="page in visiblePages"
-              :key="page"
-              :variant="page === currentPage ? 'default' : 'outline'"
-              size="sm"
-              class="w-8"
-              @click="setPage(page)"
-            >
-              {{ page }}
-            </Button>
-          </div>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            @click="setPage(currentPage + 1)"
-            :disabled="currentPage === totalPages"
-          >
-            <ChevronRight class="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            @click="setPage(totalPages)"
-            :disabled="currentPage === totalPages"
-          >
-            <ChevronsRight class="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <DataPagination
+        :current-page="paginationState.currentPage"
+        :page-size="paginationState.pageSize"
+        :total-items="paginationState.totalItems"
+        :total-pages="paginationState.totalPages"
+        :loading="loading"
+        @page-change="handlePageChange"
+        @page-size-change="handlePageSizeChange"
+        class="mt-3 sm:mt-4"
+      />
     </CardContent>
   </Card>
 </template>
@@ -326,6 +316,10 @@ import { ref, computed, watch } from 'vue';
 import { useUserManagementStore } from '@/stores/userManagement';
 import { useAuthStore } from '@/stores/auth';
 import type { User } from '@/types';
+import type { UserPaginationSizes } from '@/types/pagination';
+
+// Pagination Components
+import DataPagination from '@/components/ui/pagination/DataPagination.vue';
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -348,7 +342,7 @@ import {
 // Icons
 import {
   Search, X, RotateCcw, MoreHorizontal, Eye, Edit, UserCheck, Crown, Trash2,
-  Shield, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
+  Shield, ArrowUpDown
 } from 'lucide-vue-next';
 
 // Props & Emits
@@ -371,20 +365,17 @@ const emit = defineEmits<{
 const userManagementStore = useUserManagementStore();
 const authStore = useAuthStore();
 
-// Local state
+// Local state for filters
 const searchQuery = ref('');
 const roleFilter = ref('__ALL__');
 const statusFilter = ref('__ALL__');
 const terminalFilter = ref('__ALL__');
 const ssoFilter = ref('__ALL__');
-const pageSizeStr = ref('20');
 
 // Computed
 const loading = computed(() => userManagementStore.loading);
-const currentPage = computed(() => userManagementStore.currentPage);
-const totalPages = computed(() => userManagementStore.totalPages);
+const paginationState = computed(() => userManagementStore.paginationState);
 const totalUsers = computed(() => userManagementStore.users.length);
-const filteredUsers = computed(() => userManagementStore.filteredUsers);
 const paginatedUsers = computed(() => userManagementStore.paginatedUsers);
 
 const selectedUsers = computed({
@@ -419,44 +410,26 @@ const isPartiallySelected = computed(() => {
   return selectedCount > 0 && selectedCount < paginatedUsers.value.length;
 });
 
-const visiblePages = computed(() => {
-  const total = totalPages.value;
-  const current = currentPage.value;
-  const pages: number[] = [];
-  
-  if (total <= 7) {
-    for (let i = 1; i <= total; i++) {
-      pages.push(i);
-    }
-  } else {
-    if (current <= 3) {
-      pages.push(1, 2, 3, 4, 5);
-    } else if (current >= total - 2) {
-      pages.push(total - 4, total - 3, total - 2, total - 1, total);
-    } else {
-      pages.push(current - 2, current - 1, current, current + 1, current + 2);
-    }
-  }
-  
-  return pages;
-});
 
 // Watch for filter changes
-watch([searchQuery, roleFilter, statusFilter, terminalFilter, ssoFilter], () => {
-  const filters = {
-    search: searchQuery.value || undefined,
-    role: roleFilter.value !== '__ALL__' ? roleFilter.value as any : undefined,
-    status: statusFilter.value !== '__ALL__' ? statusFilter.value as any : undefined,
-    terminalId: terminalFilter.value !== '__ALL__' ? terminalFilter.value : undefined,
-    ssoProvider: ssoFilter.value !== '__ALL__' ? ssoFilter.value as any : undefined,
-  };
-  
-  userManagementStore.fetchUsers(filters);
-}, { deep: true });
+watch(searchQuery, (newValue) => {
+  userManagementStore.setSearchQuery(newValue);
+});
 
-watch(pageSizeStr, (newSize) => {
-  userManagementStore.pageSize = parseInt(newSize);
-  userManagementStore.setPage(1);
+watch(roleFilter, (newValue) => {
+  userManagementStore.setRoleFilter(newValue === '__ALL__' ? '' : newValue);
+});
+
+watch(statusFilter, (newValue) => {
+  userManagementStore.setStatusFilter(newValue === '__ALL__' ? '' : newValue);
+});
+
+watch(terminalFilter, (newValue) => {
+  userManagementStore.setTerminalFilter(newValue === '__ALL__' ? '' : newValue);
+});
+
+watch(ssoFilter, (newValue) => {
+  userManagementStore.setSsoFilter(newValue === '__ALL__' ? '' : newValue);
 });
 
 // Methods
@@ -525,8 +498,16 @@ const toggleUserSelection = (userId: string) => {
   }
 };
 
-const setPage = (page: number) => {
+const handlePageChange = (page: number) => {
   userManagementStore.setPage(page);
+};
+
+const handlePageSizeChange = (pageSize: number) => {
+  userManagementStore.setPageSize(pageSize as UserPaginationSizes);
+};
+
+const toggleSort = (field: string) => {
+  userManagementStore.toggleSort(field);
 };
 
 const clearFilters = () => {

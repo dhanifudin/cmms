@@ -94,50 +94,65 @@
     <!-- Filters Panel -->
     <Card v-if="showFilters" class="mb-6">
       <CardContent class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <Label class="text-sm font-medium">Category</Label>
-            <CategorySelector 
-              v-model="filters.categoryId"
-              placeholder="All categories"
-              allow-clear
-            />
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-medium">Filters</h3>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              @click="clearFilters"
+              v-if="hasActiveFilters"
+            >
+              <X class="h-4 w-4 mr-1" />
+              Clear All
+            </Button>
           </div>
-          <div>
-            <Label class="text-sm font-medium">Status</Label>
-            <Select v-model="filters.status">
-              <SelectTrigger>
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__ALL__">All statuses</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="deprecated">Deprecated</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label class="text-sm font-medium">Type</Label>
-            <Select v-model="filters.type">
-              <SelectTrigger>
-                <SelectValue placeholder="All types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__ALL__">All types</SelectItem>
-                <SelectItem value="preventive">Preventive</SelectItem>
-                <SelectItem value="corrective">Corrective</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label class="text-sm font-medium">Search</Label>
-            <Input 
-              v-model="filters.search"
-              placeholder="Search templates..."
-              class="w-full"
-            />
+          
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <Label class="text-sm font-medium">Category</Label>
+              <CategorySelector 
+                v-model="filters.categoryId"
+                placeholder="All categories"
+                allow-clear
+              />
+            </div>
+            <div>
+              <Label class="text-sm font-medium">Status</Label>
+              <Select v-model="filters.status">
+                <SelectTrigger>
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="deprecated">Deprecated</SelectItem>
+                  <SelectItem value="pending_approval">Pending Approval</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label class="text-sm font-medium">Type</Label>
+              <Select v-model="filters.type">
+                <SelectTrigger>
+                  <SelectValue placeholder="All types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All types</SelectItem>
+                  <SelectItem value="preventive">Preventive</SelectItem>
+                  <SelectItem value="corrective">Corrective</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label class="text-sm font-medium">Search</Label>
+              <Input 
+                v-model="filters.search"
+                placeholder="Search templates..."
+                class="w-full"
+              />
+            </div>
           </div>
         </div>
       </CardContent>
@@ -190,7 +205,28 @@
           @view-analytics="viewTemplateAnalytics"
           @select="handleTemplateSelection"
           @bulk-action="handleBulkAction"
+          @sort="handleSort"
         />
+        
+        <!-- Pagination for List View -->
+        <div class="p-4 border-t">
+          <div class="flex items-center justify-between mb-4">
+            <div class="text-sm text-muted-foreground">
+              Showing {{ paginatedTemplates.length }} of {{ paginationState.totalItems }} templates
+              <span v-if="hasActiveFilters">(filtered from {{ totalTemplates }})</span>
+            </div>
+          </div>
+          
+          <DataPagination
+            :current-page="paginationState.currentPage"
+            :page-size="paginationState.pageSize"
+            :total-items="paginationState.totalItems"
+            :total-pages="paginationState.totalPages"
+            :loading="loading"
+            @page-change="handlePageChange"
+            @page-size-change="handlePageSizeChange"
+          />
+        </div>
       </CardContent>
     </Card>
 
@@ -264,6 +300,10 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useTemplateStore } from '@/stores/template';
 import { useToast } from '@/hooks/use-toast';
+import type { TemplatePaginationSizes } from '@/types/pagination';
+
+// Pagination Components
+import DataPagination from '@/components/ui/pagination/DataPagination.vue';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -295,7 +335,7 @@ import TemplateAnalytics from '@/components/template/TemplateAnalytics.vue';
 // Icons
 import { 
   Plus, RotateCcw, File, CheckCircle, Clock, Activity,
-  LayoutList, Grid3X3, Filter, FileText
+  LayoutList, Grid3X3, Filter, FileText, X
 } from 'lucide-vue-next';
 
 // Types
@@ -331,17 +371,15 @@ const filters = ref({
 // Computed
 const templateStats = computed(() => templateStore.templateStats);
 const loading = computed(() => templateStore.loading);
-// const templates = computed(() => templateStore.templates);
+const paginationState = computed(() => templateStore.paginationState);
+const paginatedTemplates = computed(() => templateStore.paginatedTemplates);
+const totalTemplates = computed(() => templateStore.templates.length);
 
+// For backward compatibility in grid/list view
 const filteredTemplates = computed(() => {
-  const cleanFilters = {
-    ...filters.value,
-    categoryId: filters.value.categoryId || undefined,
-    status: filters.value.status || undefined,
-    type: filters.value.type || undefined,
-    search: filters.value.search || undefined
-  };
-  return templateStore.getFilteredTemplates(cleanFilters);
+  // For grid view, we want all filtered templates (not paginated)
+  // For list view, we'll use paginated templates with DataPagination component
+  return viewMode.value === 'grid' ? templateStore.filteredAndSearchedTemplates : paginatedTemplates.value;
 });
 
 const hasActiveFilters = computed(() => {
@@ -545,14 +583,68 @@ const refreshTemplates = async () => {
   }
 };
 
-// Watchers
+// Enterprise pagination event handlers
+const handlePageChange = (page: number) => {
+  templateStore.setPage(page);
+};
+
+const handlePageSizeChange = (pageSize: number) => {
+  templateStore.setPageSize(pageSize as TemplatePaginationSizes);
+};
+
+// Clear filters method
+const clearFilters = () => {
+  filters.value = {
+    categoryId: '',
+    status: '' as '' | 'draft' | 'active' | 'deprecated' | 'archived',
+    type: '' as '' | 'preventive' | 'corrective',
+    search: '',
+    isRecurring: undefined,
+    tags: []
+  };
+  templateStore.clearAllFilters();
+};
+
+// Sort handler
+const handleSort = (field: string) => {
+  templateStore.toggleSort(field);
+};
+
+// Enterprise filter watchers
 watch(
-  () => filters.value,
-  () => {
-    // Auto-refresh when filters change
-    templateStore.applyFilters(filters.value);
-  },
-  { deep: true }
+  () => filters.value.search,
+  (newValue) => {
+    templateStore.setSearchQuery(newValue || '');
+  }
+);
+
+watch(
+  () => filters.value.categoryId,
+  (newValue) => {
+    templateStore.setCategoryFilter(newValue || '');
+  }
+);
+
+watch(
+  () => filters.value.status,
+  (newValue) => {
+    templateStore.setStatusFilter(newValue || '');
+  }
+);
+
+watch(
+  () => filters.value.type,
+  (newValue) => {
+    templateStore.setTypeFilter(newValue || '');
+  }
+);
+
+watch(
+  () => filters.value.isRecurring,
+  (newValue) => {
+    const recurringFilter = newValue === true ? 'recurring' : newValue === false ? 'one-time' : '';
+    templateStore.setRecurringFilter(recurringFilter);
+  }
 );
 
 // Initialize

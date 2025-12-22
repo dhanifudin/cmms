@@ -56,13 +56,33 @@
               @update:checked="toggleSelectAll"
             />
           </TableHead>
-          <TableHead class="min-w-[200px]">Template</TableHead>
-          <TableHead>Category</TableHead>
+          <TableHead class="min-w-[200px] cursor-pointer hover:bg-muted/50" @click="$emit('sort', 'name')">
+            <div class="flex items-center space-x-1">
+              <span>Template</span>
+              <ArrowUpDown class="h-4 w-4 text-muted-foreground" />
+            </div>
+          </TableHead>
+          <TableHead class="cursor-pointer hover:bg-muted/50" @click="$emit('sort', 'category')">
+            <div class="flex items-center space-x-1">
+              <span>Category</span>
+              <ArrowUpDown class="h-4 w-4 text-muted-foreground" />
+            </div>
+          </TableHead>
           <TableHead>Type</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Items</TableHead>
-          <TableHead>Usage</TableHead>
-          <TableHead>Last Used</TableHead>
+          <TableHead class="cursor-pointer hover:bg-muted/50" @click="$emit('sort', 'usageCount')">
+            <div class="flex items-center space-x-1">
+              <span>Usage</span>
+              <ArrowUpDown class="h-4 w-4 text-muted-foreground" />
+            </div>
+          </TableHead>
+          <TableHead class="cursor-pointer hover:bg-muted/50" @click="$emit('sort', 'updatedAt')">
+            <div class="flex items-center space-x-1">
+              <span>Last Used</span>
+              <ArrowUpDown class="h-4 w-4 text-muted-foreground" />
+            </div>
+          </TableHead>
           <TableHead class="w-24">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -247,6 +267,7 @@ import {
   Package,
   TrendingUp,
   Folder,
+  ArrowUpDown,
 } from 'lucide-vue-next';
 
 interface Props {
@@ -264,6 +285,7 @@ const emit = defineEmits<{
   viewAnalytics: [template: WorkOrderTemplate];
   select: [templateIds: string[]];
   bulkAction: [action: string];
+  sort: [field: string];
 }>();
 
 // Store

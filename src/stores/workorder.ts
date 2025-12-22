@@ -150,6 +150,95 @@ export const useWorkOrderStore = defineStore('workorder', () => {
     }
   };
 
+  // Create work order from supervisor memo
+  const createWorkOrderFromMemo = async (memoId: string, memoData: import('@/types').MemoData, additionalData?: Partial<CreateWorkOrderForm>) => {
+    if (!authStore.currentUser || !authStore.isAdmin) {
+      throw new Error('Only admins can create work orders from memos');
+    }
+
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const workOrderData: CreateWorkOrderForm = {
+        title: memoData.workOrderSpecs.title,
+        description: memoData.workOrderSpecs.description,
+        type: memoData.workOrderSpecs.category.includes('Preventive') ? 'preventive' : 'corrective',
+        subType: memoData.workOrderSpecs.category.includes('Emergency') ? 'incidental' : 'planned',
+        priority: memoData.workOrderSpecs.priority,
+        terminalId: memoData.workOrderSpecs.terminalId,
+        assignedWorkerId: memoData.workOrderSpecs.suggestedWorkerId,
+        startDate: new Date().toISOString(), // Start ASAP by default
+        dueDate: new Date(Date.now() + (memoData.workOrderSpecs.estimatedDuration * 24 * 60 * 60 * 1000)).toISOString(),
+        estimatedDuration: memoData.workOrderSpecs.estimatedDuration,
+        materials: (memoData.workOrderSpecs.requiredMaterials || []).map((materialName, index) => ({
+          itemId: `temp-${index}`, // Temporary ID - should be replaced with actual inventory item ID
+          itemName: materialName,
+          plannedQuantity: 1,
+          notes: 'Added from supervisor memo'
+        })),
+        
+        // Override with any additional data provided by admin
+        ...additionalData
+      };
+
+      const newWorkOrder: WorkOrder = {
+        id: `wo_memo_${Date.now()}`,
+        title: workOrderData.title,
+        description: workOrderData.description,
+        type: workOrderData.type,
+        subType: workOrderData.subType,
+        status: 'pending_approval', // Goes to supervisor for approval
+        priority: workOrderData.priority,
+        terminalId: workOrderData.terminalId,
+        assignedWorkerId: workOrderData.assignedWorkerId,
+        createdBy: authStore.currentUser.id,
+        startDate: workOrderData.startDate,
+        dueDate: workOrderData.dueDate,
+        estimatedDuration: workOrderData.estimatedDuration,
+        parentId: workOrderData.parentId,
+        
+        // Track memo origin
+        createdFromMemo: memoId,
+        memoJustification: memoData.justification,
+        memoUrgency: memoData.urgencyLevel,
+        
+        // Template integration fields
+        inheritedFromTemplate: false,
+        customizations: [],
+        checklistLocked: false,
+        
+        checklist: [],
+        beforePhotos: [],
+        afterPhotos: [],
+        materials: workOrderData.materials,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Add special instructions if provided
+      if (memoData.workOrderSpecs.specialInstructions) {
+        newWorkOrder.description += `\n\n**Special Instructions**: ${memoData.workOrderSpecs.specialInstructions}`;
+      }
+
+      workOrders.value.push(newWorkOrder);
+      
+      // Update memo status to converted
+      memoData.status = 'converted';
+      memoData.convertedToWorkOrderId = newWorkOrder.id;
+      
+      return newWorkOrder;
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to create work order from memo';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const updateWorkOrderStatus = async (id: string, status: WorkOrderStatus, _notes?: string) => {
     if (!authStore.currentUser) {
       throw new Error('User not authenticated');
@@ -278,7 +367,20 @@ export const useWorkOrderStore = defineStore('workorder', () => {
   };
 
   const getWorkOrderById = (id: string) => {
-    return workOrders.value.find(wo => wo.id === id);
+    // First check if the work order exists in the filtered list (respecting permissions)
+    const filteredWorkOrder = getFilteredWorkOrders.value.find(wo => wo.id === id);
+    if (filteredWorkOrder) {
+      return filteredWorkOrder;
+    }
+    
+    // If not found in filtered list but user is admin/supervisor, check all work orders
+    // This allows cross-terminal access for admin/supervisor roles
+    if (authStore.isAdmin || authStore.isSupervisor) {
+      return workOrders.value.find(wo => wo.id === id);
+    }
+    
+    // For workers, only return work orders they have access to
+    return null;
   };
 
   const getWorkOrderByIdAsync = async (id: string): Promise<WorkOrder | null> => {
@@ -329,6 +431,7 @@ export const useWorkOrderStore = defineStore('workorder', () => {
     submitForReview,
     fetchWorkOrders,
     createWorkOrder,
+    createWorkOrderFromMemo,
     updateWorkOrderStatus,
     assignWorker,
     submitDocumentation,

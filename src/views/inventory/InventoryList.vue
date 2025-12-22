@@ -86,13 +86,13 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="space-y-2">
             <Label>Category</Label>
-            <Select v-model="filters.category">
+            <Select v-model="categorySelect">
               <SelectTrigger>
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__ALL__">All Categories</SelectItem>
-                <SelectItem v-for="category in categories" :key="category" :value="category">
+                <SelectItem v-for="category in availableCategories" :key="category" :value="category">
                   {{ category }}
                 </SelectItem>
               </SelectContent>
@@ -101,14 +101,15 @@
 
           <div class="space-y-2">
             <Label>Stock Status</Label>
-            <Select v-model="filters.stockStatus">
+            <Select v-model="statusSelect">
               <SelectTrigger>
                 <SelectValue placeholder="All Items" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__ALL__">All Items</SelectItem>
-                <SelectItem value="low">Low Stock</SelectItem>
-                <SelectItem value="normal">Normal Stock</SelectItem>
+                <SelectItem value="all">All Items</SelectItem>
+                <SelectItem value="active">Active Stock</SelectItem>
+                <SelectItem value="low_stock">Low Stock</SelectItem>
+                <SelectItem value="out_of_stock">Out of Stock</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -118,13 +119,28 @@
             <div class="relative">
               <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                v-model="filters.search"
+                v-model="searchInput"
                 type="text"
                 placeholder="Search items..."
                 class="pl-10"
               />
             </div>
           </div>
+        </div>
+        
+        <!-- Filter Actions -->
+        <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+          <div class="text-sm text-gray-600">
+            Showing {{ paginatedItems.length }} of {{ filteredAndSearchedItems.length }} items
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            @click="clearAllFilters"
+            class="text-sm text-gray-500 hover:text-gray-700"
+          >
+            Clear Filters
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -140,7 +156,7 @@
           </div>
         </div>
 
-        <Alert v-else-if="filteredItems.length === 0" class="m-6">
+        <Alert v-else-if="paginatedItems.length === 0" class="m-6">
           <Package class="h-4 w-4" />
           <AlertTitle>No items found</AlertTitle>
           <AlertDescription>Try adjusting your filters or add a new item.</AlertDescription>
@@ -150,18 +166,50 @@
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Stock</TableHead>
+                <TableHead>
+                  <button
+                    @click="handleSort('name')"
+                    class="flex items-center space-x-1 text-left hover:text-gray-900"
+                  >
+                    <span>Item</span>
+                    <ArrowUpDown :class="getSortIcon('name')" class="h-4 w-4" />
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button
+                    @click="handleSort('category')"
+                    class="flex items-center space-x-1 text-left hover:text-gray-900"
+                  >
+                    <span>Category</span>
+                    <ArrowUpDown :class="getSortIcon('category')" class="h-4 w-4" />
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button
+                    @click="handleSort('stock')"
+                    class="flex items-center space-x-1 text-left hover:text-gray-900"
+                  >
+                    <span>Stock</span>
+                    <ArrowUpDown :class="getSortIcon('stock')" class="h-4 w-4" />
+                  </button>
+                </TableHead>
                 <TableHead>Unit Price</TableHead>
-                <TableHead>Total Value</TableHead>
+                <TableHead>
+                  <button
+                    @click="handleSort('value')"
+                    class="flex items-center space-x-1 text-left hover:text-gray-900"
+                  >
+                    <span>Total Value</span>
+                    <ArrowUpDown :class="getSortIcon('value')" class="h-4 w-4" />
+                  </button>
+                </TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow
-                v-for="item in filteredItems"
+                v-for="item in paginatedItems"
                 :key="item.id"
                 class="cursor-pointer"
                 @click="$router.push(`/inventory/${item.id}`)"
@@ -237,15 +285,33 @@
             </TableBody>
           </Table>
         </div>
+        
+        <!-- Pagination -->
+        <div class="border-t border-gray-200">
+          <DataPagination
+            :current-page="paginationState.currentPage"
+            :page-size="paginationState.pageSize"
+            :total-items="paginationState.totalItems"
+            :total-pages="paginationState.totalPages"
+            :page-sizes="[25, 50, 100]"
+            :loading="isLoading"
+            show-page-size-selector
+            show-quick-jump
+            show-page-info
+            @page-change="handlePageChange"
+            @page-size-change="handlePageSizeChange"
+          />
+        </div>
       </CardContent>
     </Card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useInventoryStore } from '@/stores/inventory';
+import { DataPagination } from '@/components/ui/pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -261,56 +327,52 @@ import {
   Package,
   AlertTriangle,
   DollarSign,
-  TrendingUp
+  TrendingUp,
+  ArrowUpDown
 } from 'lucide-vue-next';
 
 const authStore = useAuthStore();
 const inventoryStore = useInventoryStore();
 
-const filters = ref({
-  category: '',
-  stockStatus: '',
-  search: ''
-});
-
+// Use store's pagination and filtering
 const isLoading = computed(() => inventoryStore.isLoading);
 const activeItems = computed(() => inventoryStore.activeItems);
 const lowStockItems = computed(() => inventoryStore.lowStockItems);
 const totalValue = computed(() => inventoryStore.totalValue);
 const itemsByCategory = computed(() => inventoryStore.itemsByCategory);
+const paginatedItems = computed(() => inventoryStore.paginatedItems);
+const filteredAndSearchedItems = computed(() => inventoryStore.filteredAndSearchedItems);
+const paginationState = computed(() => inventoryStore.paginationState);
+const availableCategories = computed(() => inventoryStore.availableCategories);
+const searchQuery = computed(() => inventoryStore.searchQuery);
+const categoryFilter = computed(() => inventoryStore.categoryFilter);
+const statusFilter = computed(() => inventoryStore.statusFilter);
+const sortBy = computed(() => inventoryStore.sortBy);
+const sortOrder = computed(() => inventoryStore.sortOrder);
 
-const categories = computed(() => {
-  return Object.keys(itemsByCategory.value).filter(cat => cat && cat.trim()).sort();
+// Local refs for form controls
+const searchInput = ref('');
+const categorySelect = ref('__ALL__');
+const statusSelect = ref<'all' | 'active' | 'low_stock' | 'out_of_stock'>('all');
+
+// Watchers to sync local refs with store
+watch(searchInput, (newValue) => {
+  inventoryStore.setSearchQuery(newValue);
 });
 
-const filteredItems = computed(() => {
-  let items = activeItems.value;
-  
-  // Filter by category
-  if (filters.value.category && filters.value.category !== '__ALL__') {
-    items = items.filter(item => item.category === filters.value.category);
-  }
-  
-  // Filter by stock status
-  if (filters.value.stockStatus === 'low') {
-    items = items.filter(item => item.currentStock <= item.minThreshold);
-  } else if (filters.value.stockStatus === 'normal') {
-    items = items.filter(item => item.currentStock > item.minThreshold);
-  }
-  // '__ALL__' or null shows all items, no filtering needed
-  
-  // Filter by search
-  if (filters.value.search) {
-    const search = filters.value.search.toLowerCase();
-    items = items.filter(item => 
-      item.name.toLowerCase().includes(search) ||
-      item.code.toLowerCase().includes(search) ||
-      item.description?.toLowerCase().includes(search)
-    );
-  }
-  
-  return items.sort((a, b) => a.name.localeCompare(b.name));
+watch(categorySelect, (newValue) => {
+  // Convert the special __ALL__ value to empty string for the store
+  inventoryStore.setCategoryFilter(newValue === '__ALL__' ? '' : newValue);
 });
+
+watch(statusSelect, (newValue) => {
+  inventoryStore.setStatusFilter(newValue);
+});
+
+// Initialize local refs from store
+searchInput.value = searchQuery.value;
+categorySelect.value = categoryFilter.value || '__ALL__';
+statusSelect.value = statusFilter.value;
 
 const hasPermission = (permission: string) => authStore.hasPermission(permission);
 
@@ -340,6 +402,35 @@ const getStockLevelColor = (item: any) => {
 const adjustStock = (item: any) => {
   // TODO: Implement stock adjustment modal
   console.log('Adjust stock for item:', item.name);
+};
+
+// Pagination handlers
+const handlePageChange = (page: number) => {
+  inventoryStore.setPage(page);
+};
+
+const handlePageSizeChange = (pageSize: number) => {
+  inventoryStore.setPageSize(pageSize as any);
+};
+
+// Sorting handlers
+const handleSort = (field: 'name' | 'category' | 'stock' | 'value') => {
+  const currentOrder = sortBy.value === field && sortOrder.value === 'asc' ? 'desc' : 'asc';
+  inventoryStore.setSorting(field, currentOrder);
+};
+
+const getSortIcon = (field: string) => {
+  if (sortBy.value !== field) return 'text-gray-400';
+  return sortOrder.value === 'asc' ? 'text-blue-600 rotate-180' : 'text-blue-600';
+};
+
+// Clear all filters
+const clearAllFilters = () => {
+  inventoryStore.clearFilters();
+  // Reset local refs
+  searchInput.value = '';
+  categorySelect.value = '__ALL__';
+  statusSelect.value = 'all';
 };
 
 onMounted(() => {

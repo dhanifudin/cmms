@@ -142,25 +142,64 @@
     </div>
 
     <!-- Data Tables -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="space-y-6">
       <!-- Terminal Performance Table -->
       <div class="bg-white rounded-lg border border-gray-200">
         <div class="p-6 border-b border-gray-200">
-          <h3 class="text-lg font-semibold text-gray-900">Terminal Performance</h3>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">Terminal Performance</h3>
+            <div class="flex items-center space-x-3">
+              <div class="relative">
+                <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  :value="terminalSearchQuery"
+                  @input="setTerminalSearchQuery(($event.target as HTMLInputElement).value)"
+                  type="text"
+                  placeholder="Search terminals..."
+                  class="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
         </div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Terminal</th>
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Completion</th>
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Time</th>
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Overdue</th>
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+                <th 
+                  @click="setTerminalSort('terminalName')"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                >
+                  Terminal
+                </th>
+                <th 
+                  @click="setTerminalSort('completionRate')"
+                  class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                >
+                  Completion
+                </th>
+                <th 
+                  @click="setTerminalSort('avgCompletionTime')"
+                  class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                >
+                  Avg Time
+                </th>
+                <th 
+                  @click="setTerminalSort('overdueCount')"
+                  class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                >
+                  Overdue
+                </th>
+                <th 
+                  @click="setTerminalSort('totalCost')"
+                  class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                >
+                  Cost
+                </th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="terminal in terminalPerformance" :key="terminal.terminalId">
+              <tr v-for="terminal in paginatedTerminals" :key="terminal.terminalId">
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div>
                     <p class="text-sm font-medium text-gray-900">{{ terminal.terminalName }}</p>
@@ -201,25 +240,68 @@
             </tbody>
           </table>
         </div>
+        <DataPagination
+          :current-page="terminalPaginationState.currentPage"
+          :total-pages="terminalPaginationState.totalPages"
+          :total-items="terminalPaginationState.totalItems"
+          :page-size="terminalPaginationState.pageSize"
+          :page-sizes="[50, 100, 200]"
+          @page-change="setTerminalPage"
+          @page-size-change="setTerminalPageSize"
+        />
       </div>
 
       <!-- Worker Performance Table -->
       <div class="bg-white rounded-lg border border-gray-200">
         <div class="p-6 border-b border-gray-200">
-          <h3 class="text-lg font-semibold text-gray-900">Top Worker Performance</h3>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">Worker Performance</h3>
+            <div class="flex items-center space-x-3">
+              <div class="relative">
+                <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  :value="workerSearchQuery"
+                  @input="setWorkerSearchQuery(($event.target as HTMLInputElement).value)"
+                  type="text"
+                  placeholder="Search workers..."
+                  class="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
         </div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Worker</th>
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Quality</th>
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Efficiency</th>
+                <th 
+                  @click="setWorkerSort('workerName')"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                >
+                  Worker
+                </th>
+                <th 
+                  @click="setWorkerSort('completedOrders')"
+                  class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                >
+                  Completed
+                </th>
+                <th 
+                  @click="setWorkerSort('qualityScore')"
+                  class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                >
+                  Quality
+                </th>
+                <th 
+                  @click="setWorkerSort('efficiency')"
+                  class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                >
+                  Efficiency
+                </th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="worker in workerPerformance.slice(0, 5)" :key="worker.workerId">
+              <tr v-for="worker in paginatedWorkers" :key="worker.workerId">
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div>
                     <p class="text-sm font-medium text-gray-900">{{ worker.workerName }}</p>
@@ -264,6 +346,15 @@
             </tbody>
           </table>
         </div>
+        <DataPagination
+          :current-page="workerPaginationState.currentPage"
+          :total-pages="workerPaginationState.totalPages"
+          :total-items="workerPaginationState.totalItems"
+          :page-size="workerPaginationState.pageSize"
+          :page-sizes="[50, 100, 200]"
+          @page-change="setWorkerPage"
+          @page-size-change="setWorkerPageSize"
+        />
       </div>
     </div>
 
@@ -271,27 +362,71 @@
     <div class="bg-white rounded-lg border border-gray-200">
       <div class="p-6 border-b border-gray-200">
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900">Overdue Work Orders</h3>
-          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            {{ overdueReports.length }} overdue
-          </span>
+          <div class="flex items-center space-x-3">
+            <h3 class="text-lg font-semibold text-gray-900">Overdue Work Orders</h3>
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              {{ overduePaginationState.totalItems }} overdue
+            </span>
+          </div>
+          <div class="flex items-center space-x-3">
+            <div class="relative">
+              <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                :value="overdueSearchQuery"
+                @input="setOverdueSearchQuery(($event.target as HTMLInputElement).value)"
+                type="text"
+                placeholder="Search overdue reports..."
+                class="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
         </div>
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Work Order</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Worker</th>
-              <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-              <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Days Overdue</th>
-              <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-              <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Penalty</th>
+              <th 
+                @click="setOverdueSort('title')"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+              >
+                Work Order
+              </th>
+              <th 
+                @click="setOverdueSort('assignedWorker')"
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+              >
+                Assigned Worker
+              </th>
+              <th 
+                @click="setOverdueSort('dueDate')"
+                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+              >
+                Due Date
+              </th>
+              <th 
+                @click="setOverdueSort('daysOverdue')"
+                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+              >
+                Days Overdue
+              </th>
+              <th 
+                @click="setOverdueSort('priority')"
+                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+              >
+                Priority
+              </th>
+              <th 
+                @click="setOverdueSort('estimatedPenalty')"
+                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+              >
+                Penalty
+              </th>
               <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="item in overdueReports" :key="item.workOrderId">
+            <tr v-for="item in paginatedOverdueReports" :key="item.workOrderId">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div>
                   <p class="text-sm font-medium text-gray-900">{{ item.title }}</p>
@@ -336,6 +471,15 @@
           </tbody>
         </table>
       </div>
+      <DataPagination
+        :current-page="overduePaginationState.currentPage"
+        :total-pages="overduePaginationState.totalPages"
+        :total-items="overduePaginationState.totalItems"
+        :page-size="overduePaginationState.pageSize"
+        :page-sizes="[50, 100, 200]"
+        @page-change="setOverduePage"
+        @page-size-change="setOverduePageSize"
+      />
     </div>
 
     <!-- Cost Analysis -->
@@ -404,9 +548,10 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, watch } from 'vue';
 import { useReportsStore } from '@/stores/reports';
-import { RefreshCw, Download } from 'lucide-vue-next';
+import { RefreshCw, Download, Search } from 'lucide-vue-next';
 import Chart from 'chart.js/auto';
 import ExportModal from '@/components/reports/ExportModal.vue';
+import DataPagination from '@/components/ui/pagination/DataPagination.vue';
 
 const reportsStore = useReportsStore();
 const showExportModal = ref(false);
@@ -421,16 +566,42 @@ const costBreakdownChart = ref<HTMLCanvasElement>();
 // Chart instances - for cleanup if needed
 const chartInstances: Chart[] = [];
 
-// Computed
+// Computed and pagination state
 const { 
   loading, 
   keyMetrics, 
   chartData, 
-  terminalPerformance, 
-  workerPerformance, 
-  overdueReports, 
   costAnalysis,
-  dateRange
+  dateRange,
+  
+  // Pagination state
+  terminalPaginationState,
+  workerPaginationState,
+  overduePaginationState,
+  
+  // Search state
+  terminalSearchQuery,
+  workerSearchQuery,
+  overdueSearchQuery,
+  
+  // Paginated data
+  paginatedTerminals,
+  paginatedWorkers,
+  paginatedOverdueReports,
+  
+  // Pagination methods
+  setTerminalPage,
+  setTerminalPageSize,
+  setTerminalSearchQuery,
+  setTerminalSort,
+  setWorkerPage,
+  setWorkerPageSize,
+  setWorkerSearchQuery,
+  setWorkerSort,
+  setOverduePage,
+  setOverduePageSize,
+  setOverdueSearchQuery,
+  setOverdueSort
 } = reportsStore;
 
 const terminalOptions = ['Terminal 1', 'Terminal 2', 'Terminal 3', 'Terminal 4', 'Terminal 5'];

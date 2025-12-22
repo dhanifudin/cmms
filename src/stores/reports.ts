@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, readonly } from 'vue';
+import type { PaginationState, ReportPaginationSizes } from '@/types/pagination';
+import { getPaginationConfig } from '@/config/pagination';
 
 export interface ReportMetric {
   id: string;
@@ -75,6 +77,44 @@ export const useReportsStore = defineStore('reports', () => {
     workers: [] as string[],
     categories: [] as string[]
   });
+
+  // Enterprise pagination state for different report sections
+  const paginationConfig = getPaginationConfig('reports');
+  
+  // Terminal Performance Pagination
+  const terminalPaginationState = ref<PaginationState>({
+    currentPage: 1,
+    pageSize: paginationConfig.defaultPageSize,
+    totalItems: 0,
+    totalPages: 0
+  });
+
+  // Worker Performance Pagination  
+  const workerPaginationState = ref<PaginationState>({
+    currentPage: 1,
+    pageSize: paginationConfig.defaultPageSize,
+    totalItems: 0,
+    totalPages: 0
+  });
+
+  // Overdue Reports Pagination
+  const overduePaginationState = ref<PaginationState>({
+    currentPage: 1,
+    pageSize: paginationConfig.defaultPageSize,
+    totalItems: 0,
+    totalPages: 0
+  });
+
+  // Enterprise search and filter state
+  const terminalSearchQuery = ref('');
+  const workerSearchQuery = ref('');
+  const overdueSearchQuery = ref('');
+  const terminalSortBy = ref<'terminalName' | 'completionRate' | 'avgCompletionTime' | 'overdueCount' | 'totalCost'>('terminalName');
+  const terminalSortOrder = ref<'asc' | 'desc'>('asc');
+  const workerSortBy = ref<'workerName' | 'completedOrders' | 'avgCompletionTime' | 'qualityScore' | 'efficiency'>('workerName');
+  const workerSortOrder = ref<'asc' | 'desc'>('asc');
+  const overdueSortBy = ref<'title' | 'assignedWorker' | 'dueDate' | 'daysOverdue' | 'priority' | 'estimatedPenalty'>('daysOverdue');
+  const overdueSortOrder = ref<'asc' | 'desc'>('desc');
 
   // Mock data would be used for real API integration
 
@@ -211,96 +251,60 @@ export const useReportsStore = defineStore('reports', () => {
     }
   ]);
 
-  const terminalPerformance = computed((): TerminalPerformance[] => [
-    {
-      terminalId: 'terminal1',
-      terminalName: 'Terminal Tanjung Priok',
-      completionRate: 95,
-      avgCompletionTime: 2.8,
-      overdueCount: 2,
-      totalCost: 45000,
-      workerCount: 12,
-      efficiency: 'excellent'
-    },
-    {
-      terminalId: 'terminal2', 
-      terminalName: 'Terminal Belawan',
-      completionRate: 88,
-      avgCompletionTime: 3.5,
-      overdueCount: 5,
-      totalCost: 38000,
-      workerCount: 10,
-      efficiency: 'good'
-    },
-    {
-      terminalId: 'terminal3',
-      terminalName: 'Terminal Balikpapan',
-      completionRate: 92,
-      avgCompletionTime: 3.1,
-      overdueCount: 3,
-      totalCost: 41000,
-      workerCount: 11,
-      efficiency: 'good'
-    }
-  ]);
+  // Base terminal performance data (expanded for pagination testing)
+  const baseTerminalPerformance = (): TerminalPerformance[] => [
+    { terminalId: 'terminal1', terminalName: 'Terminal Tanjung Priok', completionRate: 95, avgCompletionTime: 2.8, overdueCount: 2, totalCost: 45000, workerCount: 12, efficiency: 'excellent' },
+    { terminalId: 'terminal2', terminalName: 'Terminal Belawan', completionRate: 88, avgCompletionTime: 3.5, overdueCount: 5, totalCost: 38000, workerCount: 10, efficiency: 'good' },
+    { terminalId: 'terminal3', terminalName: 'Terminal Balikpapan', completionRate: 92, avgCompletionTime: 3.1, overdueCount: 3, totalCost: 41000, workerCount: 11, efficiency: 'good' },
+    { terminalId: 'terminal4', terminalName: 'Terminal Surabaya', completionRate: 85, avgCompletionTime: 4.2, overdueCount: 7, totalCost: 35000, workerCount: 9, efficiency: 'average' },
+    { terminalId: 'terminal5', terminalName: 'Terminal Makassar', completionRate: 90, avgCompletionTime: 3.3, overdueCount: 4, totalCost: 39000, workerCount: 10, efficiency: 'good' },
+    { terminalId: 'terminal6', terminalName: 'Terminal Banjarmasin', completionRate: 87, avgCompletionTime: 3.8, overdueCount: 6, totalCost: 36000, workerCount: 8, efficiency: 'average' },
+    { terminalId: 'terminal7', terminalName: 'Terminal Pontianak', completionRate: 93, avgCompletionTime: 2.9, overdueCount: 3, totalCost: 42000, workerCount: 11, efficiency: 'good' },
+    { terminalId: 'terminal8', terminalName: 'Terminal Palembang', completionRate: 89, avgCompletionTime: 3.4, overdueCount: 4, totalCost: 37000, workerCount: 9, efficiency: 'good' },
+    { terminalId: 'terminal9', terminalName: 'Terminal Medan', completionRate: 91, avgCompletionTime: 3.2, overdueCount: 3, totalCost: 40000, workerCount: 10, efficiency: 'good' },
+    { terminalId: 'terminal10', terminalName: 'Terminal Batam', completionRate: 86, avgCompletionTime: 3.7, overdueCount: 5, totalCost: 34000, workerCount: 8, efficiency: 'average' },
+    { terminalId: 'terminal11', terminalName: 'Terminal Jayapura', completionRate: 83, avgCompletionTime: 4.5, overdueCount: 8, totalCost: 32000, workerCount: 7, efficiency: 'average' },
+    { terminalId: 'terminal12', terminalName: 'Terminal Sorong', completionRate: 94, avgCompletionTime: 2.7, overdueCount: 2, totalCost: 43000, workerCount: 11, efficiency: 'excellent' }
+  ];
 
-  const workerPerformance = computed((): WorkerPerformance[] => [
-    {
-      workerId: 'worker1',
-      workerName: 'Candra Wijaya',
-      completedOrders: 28,
-      avgCompletionTime: 2.5,
-      overdueCount: 1,
-      qualityScore: 95,
-      efficiency: 'excellent',
-      terminalId: 'terminal1'
-    },
-    {
-      workerId: 'worker2',
-      workerName: 'Dedi Kurniawan',
-      completedOrders: 22,
-      avgCompletionTime: 3.8,
-      overdueCount: 4,
-      qualityScore: 82,
-      efficiency: 'average',
-      terminalId: 'terminal2'
-    },
-    {
-      workerId: 'worker3',
-      workerName: 'Eko Santoso',
-      completedOrders: 25,
-      avgCompletionTime: 3.0,
-      overdueCount: 2,
-      qualityScore: 89,
-      efficiency: 'good',
-      terminalId: 'terminal1'
-    }
-  ]);
+  const terminalPerformance = computed((): TerminalPerformance[] => baseTerminalPerformance());
 
-  const overdueReports = computed((): OverdueReport[] => [
-    {
-      workOrderId: 'wo002',
-      title: 'Generator Maintenance',
-      assignedWorker: 'Dedi Kurniawan',
-      terminalId: 'terminal2',
-      dueDate: '2024-12-20',
-      daysOverdue: 5,
-      priority: 'normal',
-      status: 'overdue',
-      estimatedPenalty: 150
-    },
-    {
-      workOrderId: 'wo005',
-      title: 'Safety Valve Inspection',
-      assignedWorker: 'Eko Santoso',
-      terminalId: 'terminal1', 
-      dueDate: '2024-12-22',
-      daysOverdue: 3,
-      priority: 'high',
-      status: 'overdue',
-      estimatedPenalty: 225
-    }
-  ]);
+  // Base worker performance data (expanded for pagination testing)
+  const baseWorkerPerformance = (): WorkerPerformance[] => [
+    { workerId: 'worker1', workerName: 'Candra Wijaya', completedOrders: 28, avgCompletionTime: 2.5, overdueCount: 1, qualityScore: 95, efficiency: 'excellent', terminalId: 'terminal1' },
+    { workerId: 'worker2', workerName: 'Dedi Kurniawan', completedOrders: 22, avgCompletionTime: 3.8, overdueCount: 4, qualityScore: 82, efficiency: 'average', terminalId: 'terminal2' },
+    { workerId: 'worker3', workerName: 'Eko Santoso', completedOrders: 25, avgCompletionTime: 3.0, overdueCount: 2, qualityScore: 89, efficiency: 'good', terminalId: 'terminal1' },
+    { workerId: 'worker4', workerName: 'Fajar Nugroho', completedOrders: 31, avgCompletionTime: 2.3, overdueCount: 0, qualityScore: 97, efficiency: 'excellent', terminalId: 'terminal3' },
+    { workerId: 'worker5', workerName: 'Gunawan Sari', completedOrders: 19, avgCompletionTime: 4.1, overdueCount: 6, qualityScore: 75, efficiency: 'poor', terminalId: 'terminal4' },
+    { workerId: 'worker6', workerName: 'Hendra Pratama', completedOrders: 26, avgCompletionTime: 2.8, overdueCount: 2, qualityScore: 91, efficiency: 'excellent', terminalId: 'terminal5' },
+    { workerId: 'worker7', workerName: 'Indra Mahendra', completedOrders: 23, avgCompletionTime: 3.5, overdueCount: 3, qualityScore: 85, efficiency: 'good', terminalId: 'terminal2' },
+    { workerId: 'worker8', workerName: 'Joko Sutrisno', completedOrders: 20, avgCompletionTime: 3.9, overdueCount: 5, qualityScore: 78, efficiency: 'average', terminalId: 'terminal6' },
+    { workerId: 'worker9', workerName: 'Kurniawan Adi', completedOrders: 29, avgCompletionTime: 2.6, overdueCount: 1, qualityScore: 93, efficiency: 'excellent', terminalId: 'terminal7' },
+    { workerId: 'worker10', workerName: 'Lucky Firmansyah', completedOrders: 24, avgCompletionTime: 3.2, overdueCount: 3, qualityScore: 87, efficiency: 'good', terminalId: 'terminal8' },
+    { workerId: 'worker11', workerName: 'Made Suartika', completedOrders: 27, avgCompletionTime: 2.9, overdueCount: 2, qualityScore: 90, efficiency: 'good', terminalId: 'terminal9' },
+    { workerId: 'worker12', workerName: 'Nanda Pratama', completedOrders: 21, avgCompletionTime: 3.7, overdueCount: 4, qualityScore: 80, efficiency: 'average', terminalId: 'terminal10' },
+    { workerId: 'worker13', workerName: 'Oka Mahendra', completedOrders: 18, avgCompletionTime: 4.3, overdueCount: 7, qualityScore: 72, efficiency: 'poor', terminalId: 'terminal11' },
+    { workerId: 'worker14', workerName: 'Putu Wijaya', completedOrders: 30, avgCompletionTime: 2.4, overdueCount: 1, qualityScore: 96, efficiency: 'excellent', terminalId: 'terminal12' },
+    { workerId: 'worker15', workerName: 'Ravi Sharma', completedOrders: 26, avgCompletionTime: 3.1, overdueCount: 2, qualityScore: 88, efficiency: 'good', terminalId: 'terminal3' }
+  ];
+
+  const workerPerformance = computed((): WorkerPerformance[] => baseWorkerPerformance());
+
+  // Base overdue reports data (expanded for pagination testing)
+  const baseOverdueReports = (): OverdueReport[] => [
+    { workOrderId: 'wo002', title: 'Generator Maintenance', assignedWorker: 'Dedi Kurniawan', terminalId: 'terminal2', dueDate: '2024-12-20', daysOverdue: 5, priority: 'normal', status: 'overdue', estimatedPenalty: 150 },
+    { workOrderId: 'wo005', title: 'Safety Valve Inspection', assignedWorker: 'Eko Santoso', terminalId: 'terminal1', dueDate: '2024-12-22', daysOverdue: 3, priority: 'high', status: 'overdue', estimatedPenalty: 225 },
+    { workOrderId: 'wo008', title: 'Pump System Check', assignedWorker: 'Gunawan Sari', terminalId: 'terminal4', dueDate: '2024-12-18', daysOverdue: 7, priority: 'critical', status: 'overdue', estimatedPenalty: 350 },
+    { workOrderId: 'wo012', title: 'Compressor Service', assignedWorker: 'Joko Sutrisno', terminalId: 'terminal6', dueDate: '2024-12-21', daysOverdue: 4, priority: 'normal', status: 'overdue', estimatedPenalty: 200 },
+    { workOrderId: 'wo015', title: 'Fire System Test', assignedWorker: 'Oka Mahendra', terminalId: 'terminal11', dueDate: '2024-12-19', daysOverdue: 6, priority: 'high', status: 'overdue', estimatedPenalty: 300 },
+    { workOrderId: 'wo018', title: 'Pipeline Inspection', assignedWorker: 'Nanda Pratama', terminalId: 'terminal10', dueDate: '2024-12-23', daysOverdue: 2, priority: 'low', status: 'overdue', estimatedPenalty: 100 },
+    { workOrderId: 'wo021', title: 'Electrical Panel Check', assignedWorker: 'Indra Mahendra', terminalId: 'terminal2', dueDate: '2024-12-17', daysOverdue: 8, priority: 'critical', status: 'overdue', estimatedPenalty: 400 },
+    { workOrderId: 'wo024', title: 'Loading Arm Service', assignedWorker: 'Lucky Firmansyah', terminalId: 'terminal8', dueDate: '2024-12-24', daysOverdue: 1, priority: 'normal', status: 'overdue', estimatedPenalty: 75 },
+    { workOrderId: 'wo027', title: 'Tank Cleaning', assignedWorker: 'Made Suartika', terminalId: 'terminal9', dueDate: '2024-12-16', daysOverdue: 9, priority: 'high', status: 'overdue', estimatedPenalty: 450 },
+    { workOrderId: 'wo030', title: 'Control System Update', assignedWorker: 'Hendra Pratama', terminalId: 'terminal5', dueDate: '2024-12-25', daysOverdue: 0, priority: 'low', status: 'overdue', estimatedPenalty: 50 }
+  ];
+
+  const overdueReports = computed((): OverdueReport[] => baseOverdueReports());
 
   const costAnalysis = computed(() => {
     const totalLabor = 61000;
@@ -321,6 +325,209 @@ export const useReportsStore = defineStore('reports', () => {
         penalties: { change: '+25%', changeType: 'increase' as const }
       }
     };
+  });
+
+  // Enterprise-standard filtering and pagination for Terminal Performance
+  const filteredAndSearchedTerminals = computed(() => {
+    let result = baseTerminalPerformance();
+
+    // Apply search query
+    if (terminalSearchQuery.value.trim()) {
+      const search = terminalSearchQuery.value.trim().toLowerCase();
+      result = result.filter(terminal =>
+        terminal.terminalName.toLowerCase().includes(search) ||
+        terminal.terminalId.toLowerCase().includes(search)
+      );
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (terminalSortBy.value) {
+        case 'terminalName':
+          aValue = a.terminalName.toLowerCase();
+          bValue = b.terminalName.toLowerCase();
+          break;
+        case 'completionRate':
+          aValue = a.completionRate;
+          bValue = b.completionRate;
+          break;
+        case 'avgCompletionTime':
+          aValue = a.avgCompletionTime;
+          bValue = b.avgCompletionTime;
+          break;
+        case 'overdueCount':
+          aValue = a.overdueCount;
+          bValue = b.overdueCount;
+          break;
+        case 'totalCost':
+          aValue = a.totalCost;
+          bValue = b.totalCost;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return terminalSortOrder.value === 'asc' ? -1 : 1;
+      if (aValue > bValue) return terminalSortOrder.value === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // Update pagination total
+    terminalPaginationState.value.totalItems = result.length;
+    terminalPaginationState.value.totalPages = Math.ceil(result.length / terminalPaginationState.value.pageSize);
+    
+    // Ensure current page is valid
+    if (terminalPaginationState.value.currentPage > terminalPaginationState.value.totalPages && terminalPaginationState.value.totalPages > 0) {
+      terminalPaginationState.value.currentPage = terminalPaginationState.value.totalPages;
+    }
+
+    return result;
+  });
+
+  const paginatedTerminals = computed(() => {
+    const startIndex = (terminalPaginationState.value.currentPage - 1) * terminalPaginationState.value.pageSize;
+    const endIndex = startIndex + terminalPaginationState.value.pageSize;
+    return filteredAndSearchedTerminals.value.slice(startIndex, endIndex);
+  });
+
+  // Enterprise-standard filtering and pagination for Worker Performance
+  const filteredAndSearchedWorkers = computed(() => {
+    let result = baseWorkerPerformance();
+
+    // Apply search query
+    if (workerSearchQuery.value.trim()) {
+      const search = workerSearchQuery.value.trim().toLowerCase();
+      result = result.filter(worker =>
+        worker.workerName.toLowerCase().includes(search) ||
+        worker.workerId.toLowerCase().includes(search) ||
+        worker.terminalId.toLowerCase().includes(search)
+      );
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (workerSortBy.value) {
+        case 'workerName':
+          aValue = a.workerName.toLowerCase();
+          bValue = b.workerName.toLowerCase();
+          break;
+        case 'completedOrders':
+          aValue = a.completedOrders;
+          bValue = b.completedOrders;
+          break;
+        case 'avgCompletionTime':
+          aValue = a.avgCompletionTime;
+          bValue = b.avgCompletionTime;
+          break;
+        case 'qualityScore':
+          aValue = a.qualityScore;
+          bValue = b.qualityScore;
+          break;
+        case 'efficiency':
+          aValue = a.efficiency;
+          bValue = b.efficiency;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return workerSortOrder.value === 'asc' ? -1 : 1;
+      if (aValue > bValue) return workerSortOrder.value === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // Update pagination total
+    workerPaginationState.value.totalItems = result.length;
+    workerPaginationState.value.totalPages = Math.ceil(result.length / workerPaginationState.value.pageSize);
+    
+    if (workerPaginationState.value.currentPage > workerPaginationState.value.totalPages && workerPaginationState.value.totalPages > 0) {
+      workerPaginationState.value.currentPage = workerPaginationState.value.totalPages;
+    }
+
+    return result;
+  });
+
+  const paginatedWorkers = computed(() => {
+    const startIndex = (workerPaginationState.value.currentPage - 1) * workerPaginationState.value.pageSize;
+    const endIndex = startIndex + workerPaginationState.value.pageSize;
+    return filteredAndSearchedWorkers.value.slice(startIndex, endIndex);
+  });
+
+  // Enterprise-standard filtering and pagination for Overdue Reports
+  const filteredAndSearchedOverdue = computed(() => {
+    let result = baseOverdueReports();
+
+    // Apply search query
+    if (overdueSearchQuery.value.trim()) {
+      const search = overdueSearchQuery.value.trim().toLowerCase();
+      result = result.filter(report =>
+        report.title.toLowerCase().includes(search) ||
+        report.workOrderId.toLowerCase().includes(search) ||
+        report.assignedWorker.toLowerCase().includes(search) ||
+        report.terminalId.toLowerCase().includes(search)
+      );
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (overdueSortBy.value) {
+        case 'title':
+          aValue = a.title.toLowerCase();
+          bValue = b.title.toLowerCase();
+          break;
+        case 'assignedWorker':
+          aValue = a.assignedWorker.toLowerCase();
+          bValue = b.assignedWorker.toLowerCase();
+          break;
+        case 'dueDate':
+          aValue = new Date(a.dueDate).getTime();
+          bValue = new Date(b.dueDate).getTime();
+          break;
+        case 'daysOverdue':
+          aValue = a.daysOverdue;
+          bValue = b.daysOverdue;
+          break;
+        case 'priority':
+          aValue = a.priority;
+          bValue = b.priority;
+          break;
+        case 'estimatedPenalty':
+          aValue = a.estimatedPenalty;
+          bValue = b.estimatedPenalty;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return overdueSortOrder.value === 'asc' ? -1 : 1;
+      if (aValue > bValue) return overdueSortOrder.value === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // Update pagination total
+    overduePaginationState.value.totalItems = result.length;
+    overduePaginationState.value.totalPages = Math.ceil(result.length / overduePaginationState.value.pageSize);
+    
+    if (overduePaginationState.value.currentPage > overduePaginationState.value.totalPages && overduePaginationState.value.totalPages > 0) {
+      overduePaginationState.value.currentPage = overduePaginationState.value.totalPages;
+    }
+
+    return result;
+  });
+
+  const paginatedOverdueReports = computed(() => {
+    const startIndex = (overduePaginationState.value.currentPage - 1) * overduePaginationState.value.pageSize;
+    const endIndex = startIndex + overduePaginationState.value.pageSize;
+    return filteredAndSearchedOverdue.value.slice(startIndex, endIndex);
   });
 
   // Actions
@@ -363,13 +570,137 @@ export const useReportsStore = defineStore('reports', () => {
     }
   };
 
+  // Enterprise pagination methods for Terminal Performance
+  const setTerminalPage = (page: number) => {
+    const newPage = Math.max(1, Math.min(page, terminalPaginationState.value.totalPages));
+    terminalPaginationState.value.currentPage = newPage;
+  };
+
+  const setTerminalPageSize = (pageSize: number) => {
+    const currentFirstItem = (terminalPaginationState.value.currentPage - 1) * terminalPaginationState.value.pageSize;
+    terminalPaginationState.value.pageSize = pageSize;
+    const newPage = Math.floor(currentFirstItem / pageSize) + 1;
+    setTerminalPage(newPage);
+  };
+
+  const setTerminalSearchQuery = (query: string) => {
+    terminalSearchQuery.value = query;
+    terminalPaginationState.value.currentPage = 1; // Reset to first page when search changes
+  };
+
+  const setTerminalSort = (field: string) => {
+    const validFields = ['terminalName', 'completionRate', 'avgCompletionTime', 'overdueCount', 'totalCost'];
+    if (validFields.includes(field)) {
+      if (terminalSortBy.value === field) {
+        terminalSortOrder.value = terminalSortOrder.value === 'asc' ? 'desc' : 'asc';
+      } else {
+        terminalSortBy.value = field as any;
+        terminalSortOrder.value = 'asc';
+      }
+      terminalPaginationState.value.currentPage = 1;
+    }
+  };
+
+  // Enterprise pagination methods for Worker Performance
+  const setWorkerPage = (page: number) => {
+    const newPage = Math.max(1, Math.min(page, workerPaginationState.value.totalPages));
+    workerPaginationState.value.currentPage = newPage;
+  };
+
+  const setWorkerPageSize = (pageSize: number) => {
+    const currentFirstItem = (workerPaginationState.value.currentPage - 1) * workerPaginationState.value.pageSize;
+    workerPaginationState.value.pageSize = pageSize;
+    const newPage = Math.floor(currentFirstItem / pageSize) + 1;
+    setWorkerPage(newPage);
+  };
+
+  const setWorkerSearchQuery = (query: string) => {
+    workerSearchQuery.value = query;
+    workerPaginationState.value.currentPage = 1;
+  };
+
+  const setWorkerSort = (field: string) => {
+    const validFields = ['workerName', 'completedOrders', 'avgCompletionTime', 'qualityScore', 'efficiency'];
+    if (validFields.includes(field)) {
+      if (workerSortBy.value === field) {
+        workerSortOrder.value = workerSortOrder.value === 'asc' ? 'desc' : 'asc';
+      } else {
+        workerSortBy.value = field as any;
+        workerSortOrder.value = 'asc';
+      }
+      workerPaginationState.value.currentPage = 1;
+    }
+  };
+
+  // Enterprise pagination methods for Overdue Reports
+  const setOverduePage = (page: number) => {
+    const newPage = Math.max(1, Math.min(page, overduePaginationState.value.totalPages));
+    overduePaginationState.value.currentPage = newPage;
+  };
+
+  const setOverduePageSize = (pageSize: number) => {
+    const currentFirstItem = (overduePaginationState.value.currentPage - 1) * overduePaginationState.value.pageSize;
+    overduePaginationState.value.pageSize = pageSize;
+    const newPage = Math.floor(currentFirstItem / pageSize) + 1;
+    setOverduePage(newPage);
+  };
+
+  const setOverdueSearchQuery = (query: string) => {
+    overdueSearchQuery.value = query;
+    overduePaginationState.value.currentPage = 1;
+  };
+
+  const setOverdueSort = (field: string) => {
+    const validFields = ['title', 'assignedWorker', 'dueDate', 'daysOverdue', 'priority', 'estimatedPenalty'];
+    if (validFields.includes(field)) {
+      if (overdueSortBy.value === field) {
+        overdueSortOrder.value = overdueSortOrder.value === 'asc' ? 'desc' : 'asc';
+      } else {
+        overdueSortBy.value = field as any;
+        overdueSortOrder.value = 'asc';
+      }
+      overduePaginationState.value.currentPage = 1;
+    }
+  };
+
+  // Clear all filters method
+  const clearAllFilters = () => {
+    terminalSearchQuery.value = '';
+    workerSearchQuery.value = '';
+    overdueSearchQuery.value = '';
+    terminalPaginationState.value.currentPage = 1;
+    workerPaginationState.value.currentPage = 1;
+    overduePaginationState.value.currentPage = 1;
+  };
+
   return {
     // State
     loading,
     dateRange,
     selectedFilters,
+
+    // Pagination state (enterprise standard)
+    terminalPaginationState: readonly(terminalPaginationState),
+    workerPaginationState: readonly(workerPaginationState),
+    overduePaginationState: readonly(overduePaginationState),
     
-    // Computed
+    // Search and sort state
+    terminalSearchQuery: readonly(terminalSearchQuery),
+    workerSearchQuery: readonly(workerSearchQuery),
+    overdueSearchQuery: readonly(overdueSearchQuery),
+    terminalSortBy: readonly(terminalSortBy),
+    terminalSortOrder: readonly(terminalSortOrder),
+    workerSortBy: readonly(workerSortBy),
+    workerSortOrder: readonly(workerSortOrder),
+    overdueSortBy: readonly(overdueSortBy),
+    overdueSortOrder: readonly(overdueSortOrder),
+    
+    // Paginated data
+    paginatedTerminals,
+    paginatedWorkers,
+    paginatedOverdueReports,
+    
+    // Original computed data
     keyMetrics,
     chartData,
     terminalPerformance,
@@ -377,10 +708,29 @@ export const useReportsStore = defineStore('reports', () => {
     overdueReports,
     costAnalysis,
     
-    // Actions
+    // Terminal pagination actions
+    setTerminalPage,
+    setTerminalPageSize,
+    setTerminalSearchQuery,
+    setTerminalSort,
+    
+    // Worker pagination actions
+    setWorkerPage,
+    setWorkerPageSize,
+    setWorkerSearchQuery,
+    setWorkerSort,
+    
+    // Overdue pagination actions
+    setOverduePage,
+    setOverduePageSize,
+    setOverdueSearchQuery,
+    setOverdueSort,
+    
+    // General actions
     updateDateRange,
     updateFilters,
     exportReport,
-    refreshReports
+    refreshReports,
+    clearAllFilters
   };
 });

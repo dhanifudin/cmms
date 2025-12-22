@@ -1,126 +1,64 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-3 p-2 sm:p-4 lg:p-6">
     <!-- Header -->
     <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
-        <p class="mt-2 text-sm text-gray-600">
-          Manage user accounts, roles, and permissions across all terminals
-        </p>
-      </div>
-      
-      <div class="flex items-center space-x-3">
-        <Button variant="outline" @click="exportUsers" :disabled="loading">
-          <Download class="h-4 w-4 mr-2" />
-          Export
-        </Button>
-        <Button variant="outline" @click="showBulkOperations = true" :disabled="selectedUsers.length === 0">
-          <Users class="h-4 w-4 mr-2" />
-          Bulk Actions ({{ selectedUsers.length }})
-        </Button>
-        <Button @click="showCreateUser = true">
-          <Plus class="h-4 w-4 mr-2" />
-          Add User
-        </Button>
-      </div>
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-900">User Management</h1>
     </div>
 
-    <!-- Stats Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <Card>
-        <CardContent class="p-6">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-blue-100">
-              <Users class="h-6 w-6 text-blue-600" />
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Total Users</p>
-              <p class="text-2xl font-bold text-gray-900">{{ userStats.totalUsers }}</p>
-            </div>
+    <!-- Compact Summary Bar -->
+    <div class="bg-gray-50 rounded-lg p-2 sm:p-3">
+      <div class="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+        <!-- Top/Left: Key metrics -->
+        <div class="flex items-center space-x-3 sm:space-x-6 text-xs sm:text-sm">
+          <div class="flex items-center space-x-1 sm:space-x-2">
+            <div class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500"></div>
+            <span class="text-gray-600 whitespace-nowrap">{{ userStats.totalUsers }} Total</span>
           </div>
-        </CardContent>
-      </Card>
+          <div class="flex items-center space-x-1 sm:space-x-2">
+            <div class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500"></div>
+            <span class="text-gray-600 whitespace-nowrap">{{ userStats.activeUsers }} Active</span>
+          </div>
+          <div v-if="selectedUsers.length > 0" class="flex items-center space-x-1 sm:space-x-2">
+            <div class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-600"></div>
+            <span class="text-blue-600 font-medium whitespace-nowrap">{{ selectedUsers.length }} Selected</span>
+          </div>
+        </div>
 
-      <Card>
-        <CardContent class="p-6">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-green-100">
-              <UserCheck class="h-6 w-6 text-green-600" />
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">Active Users</p>
-              <p class="text-2xl font-bold text-gray-900">{{ userStats.activeUsers }}</p>
+        <!-- Bottom/Right: Quick actions -->
+        <div class="flex items-center justify-between sm:justify-end">
+          <div class="text-xs text-gray-500 sm:hidden">
+            SSO managed
+          </div>
+          
+          <div class="flex items-center space-x-1 sm:space-x-2">
+            <Button 
+              v-if="selectedUsers.length > 0"
+              variant="outline" 
+              size="sm"
+              class="px-2 sm:px-3"
+              @click="showBulkOperations = true"
+            >
+              <Users class="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+              <span class="hidden sm:inline">Bulk</span> ({{ selectedUsers.length }})
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              class="px-2 sm:px-3"
+              @click="exportUsers" 
+              :disabled="loading"
+            >
+              <Download class="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+              <span class="hidden sm:inline">Export</span>
+            </Button>
+            
+            <div class="hidden sm:block text-xs text-gray-500">
+              Users managed via SSO
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent class="p-6">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-purple-100">
-              <UserPlus class="h-6 w-6 text-purple-600" />
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">New This Month</p>
-              <p class="text-2xl font-bold text-gray-900">{{ userStats.newUsersThisMonth }}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent class="p-6">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-orange-100">
-              <Shield class="h-6 w-6 text-orange-600" />
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-600">MFA Adoption</p>
-              <p class="text-2xl font-bold text-gray-900">{{ Math.round(userStats.mfaAdoptionRate) }}%</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-
-    <!-- Role Distribution -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Users by Role</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div class="space-y-4">
-            <div v-for="(count, role) in userStats.usersByRole" :key="role" class="flex items-center justify-between">
-              <div class="flex items-center space-x-3">
-                <Badge :variant="getRoleBadgeVariant(role)" class="w-16 justify-center">
-                  {{ role }}
-                </Badge>
-              </div>
-              <span class="font-semibold text-gray-900">{{ count }}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Users by Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div class="space-y-4">
-            <div v-for="(count, status) in userStats.usersByStatus" :key="status" class="flex items-center justify-between">
-              <div class="flex items-center space-x-3">
-                <Badge :variant="getStatusBadgeVariant(status)" class="w-16 justify-center">
-                  {{ status }}
-                </Badge>
-              </div>
-              <span class="font-semibold text-gray-900">{{ count }}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
 
     <!-- User List -->
@@ -133,22 +71,6 @@
       @promote-user="handlePromoteUser"
     />
 
-    <!-- Create User Dialog -->
-    <Dialog :open="showCreateUser" @update:open="showCreateUser = false">
-      <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create New User</DialogTitle>
-          <DialogDescription>
-            Add a new user to the system with appropriate role and permissions.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <CreateUserFormComponent 
-          @submit="handleCreateUser"
-          @cancel="showCreateUser = false"
-        />
-      </DialogContent>
-    </Dialog>
 
     <!-- Edit User Dialog -->
     <Dialog :open="showEditUser" @update:open="showEditUser = false">
@@ -233,7 +155,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useUserManagementStore } from '@/stores/userManagement';
 import { useAuthStore } from '@/stores/auth';
 import { useToast } from '@/hooks/use-toast';
-import type { User, CreateUserForm, UpdateUserForm, UserStatus, UserRole, BulkUserOperation } from '@/types';
+import type { User, UpdateUserForm, UserStatus, UserRole, BulkUserOperation } from '@/types';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -243,7 +165,6 @@ import { Badge } from '@/components/ui/badge';
 
 // Custom Components
 import UserListComponent from '@/components/users/UserList.vue';
-import CreateUserFormComponent from '@/components/users/CreateUserForm.vue';
 import EditUserFormComponent from '@/components/users/EditUserForm.vue';
 import UserDetailView from '@/components/users/UserDetailView.vue';
 import BulkOperationsComponent from '@/components/users/BulkOperations.vue';
@@ -252,7 +173,7 @@ import RolePromotionDialog from '@/components/users/RolePromotionDialog.vue';
 
 // Icons
 import { 
-  Plus, Download, Users, UserCheck, UserPlus, Shield
+  Download, Users
 } from 'lucide-vue-next';
 
 // Stores and composables
@@ -263,7 +184,6 @@ const { toast } = useToast();
 // State
 const selectedUsers = ref<string[]>([]);
 const selectedUser = ref<User | null>(null);
-const showCreateUser = ref(false);
 const showEditUser = ref(false);
 const showUserDetail = ref(false);
 const showBulkOperations = ref(false);
@@ -295,23 +215,8 @@ const getStatusBadgeVariant = (status: string) => {
   }
 };
 
+
 // Event handlers
-const handleCreateUser = async (userData: CreateUserForm) => {
-  try {
-    await userManagementStore.createUser(userData);
-    showCreateUser.value = false;
-    toast({
-      title: 'User Created',
-      description: `User ${userData.name} has been created successfully.`
-    });
-  } catch (error) {
-    toast({
-      title: 'Error',
-      description: error instanceof Error ? error.message : 'Failed to create user',
-      variant: 'destructive'
-    });
-  }
-};
 
 const handleEditUser = (user: User) => {
   selectedUser.value = user;
@@ -344,11 +249,10 @@ const handleUpdateUser = async (userData: UpdateUserForm) => {
 };
 
 const handleDeleteUser = (user: User) => {
-  selectedUser.value = user;
-  // In a real implementation, this would show a confirmation dialog
+  // Users cannot be deleted - they are managed via SSO
   toast({
-    title: 'Delete User',
-    description: 'Delete functionality will be implemented in the next phase.',
+    title: 'Action Not Allowed',
+    description: 'Users cannot be deleted. Please manage user access through the SSO system (Talenta/Idaman).',
     variant: 'destructive'
   });
 };

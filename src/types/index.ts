@@ -283,6 +283,12 @@ export interface WorkOrder {
   beforeNotes?: string;
   afterNotes?: string;
   materials: MaterialRequirement[];
+  
+  // Memo integration fields
+  createdFromMemo?: string; // memo ID if created from supervisor memo
+  memoJustification?: string; // justification from original memo
+  memoUrgency?: 'routine' | 'urgent' | 'emergency'; // urgency from memo
+  
   createdAt: string;
   updatedAt: string;
 }
@@ -376,10 +382,30 @@ export interface MessageAction {
   id: string;
   label: string;
   type: 'primary' | 'secondary' | 'danger';
-  actionType: 'route' | 'api' | 'modal';
+  actionType: 'route' | 'api' | 'modal' | 'function';
   target: string;
   requireConfirmation?: boolean;
   confirmationMessage?: string;
+}
+
+// Memo-specific interfaces for supervisor work order requests
+export interface MemoData {
+  workOrderSpecs: {
+    title: string;
+    description: string;
+    category: string;
+    priority: Priority;
+    terminalId: string;
+    estimatedDuration: number;
+    suggestedWorkerId?: string;
+    requiredMaterials?: string[];
+    specialInstructions?: string;
+  };
+  urgencyLevel: 'routine' | 'urgent' | 'emergency';
+  justification: string;
+  requestedBy: string; // supervisor ID
+  status: 'pending' | 'converted' | 'rejected';
+  convertedToWorkOrderId?: string;
 }
 
 export interface Message {
@@ -397,8 +423,9 @@ export interface Message {
   parentId?: string; // for replies
   attachments: MessageAttachment[];
   actionButtons?: MessageAction[];
+  memoData?: MemoData; // Add memo-specific data
   relatedEntity?: {
-    type: 'work_order' | 'inventory' | 'invoice' | 'user' | 'template';
+    type: 'work_order' | 'inventory' | 'invoice' | 'user' | 'template' | 'memo';
     id: string;
   };
   status: 'sent' | 'delivered' | 'read';
@@ -426,7 +453,9 @@ export type MessageType =
   | 'admin_memo'
   | 'admin_summary'
   | 'supervisor_reminder'
-  | 'inventory_alert';
+  | 'supervisor_memo'
+  | 'inventory_alert'
+  | 'admin_feedback';
 
 // Enhanced v2.0: Pagination interfaces
 export interface MessagePagination {
@@ -474,7 +503,7 @@ export interface MessageThread {
   unreadCount: number;
   type: MessageType;
   relatedEntity?: {
-    type: 'work_order' | 'inventory' | 'invoice' | 'user' | 'template';
+    type: 'work_order' | 'inventory' | 'invoice' | 'user' | 'template' | 'memo';
     id: string;
   };
   createdAt: string;

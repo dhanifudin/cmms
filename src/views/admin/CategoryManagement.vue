@@ -50,6 +50,15 @@
               <SelectItem value="inactive">Inactive Only</SelectItem>
             </SelectContent>
           </Select>
+          <Button 
+            v-if="hasActiveFilters"
+            variant="ghost" 
+            size="sm" 
+            @click="clearFilters"
+          >
+            <X class="h-4 w-4 mr-1" />
+            Clear Filters
+          </Button>
         </div>
         
         <div class="flex items-center space-x-3">
@@ -112,6 +121,7 @@
           <!-- Tree View with Enhanced Drag & Drop -->
           <div v-if="viewMode === 'tree'" class="category-tree">
             <CategoryTreeView
+              :categories="filteredCategories"
               :allow-edit="true"
               :allow-create="true"
               :allow-reorder="true"
@@ -126,7 +136,16 @@
           </div>
           
           <!-- List View -->
-          <div v-else class="category-list">
+          <div v-else class="category-list space-y-4">
+            <!-- Results Summary -->
+            <div class="flex items-center justify-between">
+              <div class="text-sm text-muted-foreground">
+                Showing {{ paginatedCategories.length }} of {{ paginationState.totalItems }} categories
+                <span v-if="hasActiveFilters">(filtered from {{ totalCategories }})</span>
+              </div>
+            </div>
+            
+            <!-- Category List -->
             <div class="grid gap-4">
               <CategoryListItem
                 v-for="category in filteredCategoriesList"
@@ -140,6 +159,17 @@
                 @view-details="viewCategoryDetails"
               />
             </div>
+            
+            <!-- Pagination for List View -->
+            <DataPagination
+              :current-page="paginationState.currentPage"
+              :page-size="paginationState.pageSize"
+              :total-items="paginationState.totalItems"
+              :total-pages="paginationState.totalPages"
+              :loading="categoryStore.loading"
+              @page-change="handlePageChange"
+              @page-size-change="handlePageSizeChange"
+            />
           </div>
 
           <!-- Empty State -->
@@ -231,11 +261,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useCategoryStore } from '@/stores/category';
 import { useTemplateStore } from '@/stores/template';
 import { useToast } from '@/hooks/use-toast';
 import type { WorkOrderCategory, CreateCategoryForm } from '@/types/templates';
+import type { CategoryPaginationSizes } from '@/types/pagination';
+
+// Pagination Components
+import DataPagination from '@/components/ui/pagination/DataPagination.vue';
 
 // Components
 // import AdminCategoryTreeNode from '@/components/category/AdminCategoryTreeNode.vue';
@@ -284,41 +318,23 @@ const editingCategory = ref<WorkOrderCategory | null>(null);
 const parentCategory = ref<WorkOrderCategory | null>(null);
 
 // Computed
+const paginationState = computed(() => categoryStore.paginationState);
+const paginatedCategories = computed(() => categoryStore.paginatedCategories);
+const totalCategories = computed(() => categoryStore.categories.length);
+
+// For tree view, use filtered tree that maintains hierarchy
 const filteredCategories = computed(() => {
-  let categories = categoryStore.categoryTree;
-  
-  // Apply status filter
-  if (statusFilter.value === 'active') {
-    categories = categories.filter(cat => cat.isActive);
-  } else if (statusFilter.value === 'inactive') {
-    categories = categories.filter(cat => !cat.isActive);
-  }
-  
-  // Apply search filter
-  if (searchTerm.value.trim()) {
-    const term = searchTerm.value.toLowerCase();
-    categories = categories.filter(category =>
-      category.name.toLowerCase().includes(term) ||
-      category.description?.toLowerCase().includes(term)
-    );
-  }
-  
-  return categories;
+  return categoryStore.filteredCategoryTree;
 });
 
+// For list view, use paginated flat categories
 const filteredCategoriesList = computed(() => {
-  const flattenCategories = (categories: WorkOrderCategory[]): WorkOrderCategory[] => {
-    const result: WorkOrderCategory[] = [];
-    categories.forEach(category => {
-      result.push(category);
-      if (category.children) {
-        result.push(...flattenCategories(category.children));
-      }
-    });
-    return result;
-  };
-  
-  return flattenCategories(filteredCategories.value);
+  return viewMode.value === 'list' ? paginatedCategories.value : categoryStore.filteredAndSearchedCategories;
+});
+
+// Check if any filters are active
+const hasActiveFilters = computed(() => {
+  return searchTerm.value.trim() || statusFilter.value !== 'all';
 });
 
 // Methods
@@ -445,6 +461,32 @@ const exportCategories = async () => {
     });
   }
 };
+
+// Enterprise pagination event handlers
+const handlePageChange = (page: number) => {
+  categoryStore.setPage(page);
+};
+
+const handlePageSizeChange = (pageSize: number) => {
+  categoryStore.setPageSize(pageSize as CategoryPaginationSizes);
+};
+
+// Clear filters method
+const clearFilters = () => {
+  searchTerm.value = '';
+  statusFilter.value = 'all';
+  categoryStore.clearAllFilters();
+};
+
+// Enterprise filter watchers
+watch(searchTerm, (newValue) => {
+  categoryStore.setSearchQuery(newValue || '');
+});
+
+watch(statusFilter, (newValue) => {
+  const filterValue = newValue === 'all' ? '' : newValue;
+  categoryStore.setStatusFilter(filterValue);
+});
 
 const handleImport = async (file: File) => {
   try {

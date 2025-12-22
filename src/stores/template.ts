@@ -1,7 +1,7 @@
 // Template Store for Work Order Template Management
 
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, readonly } from 'vue';
 import type { 
   WorkOrderTemplate,
   CreateTemplateForm,
@@ -10,6 +10,8 @@ import type {
   TemplateFilter
 } from '@/types/templates';
 import type { CreateWorkOrderForm, WorkOrder } from '@/types';
+import type { PaginationState, TemplatePaginationSizes } from '@/types/pagination';
+import { getPaginationConfig } from '@/config/pagination';
 import { 
   mockTemplates
 } from '@/mock/templates';
@@ -19,6 +21,24 @@ export const useTemplateStore = defineStore('template', () => {
   const templates = ref<WorkOrderTemplate[]>([...mockTemplates]);
   const loading = ref(false);
   const error = ref<string | null>(null);
+
+  // Pagination state
+  const paginationConfig = getPaginationConfig('templates');
+  const paginationState = ref<PaginationState>({
+    currentPage: 1,
+    pageSize: paginationConfig.defaultPageSize,
+    totalItems: 0,
+    totalPages: 0
+  });
+
+  // Search and filter state
+  const searchQuery = ref('');
+  const categoryFilter = ref<string>('');
+  const statusFilter = ref<string>('');
+  const typeFilter = ref<string>('');
+  const recurringFilter = ref<string>('');
+  const sortBy = ref<'name' | 'category' | 'usageCount' | 'createdAt' | 'updatedAt'>('updatedAt');
+  const sortOrder = ref<'asc' | 'desc'>('desc');
 
   // Computed
   const activeTemplates = computed(() => 
@@ -43,6 +63,113 @@ export const useTemplateStore = defineStore('template', () => {
     });
     return grouped;
   });
+
+  // Enterprise-standard filtering with search, sort and pagination
+  const filteredAndSearchedTemplates = computed(() => {
+    let result = templates.value;
+
+    // Apply search query
+    if (searchQuery.value.trim()) {
+      const search = searchQuery.value.trim().toLowerCase();
+      result = result.filter(template =>
+        template.name.toLowerCase().includes(search) ||
+        template.description.toLowerCase().includes(search) ||
+        template.code.toLowerCase().includes(search) ||
+        template.tags.some(tag => tag.toLowerCase().includes(search))
+      );
+    }
+
+    // Apply category filter
+    if (categoryFilter.value) {
+      result = result.filter(template => template.categoryId === categoryFilter.value);
+    }
+
+    // Apply status filter
+    if (statusFilter.value) {
+      switch (statusFilter.value) {
+        case 'active':
+          result = result.filter(template => template.isActive);
+          break;
+        case 'draft':
+          result = result.filter(template => template.status === 'draft');
+          break;
+        case 'deprecated':
+          result = result.filter(template => template.status === 'deprecated');
+          break;
+        case 'pending_approval':
+          result = result.filter(template => !template.approvedBy && !template.isActive);
+          break;
+      }
+    }
+
+    // Apply type filter
+    if (typeFilter.value) {
+      result = result.filter(template => template.type === typeFilter.value);
+    }
+
+    // Apply recurring filter
+    if (recurringFilter.value === 'recurring') {
+      result = result.filter(template => template.isRecurring);
+    } else if (recurringFilter.value === 'one-time') {
+      result = result.filter(template => !template.isRecurring);
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortBy.value) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'category':
+          aValue = a.categoryId;
+          bValue = b.categoryId;
+          break;
+        case 'usageCount':
+          aValue = a.usageCount || 0;
+          bValue = b.usageCount || 0;
+          break;
+        case 'createdAt':
+          aValue = new Date(a.createdAt).getTime();
+          bValue = new Date(b.createdAt).getTime();
+          break;
+        case 'updatedAt':
+          aValue = new Date(a.updatedAt).getTime();
+          bValue = new Date(b.updatedAt).getTime();
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortOrder.value === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder.value === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // Update pagination total
+    paginationState.value.totalItems = result.length;
+    paginationState.value.totalPages = Math.ceil(result.length / paginationState.value.pageSize);
+    
+    // Ensure current page is valid
+    if (paginationState.value.currentPage > paginationState.value.totalPages && paginationState.value.totalPages > 0) {
+      paginationState.value.currentPage = paginationState.value.totalPages;
+    }
+
+    return result;
+  });
+
+  // Paginated templates
+  const paginatedTemplates = computed(() => {
+    const startIndex = (paginationState.value.currentPage - 1) * paginationState.value.pageSize;
+    const endIndex = startIndex + paginationState.value.pageSize;
+    return filteredAndSearchedTemplates.value.slice(startIndex, endIndex);
+  });
+
+  // Backward compatibility
+  const filteredTemplates = computed(() => filteredAndSearchedTemplates.value);
 
   const templateStats = computed(() => {
     const mostUsed = templates.value.length > 0 
@@ -1187,6 +1314,132 @@ export const useTemplateStore = defineStore('template', () => {
     }
   };
 
+  // Enterprise pagination methods
+  const setPage = (page: number) => {
+    const newPage = Math.max(1, Math.min(page, paginationState.value.totalPages));
+    paginationState.value.currentPage = newPage;
+  };
+
+  const setPageSize = (pageSize: TemplatePaginationSizes) => {
+    // Calculate current first item index
+    const currentFirstItem = (paginationState.value.currentPage - 1) * paginationState.value.pageSize;
+    
+    // Update page size
+    paginationState.value.pageSize = pageSize;
+    
+    // Calculate new page to keep roughly the same position
+    const newPage = Math.floor(currentFirstItem / pageSize) + 1;
+    setPage(newPage);
+  };
+
+  const nextPage = () => {
+    if (paginationState.value.currentPage < paginationState.value.totalPages) {
+      setPage(paginationState.value.currentPage + 1);
+    }
+  };
+
+  const previousPage = () => {
+    if (paginationState.value.currentPage > 1) {
+      setPage(paginationState.value.currentPage - 1);
+    }
+  };
+
+  const firstPage = () => {
+    setPage(1);
+  };
+
+  const lastPage = () => {
+    setPage(paginationState.value.totalPages);
+  };
+
+  const resetPagination = () => {
+    paginationState.value.currentPage = 1;
+  };
+
+  // Enterprise search and filter methods
+  const setSearchQuery = (query: string) => {
+    searchQuery.value = query;
+    resetPagination(); // Reset to first page when search changes
+  };
+
+  const setCategoryFilter = (categoryId: string) => {
+    categoryFilter.value = categoryId;
+    resetPagination();
+  };
+
+  const setStatusFilter = (status: string) => {
+    statusFilter.value = status;
+    resetPagination();
+  };
+
+  const setTypeFilter = (type: string) => {
+    typeFilter.value = type;
+    resetPagination();
+  };
+
+  const setRecurringFilter = (recurring: string) => {
+    recurringFilter.value = recurring;
+    resetPagination();
+  };
+
+  const setSorting = (by: 'name' | 'category' | 'usageCount' | 'createdAt' | 'updatedAt', order: 'asc' | 'desc') => {
+    sortBy.value = by;
+    sortOrder.value = order;
+    resetPagination();
+  };
+
+  const toggleSort = (field: string) => {
+    const validFields = ['name', 'category', 'usageCount', 'createdAt', 'updatedAt'];
+    if (validFields.includes(field)) {
+      if (sortBy.value === field) {
+        // Toggle order if same field
+        sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+      } else {
+        // Change field, default to ascending
+        sortBy.value = field as any;
+        sortOrder.value = 'asc';
+      }
+      resetPagination();
+    }
+  };
+
+  const clearAllFilters = () => {
+    searchQuery.value = '';
+    categoryFilter.value = '';
+    statusFilter.value = '';
+    typeFilter.value = '';
+    recurringFilter.value = '';
+    sortBy.value = 'updatedAt';
+    sortOrder.value = 'desc';
+    resetPagination();
+  };
+
+  const clearFilters = clearAllFilters; // Alias for compatibility
+
+  // Available filter options
+  const availableCategories = computed(() => {
+    const categories = new Set<string>();
+    templates.value.forEach(template => categories.add(template.categoryId));
+    return Array.from(categories).sort();
+  });
+
+  const availableStatuses = computed(() => {
+    const statuses = new Set<string>();
+    templates.value.forEach(template => {
+      if (template.isActive) statuses.add('active');
+      if (template.status === 'draft') statuses.add('draft');
+      if (template.status === 'deprecated') statuses.add('deprecated');
+      if (!template.approvedBy && !template.isActive) statuses.add('pending_approval');
+    });
+    return Array.from(statuses).sort();
+  });
+
+  const availableTypes = computed(() => {
+    const types = new Set<string>();
+    templates.value.forEach(template => types.add(template.type));
+    return Array.from(types).sort();
+  });
+
   // Initialize store
   fetchTemplates();
 
@@ -1195,6 +1448,24 @@ export const useTemplateStore = defineStore('template', () => {
     templates,
     loading,
     error,
+
+    // Pagination and filtering state (enterprise standard)
+    paginationState: readonly(paginationState),
+    paginatedTemplates,
+    filteredAndSearchedTemplates,
+    availableCategories,
+    availableStatuses,
+    availableTypes,
+    searchQuery: readonly(searchQuery),
+    categoryFilter: readonly(categoryFilter),
+    statusFilter: readonly(statusFilter),
+    typeFilter: readonly(typeFilter),
+    recurringFilter: readonly(recurringFilter),
+    sortBy: readonly(sortBy),
+    sortOrder: readonly(sortOrder),
+
+    // Backward compatibility
+    filteredTemplates,
 
     // Computed
     activeTemplates,
@@ -1243,6 +1514,26 @@ export const useTemplateStore = defineStore('template', () => {
     getTemplateVersions,
     submitForApproval,
     approveTemplateVersion,
-    rejectTemplateVersion
+    rejectTemplateVersion,
+
+    // Enterprise pagination actions
+    setPage,
+    setPageSize,
+    nextPage,
+    previousPage,
+    firstPage,
+    lastPage,
+    resetPagination,
+
+    // Enterprise filter actions
+    setSearchQuery,
+    setCategoryFilter,
+    setStatusFilter,
+    setTypeFilter,
+    setRecurringFilter,
+    setSorting,
+    toggleSort,
+    clearAllFilters,
+    clearFilters
   };
 });

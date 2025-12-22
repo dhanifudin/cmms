@@ -49,6 +49,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useWorkOrderTableStore } from '@/stores/work-order-table';
 import { useAuthStore } from '@/stores/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -58,6 +59,7 @@ import type { WorkOrderTableRow } from '@/types';
 import WorkOrderTable from '@/components/work-order/WorkOrderTable.vue';
 
 // Store and composables
+const router = useRouter();
 const workOrderStore = useWorkOrderTableStore();
 const authStore = useAuthStore();
 const { toast } = useToast();
@@ -95,8 +97,18 @@ const handleCreateWorkOrder = () => {
   console.log('Create work order');
 };
 
-const handleViewWorkOrder = (workOrder: WorkOrderTableRow) => {
-  console.log('View work order:', workOrder);
+const handleViewWorkOrder = async (workOrder: WorkOrderTableRow) => {
+  try {
+    console.log('Navigating to work order:', workOrder.id);
+    await router.push(`/work-orders/${workOrder.id}`);
+  } catch (error) {
+    console.error('Failed to navigate to work order detail:', error);
+    toast({
+      title: 'Navigation Error',
+      description: 'Failed to open work order details',
+      variant: 'destructive'
+    });
+  }
 };
 
 const handleEditWorkOrder = (workOrder: WorkOrderTableRow) => {

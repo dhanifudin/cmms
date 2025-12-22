@@ -65,14 +65,6 @@ export const useMessageStore = defineStore('message', () => {
         icon: 'Inbox'
       },
       {
-        id: 'sent',
-        name: 'Sent',
-        type: 'system',
-        messageCount: 0,
-        unreadCount: 0,
-        icon: 'Send'
-      },
-      {
         id: 'work_orders',
         name: 'Work Orders',
         type: 'system',
@@ -307,8 +299,24 @@ export const useMessageStore = defineStore('message', () => {
         attachments: [],
         relatedEntity: {
           type: 'inventory',
-          id: 'inv_001'
+          id: 'item_t1_001'
         },
+        actionButtons: [
+          {
+            id: 'view_inventory',
+            label: 'View Inventory Details',
+            type: 'primary',
+            actionType: 'route',
+            target: '/inventory/item_t1_001'
+          },
+          {
+            id: 'create_purchase_order',
+            label: 'Create Purchase Order',
+            type: 'secondary',
+            actionType: 'route',
+            target: '/inventory/create'
+          }
+        ],
         status: 'delivered',
         readBy: [],
         createdAt: new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString(),
@@ -668,9 +676,6 @@ export const useMessageStore = defineStore('message', () => {
         case 'inbox':
           folderMessages = inboxMessages.value;
           break;
-        case 'sent':
-          folderMessages = sentMessages.value;
-          break;
         case 'work_orders':
           folderMessages = messages.value.filter(m => 
             (m.type === 'work_order_comment' || 
@@ -710,8 +715,6 @@ export const useMessageStore = defineStore('message', () => {
     switch (folderId) {
       case 'inbox':
         return inboxMessages.value;
-      case 'sent':
-        return sentMessages.value;
       case 'work_orders':
         return messages.value.filter(m => 
           (m.type === 'work_order_comment' || 
@@ -741,19 +744,21 @@ export const useMessageStore = defineStore('message', () => {
   const sendSystemMessage = async (messageData: {
     subject: string;
     content: string;
-    category: MessageCategory;
+    type?: MessageType;
+    category?: MessageCategory;
     priority?: Priority;
     recipientIds: string[];
     actionButtons?: MessageAction[];
-    relatedEntity?: { type: 'work_order' | 'inventory' | 'invoice' | 'user'; id: string };
+    relatedEntity?: { type: 'work_order' | 'inventory' | 'invoice' | 'user' | 'template' | 'memo'; id: string };
     metadata?: Record<string, any>;
     expiresAt?: string;
+    memoData?: import('@/types').MemoData;
   }) => {
     const message: Message = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       subject: messageData.subject,
       content: messageData.content,
-      type: 'system_notification',
+      type: messageData.type || 'system_notification',
       category: messageData.category,
       priority: messageData.priority || 'normal',
       senderId: 'system',
@@ -765,6 +770,7 @@ export const useMessageStore = defineStore('message', () => {
       readBy: [],
       expiresAt: messageData.expiresAt,
       metadata: messageData.metadata,
+      memoData: messageData.memoData,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -935,6 +941,73 @@ export const useMessageStore = defineStore('message', () => {
     });
   };
 
+  // Create supervisor memo requesting work order
+  const createSupervisorMemo = async (memoData: import('@/types').MemoData, adminIds: string[]) => {
+    if (!authStore.currentUser || !authStore.isSupervisor) {
+      throw new Error('Only supervisors can create memos');
+    }
+
+    const memoContent = `🔧 **Work Order Request**
+
+**Title**: ${memoData.workOrderSpecs.title}
+**Category**: ${memoData.workOrderSpecs.category}
+**Priority**: ${memoData.workOrderSpecs.priority}
+**Urgency**: ${memoData.urgencyLevel}
+**Terminal**: ${memoData.workOrderSpecs.terminalId}
+**Estimated Duration**: ${memoData.workOrderSpecs.estimatedDuration} hours
+
+**Description**: 
+${memoData.workOrderSpecs.description}
+
+**Justification**: 
+${memoData.justification}
+
+${memoData.workOrderSpecs.specialInstructions ? `**Special Instructions**: 
+${memoData.workOrderSpecs.specialInstructions}` : ''}
+
+${memoData.workOrderSpecs.requiredMaterials?.length ? `**Required Materials**: 
+${memoData.workOrderSpecs.requiredMaterials.join(', ')}` : ''}
+
+${memoData.workOrderSpecs.suggestedWorkerId ? `**Suggested Worker**: ${memoData.workOrderSpecs.suggestedWorkerId}` : ''}
+
+**Requested by**: ${authStore.currentUser.name}
+**Request Date**: ${new Date().toLocaleString()}`;
+
+    return await sendSystemMessage({
+      subject: `🔧 Work Order Request: ${memoData.workOrderSpecs.title}`,
+      content: memoContent,
+      type: 'supervisor_memo',
+      priority: memoData.urgencyLevel === 'emergency' ? 'urgent' : 
+               memoData.urgencyLevel === 'urgent' ? 'high' : 'normal',
+      recipientIds: adminIds,
+      memoData,
+      actionButtons: [
+        {
+          id: 'create_wo_from_memo',
+          label: 'Create Work Order',
+          type: 'primary',
+          actionType: 'function',
+          target: 'convertMemoToWO'
+        },
+        {
+          id: 'reject_memo',
+          label: 'Request Revision',
+          type: 'secondary',
+          actionType: 'function',
+          target: 'rejectMemo'
+        },
+        {
+          id: 'view_memo_details',
+          label: 'View Details',
+          type: 'secondary',
+          actionType: 'modal',
+          target: 'memo-details-modal'
+        }
+      ],
+      relatedEntity: { type: 'memo', id: memoData.workOrderSpecs.title.toLowerCase().replace(/\s+/g, '_') }
+    });
+  };
+
   const executeMessageAction = async (messageId: string, actionId: string) => {
     const message = messages.value.find(m => m.id === messageId);
     if (!message?.actionButtons) return { success: false };
@@ -951,6 +1024,25 @@ export const useMessageStore = defineStore('message', () => {
       // Mark message as read when action is taken
       markAsRead([messageId]);
 
+      // Handle memo-specific actions
+      if (action.target === 'convertMemoToWO') {
+        // This will be handled by the workorder store
+        console.log('Converting memo to work order:', messageId);
+        // Update memo status
+        if (message.memoData) {
+          message.memoData.status = 'converted';
+        }
+        return { success: true, action: 'convertMemoToWO', messageId };
+      }
+
+      if (action.target === 'rejectMemo') {
+        // Update memo status
+        if (message.memoData) {
+          message.memoData.status = 'rejected';
+        }
+        return { success: true, action: 'rejectMemo', messageId };
+      }
+
       // Handle different action types
       switch (action.actionType) {
         case 'route':
@@ -964,6 +1056,9 @@ export const useMessageStore = defineStore('message', () => {
         case 'modal':
           // Open modal - would emit event or use modal store
           console.log('Open modal:', action.target);
+          break;
+        case 'function':
+          // Function calls are handled above
           break;
       }
 
@@ -999,6 +1094,7 @@ export const useMessageStore = defineStore('message', () => {
     notifyInvoiceGenerated,
     showSuccessMessage,
     showErrorMessage,
+    createSupervisorMemo,
     executeMessageAction,
     // Enhanced v2.0: Pagination
     pagination,

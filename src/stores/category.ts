@@ -1,7 +1,7 @@
 // Category Store for Work Order Category Management
 
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, readonly } from 'vue';
 import type { 
   WorkOrderCategory, 
   BulkCategoryOperation, 
@@ -11,6 +11,8 @@ import type {
   CreateCategoryForm,
   CategoryAnalytics
 } from '@/types/templates';
+import type { PaginationState, CategoryPaginationSizes } from '@/types/pagination';
+import { getPaginationConfig } from '@/config/pagination';
 import { 
   mockCategories, 
   buildCategoryTree, 
@@ -24,6 +26,22 @@ export const useCategoryStore = defineStore('category', () => {
   const categories = ref<WorkOrderCategory[]>([...mockCategories]);
   const loading = ref(false);
   const error = ref<string | null>(null);
+
+  // Enterprise pagination state
+  const paginationConfig = getPaginationConfig('categories');
+  const paginationState = ref<PaginationState>({
+    currentPage: 1,
+    pageSize: paginationConfig.defaultPageSize,
+    totalItems: 0,
+    totalPages: 0
+  });
+
+  // Enterprise search and filter state
+  const searchQuery = ref('');
+  const statusFilter = ref<string>('');
+  const levelFilter = ref<string>('');
+  const sortBy = ref<'name' | 'level' | 'templateCount' | 'createdAt' | 'updatedAt'>('name');
+  const sortOrder = ref<'asc' | 'desc'>('asc');
 
   // Computed
   const categoryTree = computed(() => buildCategoryTree(categories.value));
@@ -40,6 +58,164 @@ export const useCategoryStore = defineStore('category', () => {
     const map = new Map<string, WorkOrderCategory>();
     categories.value.forEach(cat => map.set(cat.id, cat));
     return map;
+  });
+
+  // Enterprise-standard filtering and search for categories
+  const flattenedCategories = computed(() => {
+    const flatten = (cats: WorkOrderCategory[]): WorkOrderCategory[] => {
+      const result: WorkOrderCategory[] = [];
+      cats.forEach(cat => {
+        result.push(cat);
+        if (cat.children) {
+          result.push(...flatten(cat.children));
+        }
+      });
+      return result;
+    };
+    return flatten(categoryTree.value);
+  });
+
+  const filteredAndSearchedCategories = computed(() => {
+    let result = flattenedCategories.value;
+
+    // Apply search query
+    if (searchQuery.value.trim()) {
+      const search = searchQuery.value.trim().toLowerCase();
+      result = result.filter(category =>
+        category.name.toLowerCase().includes(search) ||
+        category.description?.toLowerCase().includes(search) ||
+        category.code.toLowerCase().includes(search) ||
+        category.path.toLowerCase().includes(search)
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter.value) {
+      switch (statusFilter.value) {
+        case 'active':
+          result = result.filter(category => category.isActive);
+          break;
+        case 'inactive':
+          result = result.filter(category => !category.isActive);
+          break;
+      }
+    }
+
+    // Apply level filter
+    if (levelFilter.value) {
+      const level = parseInt(levelFilter.value);
+      if (!isNaN(level)) {
+        result = result.filter(category => category.level === level);
+      }
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortBy.value) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'level':
+          aValue = a.level;
+          bValue = b.level;
+          break;
+        case 'templateCount':
+          aValue = a.templateCount || 0;
+          bValue = b.templateCount || 0;
+          break;
+        case 'createdAt':
+          aValue = new Date(a.createdAt).getTime();
+          bValue = new Date(b.createdAt).getTime();
+          break;
+        case 'updatedAt':
+          aValue = new Date(a.updatedAt).getTime();
+          bValue = new Date(b.updatedAt).getTime();
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortOrder.value === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder.value === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // Update pagination total
+    paginationState.value.totalItems = result.length;
+    paginationState.value.totalPages = Math.ceil(result.length / paginationState.value.pageSize);
+    
+    // Ensure current page is valid
+    if (paginationState.value.currentPage > paginationState.value.totalPages && paginationState.value.totalPages > 0) {
+      paginationState.value.currentPage = paginationState.value.totalPages;
+    }
+
+    return result;
+  });
+
+  // Paginated categories for list view
+  const paginatedCategories = computed(() => {
+    const startIndex = (paginationState.value.currentPage - 1) * paginationState.value.pageSize;
+    const endIndex = startIndex + paginationState.value.pageSize;
+    return filteredAndSearchedCategories.value.slice(startIndex, endIndex);
+  });
+
+  // Filtered tree for tree view (maintains hierarchy)
+  const filteredCategoryTree = computed(() => {
+    if (!searchQuery.value.trim() && !statusFilter.value && !levelFilter.value) {
+      return categoryTree.value;
+    }
+
+    const search = searchQuery.value.trim().toLowerCase();
+    
+    const filterTree = (cats: WorkOrderCategory[]): WorkOrderCategory[] => {
+      return cats.filter(cat => {
+        // Check if category matches filters
+        let matches = true;
+
+        // Search filter
+        if (search) {
+          matches = matches && (
+            cat.name.toLowerCase().includes(search) ||
+            cat.description?.toLowerCase().includes(search) ||
+            cat.code.toLowerCase().includes(search) ||
+            cat.path.toLowerCase().includes(search)
+          );
+        }
+
+        // Status filter
+        if (statusFilter.value) {
+          matches = matches && (
+            statusFilter.value === 'active' ? cat.isActive : !cat.isActive
+          );
+        }
+
+        // Level filter
+        if (levelFilter.value) {
+          const level = parseInt(levelFilter.value);
+          if (!isNaN(level)) {
+            matches = matches && cat.level === level;
+          }
+        }
+
+        // Check if any children match (include parent if child matches)
+        const filteredChildren = cat.children ? filterTree(cat.children) : [];
+        
+        if (matches || filteredChildren.length > 0) {
+          return {
+            ...cat,
+            children: filteredChildren
+          };
+        }
+
+        return false;
+      }).filter(Boolean) as WorkOrderCategory[];
+    };
+
+    return filterTree(categoryTree.value);
   });
 
   // Actions
@@ -531,6 +707,112 @@ export const useCategoryStore = defineStore('category', () => {
     return createCategory(duplicateData);
   };
 
+  // Enterprise pagination methods
+  const setPage = (page: number) => {
+    const newPage = Math.max(1, Math.min(page, paginationState.value.totalPages));
+    paginationState.value.currentPage = newPage;
+  };
+
+  const setPageSize = (pageSize: CategoryPaginationSizes) => {
+    // Calculate current first item index
+    const currentFirstItem = (paginationState.value.currentPage - 1) * paginationState.value.pageSize;
+    
+    // Update page size
+    paginationState.value.pageSize = pageSize;
+    
+    // Calculate new page to keep roughly the same position
+    const newPage = Math.floor(currentFirstItem / pageSize) + 1;
+    setPage(newPage);
+  };
+
+  const nextPage = () => {
+    if (paginationState.value.currentPage < paginationState.value.totalPages) {
+      setPage(paginationState.value.currentPage + 1);
+    }
+  };
+
+  const previousPage = () => {
+    if (paginationState.value.currentPage > 1) {
+      setPage(paginationState.value.currentPage - 1);
+    }
+  };
+
+  const firstPage = () => {
+    setPage(1);
+  };
+
+  const lastPage = () => {
+    setPage(paginationState.value.totalPages);
+  };
+
+  const resetPagination = () => {
+    paginationState.value.currentPage = 1;
+  };
+
+  // Enterprise search and filter methods
+  const setSearchQuery = (query: string) => {
+    searchQuery.value = query;
+    resetPagination(); // Reset to first page when search changes
+  };
+
+  const setStatusFilter = (status: string) => {
+    statusFilter.value = status;
+    resetPagination();
+  };
+
+  const setLevelFilter = (level: string) => {
+    levelFilter.value = level;
+    resetPagination();
+  };
+
+  const setSorting = (by: 'name' | 'level' | 'templateCount' | 'createdAt' | 'updatedAt', order: 'asc' | 'desc') => {
+    sortBy.value = by;
+    sortOrder.value = order;
+    resetPagination();
+  };
+
+  const toggleSort = (field: string) => {
+    const validFields = ['name', 'level', 'templateCount', 'createdAt', 'updatedAt'];
+    if (validFields.includes(field)) {
+      if (sortBy.value === field) {
+        // Toggle order if same field
+        sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+      } else {
+        // Change field, default to ascending
+        sortBy.value = field as any;
+        sortOrder.value = 'asc';
+      }
+      resetPagination();
+    }
+  };
+
+  const clearAllFilters = () => {
+    searchQuery.value = '';
+    statusFilter.value = '';
+    levelFilter.value = '';
+    sortBy.value = 'name';
+    sortOrder.value = 'asc';
+    resetPagination();
+  };
+
+  const clearFilters = clearAllFilters; // Alias for compatibility
+
+  // Available filter options
+  const availableStatuses = computed(() => {
+    const statuses = new Set<string>();
+    categories.value.forEach(category => {
+      if (category.isActive) statuses.add('active');
+      if (!category.isActive) statuses.add('inactive');
+    });
+    return Array.from(statuses).sort();
+  });
+
+  const availableLevels = computed(() => {
+    const levels = new Set<number>();
+    categories.value.forEach(category => levels.add(category.level));
+    return Array.from(levels).sort((a, b) => a - b);
+  });
+
   // Note: Don't initialize automatically, let components call fetchCategories when needed
 
   return {
@@ -539,10 +821,25 @@ export const useCategoryStore = defineStore('category', () => {
     loading,
     error,
 
+    // Pagination and filtering state (enterprise standard)
+    paginationState: readonly(paginationState),
+    paginatedCategories,
+    filteredAndSearchedCategories,
+    filteredCategoryTree,
+    flattenedCategories,
+    availableStatuses,
+    availableLevels,
+    searchQuery: readonly(searchQuery),
+    statusFilter: readonly(statusFilter),
+    levelFilter: readonly(levelFilter),
+    sortBy: readonly(sortBy),
+    sortOrder: readonly(sortOrder),
+
     // Computed
     categoryTree,
     activeCategories,
     rootCategories,
+    categoryMap,
 
     // Actions
     fetchCategories,
@@ -559,6 +856,24 @@ export const useCategoryStore = defineStore('category', () => {
     exportCategories,
     importCategories,
     getCategoryAnalytics,
-    duplicateCategory
+    duplicateCategory,
+
+    // Enterprise pagination actions
+    setPage,
+    setPageSize,
+    nextPage,
+    previousPage,
+    firstPage,
+    lastPage,
+    resetPagination,
+
+    // Enterprise filter actions
+    setSearchQuery,
+    setStatusFilter,
+    setLevelFilter,
+    setSorting,
+    toggleSort,
+    clearAllFilters,
+    clearFilters
   };
 });

@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, readonly } from 'vue';
 import type { InventoryItem, StockMovement, MaterialRequirement } from '@/types';
+import type { PaginationState, InventoryPaginationSizes } from '@/types/pagination';
+import { getPaginationConfig } from '@/config/pagination';
 import { useAuthStore } from './auth';
 
 export const useInventoryStore = defineStore('inventory', () => {
@@ -10,6 +12,22 @@ export const useInventoryStore = defineStore('inventory', () => {
   const error = ref<string | null>(null);
 
   const authStore = useAuthStore();
+
+  // Pagination state
+  const paginationConfig = getPaginationConfig('inventory');
+  const paginationState = ref<PaginationState>({
+    currentPage: 1,
+    pageSize: paginationConfig.defaultPageSize,
+    totalItems: 0,
+    totalPages: 0
+  });
+
+  // Search and filter state
+  const searchQuery = ref('');
+  const categoryFilter = ref<string>('');
+  const statusFilter = ref<'all' | 'active' | 'low_stock' | 'out_of_stock'>('all');
+  const sortBy = ref<'name' | 'category' | 'stock' | 'value'>('name');
+  const sortOrder = ref<'asc' | 'desc'>('asc');
 
   // Terminal-based filtering helper
   const getFilteredInventory = computed(() => {
@@ -47,7 +65,92 @@ export const useInventoryStore = defineStore('inventory', () => {
     return [];
   });
 
-  // Computed getters based on filtered data
+  // Search and filter computed properties
+  const filteredAndSearchedItems = computed(() => {
+    let items = getFilteredInventory.value;
+
+    // Apply search query
+    if (searchQuery.value.trim()) {
+      const query = searchQuery.value.trim().toLowerCase();
+      items = items.filter(item =>
+        item.name.toLowerCase().includes(query) ||
+        item.code.toLowerCase().includes(query) ||
+        item.category.toLowerCase().includes(query) ||
+        (item.description && item.description.toLowerCase().includes(query)) ||
+        (item.supplier && item.supplier.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply category filter
+    if (categoryFilter.value) {
+      items = items.filter(item => item.category === categoryFilter.value);
+    }
+
+    // Apply status filter
+    switch (statusFilter.value) {
+      case 'active':
+        items = items.filter(item => item.status === 'active');
+        break;
+      case 'low_stock':
+        items = items.filter(item => item.currentStock <= item.minThreshold && item.status === 'active');
+        break;
+      case 'out_of_stock':
+        items = items.filter(item => item.currentStock === 0);
+        break;
+      // 'all' case - no additional filtering
+    }
+
+    // Apply sorting
+    items.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortBy.value) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'category':
+          aValue = a.category.toLowerCase();
+          bValue = b.category.toLowerCase();
+          break;
+        case 'stock':
+          aValue = a.currentStock;
+          bValue = b.currentStock;
+          break;
+        case 'value':
+          aValue = a.currentStock * a.unitPrice;
+          bValue = b.currentStock * b.unitPrice;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortOrder.value === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder.value === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // Update pagination total
+    paginationState.value.totalItems = items.length;
+    paginationState.value.totalPages = Math.ceil(items.length / paginationState.value.pageSize);
+    
+    // Ensure current page is valid
+    if (paginationState.value.currentPage > paginationState.value.totalPages && paginationState.value.totalPages > 0) {
+      paginationState.value.currentPage = paginationState.value.totalPages;
+    }
+
+    return items;
+  });
+
+  // Paginated items
+  const paginatedItems = computed(() => {
+    const startIndex = (paginationState.value.currentPage - 1) * paginationState.value.pageSize;
+    const endIndex = startIndex + paginationState.value.pageSize;
+    return filteredAndSearchedItems.value.slice(startIndex, endIndex);
+  });
+
+  // Computed getters based on filtered data (preserve existing computed properties)
   const lowStockItems = computed(() => 
     getFilteredInventory.value.filter(item => 
       item.currentStock <= item.minThreshold && item.status === 'active'
@@ -72,6 +175,13 @@ export const useInventoryStore = defineStore('inventory', () => {
   const totalValue = computed(() => 
     getFilteredInventory.value.reduce((total, item) => total + (item.currentStock * item.unitPrice), 0)
   );
+
+  // Available categories for filter dropdown
+  const availableCategories = computed(() => {
+    const categories = new Set<string>();
+    getFilteredInventory.value.forEach(item => categories.add(item.category));
+    return Array.from(categories).sort();
+  });
 
   // Actions
   const fetchInventoryItems = async () => {
@@ -267,7 +377,81 @@ export const useInventoryStore = defineStore('inventory', () => {
     return lowStockItems.value.length > 0 ? lowStockItems.value : null;
   };
 
+  // Pagination methods
+  const setPage = (page: number) => {
+    const newPage = Math.max(1, Math.min(page, paginationState.value.totalPages));
+    paginationState.value.currentPage = newPage;
+  };
+
+  const setPageSize = (pageSize: InventoryPaginationSizes) => {
+    // Calculate current first item index
+    const currentFirstItem = (paginationState.value.currentPage - 1) * paginationState.value.pageSize;
+    
+    // Update page size
+    paginationState.value.pageSize = pageSize;
+    
+    // Calculate new page to keep roughly the same position
+    const newPage = Math.floor(currentFirstItem / pageSize) + 1;
+    setPage(newPage);
+  };
+
+  const nextPage = () => {
+    if (paginationState.value.currentPage < paginationState.value.totalPages) {
+      setPage(paginationState.value.currentPage + 1);
+    }
+  };
+
+  const previousPage = () => {
+    if (paginationState.value.currentPage > 1) {
+      setPage(paginationState.value.currentPage - 1);
+    }
+  };
+
+  const firstPage = () => {
+    setPage(1);
+  };
+
+  const lastPage = () => {
+    setPage(paginationState.value.totalPages);
+  };
+
+  const resetPagination = () => {
+    paginationState.value.currentPage = 1;
+  };
+
+  // Search and filter methods
+  const setSearchQuery = (query: string) => {
+    searchQuery.value = query;
+    resetPagination(); // Reset to first page when search changes
+  };
+
+  const setCategoryFilter = (category: string) => {
+    categoryFilter.value = category;
+    resetPagination();
+  };
+
+  const setStatusFilter = (status: 'all' | 'active' | 'low_stock' | 'out_of_stock') => {
+    statusFilter.value = status;
+    resetPagination();
+  };
+
+  const setSorting = (by: 'name' | 'category' | 'stock' | 'value', order: 'asc' | 'desc') => {
+    sortBy.value = by;
+    sortOrder.value = order;
+    resetPagination();
+  };
+
+  const clearFilters = () => {
+    searchQuery.value = '';
+    categoryFilter.value = '';
+    statusFilter.value = 'all';
+    sortBy.value = 'name';
+    sortOrder.value = 'asc';
+    resetPagination();
+  };
+
   return {
+    // Original properties
     items,
     movements,
     isLoading,
@@ -276,6 +460,19 @@ export const useInventoryStore = defineStore('inventory', () => {
     activeItems,
     itemsByCategory,
     totalValue,
+    
+    // New pagination and filtering properties
+    paginationState: readonly(paginationState),
+    paginatedItems,
+    filteredAndSearchedItems,
+    availableCategories,
+    searchQuery: readonly(searchQuery),
+    categoryFilter: readonly(categoryFilter),
+    statusFilter: readonly(statusFilter),
+    sortBy: readonly(sortBy),
+    sortOrder: readonly(sortOrder),
+    
+    // Original actions
     fetchInventoryItems,
     fetchStockMovements,
     createInventoryItem,
@@ -285,6 +482,22 @@ export const useInventoryStore = defineStore('inventory', () => {
     getItemsByCategory,
     searchItems,
     getMovementsByItem,
-    checkLowStock
+    checkLowStock,
+    
+    // New pagination actions
+    setPage,
+    setPageSize,
+    nextPage,
+    previousPage,
+    firstPage,
+    lastPage,
+    resetPagination,
+    
+    // New filter actions
+    setSearchQuery,
+    setCategoryFilter,
+    setStatusFilter,
+    setSorting,
+    clearFilters
   };
 });

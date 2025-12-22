@@ -9,14 +9,14 @@
             <h1 class="text-base font-semibold text-gray-900">Inbox</h1>
             <p class="text-xs text-gray-500">System notifications</p>
           </div>
-          <!-- Compose only for supervisors with WO context -->
+          <!-- Compose only for system notifications (limited) -->
           <button
-            v-if="authStore.isSupervisor"
+            v-if="authStore.isAdmin"
             @click="showComposeModal = true"
             class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <PlusIcon class="h-3 w-3 mr-1" />
-            New
+            New Announcement
           </button>
         </div>
 
@@ -295,6 +295,7 @@ import { useAuthStore } from '@/stores/auth';
 import type { Message } from '@/types';
 import {
   Plus as PlusIcon,
+  ChevronDown as ChevronDownIcon,
   Search as SearchIcon,
   Inbox as InboxIcon,
   Mail as MailIcon,
@@ -472,8 +473,8 @@ const handlePageSizeChange = (pageSize: 25 | 50 | 100) => {
   selectedMessage.value = null; // Clear selection when changing page size
 };
 
-// Enhanced v2.0: Action button handler
-const handleActionExecuted = (actionId: string, result: { success: boolean; error?: any }) => {
+// Enhanced v2.0: Action button handler for general actions only
+const handleActionExecuted = async (actionId: string, result: { success: boolean; error?: any; action?: string; messageId?: string }) => {
   if (result.success) {
     // Gaming-style success feedback
     console.log(`🎮 Action "${actionId}" completed successfully!`);

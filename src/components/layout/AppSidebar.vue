@@ -62,6 +62,18 @@
         <SidebarGroupLabel class="sidebar-text-muted-theme">Operations</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
+            <SidebarMenuItem v-if="authStore.isSupervisor || authStore.isAdmin">
+              <SidebarMenuButton as-child :is-active="$route.path.startsWith('/memos')">
+                <router-link to="/memos" class="flex items-center">
+                  <FileText class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Work Order Memos</span>
+                  <SidebarMenuBadge v-if="pendingMemoCount > 0" variant="outline">
+                    {{ pendingMemoCount }}
+                  </SidebarMenuBadge>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
             <SidebarMenuItem>
               <SidebarMenuButton as-child :is-active="$route.path === '/work-orders'">
                 <router-link to="/work-orders" class="flex items-center">
@@ -325,6 +337,30 @@ const lowStockCount = computed(() => {
     return inventoryStore.lowStockItems.length
   }
   return 0
+})
+
+const pendingMemoCount = computed(() => {
+  if (authStore.isSupervisor || authStore.isAdmin) {
+    // Count pending memos based on user role
+    const memos = messageStore.messages.filter(message => {
+      if (message.type !== 'supervisor_memo' || !message.memoData) return false;
+      
+      // Supervisors see their own pending memos
+      if (authStore.isSupervisor) {
+        return message.senderId === authStore.currentUser?.id && message.memoData.status === 'pending';
+      }
+      
+      // Admins see pending memos for their terminals
+      if (authStore.isAdmin && authStore.currentUser?.terminalId) {
+        return message.memoData.workOrderSpecs.terminalId === authStore.currentUser.terminalId && message.memoData.status === 'pending';
+      }
+      
+      return false;
+    });
+    
+    return memos.length;
+  }
+  return 0;
 })
 
 // Demo user switching
