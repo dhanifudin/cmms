@@ -1,5 +1,6 @@
-import type { WorkOrder, ChecklistItem } from '@/types';
+import type { WorkOrder, ChecklistItem, Photo } from '@/types';
 import { getUsersByTerminal, getUsersByRole } from './users';
+import { mockCategories } from './categories';
 
 // Terminal-based work order distribution: 100 work orders total across 116 terminals
 // Distribution strategy: 0-2 work orders per terminal
@@ -307,6 +308,7 @@ function generateTerminalWorkOrders(): WorkOrder[] {
         const status = getWorkOrderStatus(workOrderIndex);
         const priority = getPriority(workOrderIndex);
         const checklist = getChecklistForWorkOrder(workOrderIndex);
+        const categoryId = getCategoryForWorkOrder(workOrderIndex);
         
         workOrders.push({
           id: `wo${workOrderIndex.toString().padStart(3, '0')}`,
@@ -315,6 +317,7 @@ function generateTerminalWorkOrders(): WorkOrder[] {
           type,
           status,
           priority,
+          categoryId,
           terminalId,
           regionId,
           assignedWorkerId: workerId,
@@ -337,8 +340,8 @@ function generateTerminalWorkOrders(): WorkOrder[] {
             afterValue: status === 'completed' ? generateMockAfterValue(item) : undefined
           })),
           
-          beforePhotos: [],
-          afterPhotos: [],
+          beforePhotos: generateMockPhotos('before', status, workOrderIndex),
+          afterPhotos: generateMockPhotos('after', status, workOrderIndex),
           beforeNotes: status !== 'draft' && status !== 'pending_approval' ? 
             generateMockNotes('before', workOrderIndex) : '',
           afterNotes: status === 'completed' ? generateMockNotes('after', workOrderIndex) : '',
@@ -436,6 +439,48 @@ function generateMockMaterials(index: number): Array<{ itemId: string; plannedQu
   ];
   
   return materials[index % materials.length] || [];
+}
+
+function getCategoryForWorkOrder(index: number): string {
+  // Map work orders to categories based on their titles/types
+  const categoryIds = [
+    'cat-pipeline', 'cat-compressor', 'cat-safety', 'cat-electrical',
+    'cat-instrumentation', 'cat-mechanical', 'cat-pipeline', 'cat-compressor',
+    'cat-safety', 'cat-electrical'
+  ];
+  return categoryIds[index % categoryIds.length] || 'cat-pipeline';
+}
+
+function generateMockPhotos(type: 'before' | 'after', status: string, index: number): Photo[] {
+  // Only add photos for work orders that should have documentation
+  const shouldHaveBeforePhotos = status !== 'draft' && status !== 'pending_approval';
+  const shouldHaveAfterPhotos = status === 'completed' || status === 'submitted_for_review';
+
+  if (type === 'before' && !shouldHaveBeforePhotos) return [];
+  if (type === 'after' && !shouldHaveAfterPhotos) return [];
+
+  const photoCount = Math.floor(Math.random() * 3) + 1; // 1-3 photos
+  const photos = [];
+  const workOrderId = `wo${index.toString().padStart(3, '0')}`;
+
+  for (let i = 0; i < photoCount; i++) {
+    const photoId = `${type}_photo_${index}_${i + 1}`;
+    const equipmentTypes = ['pipeline', 'compressor', 'valve', 'gauge', 'panel'];
+    const equipment = equipmentTypes[Math.floor(Math.random() * equipmentTypes.length)];
+    
+    photos.push({
+      id: photoId,
+      url: `/demo-photos/${type}-${equipment}-${(i + 1)}.jpg`,
+      caption: type === 'before' 
+        ? `${equipment} condition before maintenance - Photo ${i + 1}`
+        : `${equipment} condition after maintenance completed - Photo ${i + 1}`,
+      timestamp: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString(),
+      workOrderId,
+      type
+    });
+  }
+
+  return photos;
 }
 
 // Generate the work orders lazily to ensure all dependencies are loaded

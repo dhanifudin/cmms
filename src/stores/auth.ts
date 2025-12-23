@@ -49,7 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
           updatedAt: '2024-01-01T00:00:00Z'
         },
         'worker@terminal1.com': {
-          id: 'worker1',
+          id: 'worker1_1',
           name: 'Candra Wijaya',
           email: 'worker@terminal1.com',
           role: 'worker',
