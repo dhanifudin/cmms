@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Message, MessageThread, InboxFolder, MessageType, MessageCategory, MessageAction, Priority, MessagePagination } from '@/types';
 import { useAuthStore } from './auth';
+import { getMemoMessages } from '@/mock/memos';
 
 export const useMessageStore = defineStore('message', () => {
   const messages = ref<Message[]>([]);
@@ -363,9 +364,13 @@ export const useMessageStore = defineStore('message', () => {
 
     // Enhanced v2.0: Generate additional mock messages for pagination testing
     const additionalMessages = generateAdditionalMockMessages(now, currentUserId);
-    messages.value = [...mockMessages, ...additionalMessages];
+
+    // Load supervisor memo messages
+    const memoMessages = getMemoMessages();
+
+    messages.value = [...mockMessages, ...additionalMessages, ...memoMessages];
     generateThreadsFromMessages();
-    
+
     // Initialize pagination
     updatePagination(messages.value);
   };
