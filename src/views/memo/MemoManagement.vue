@@ -4,20 +4,9 @@
     <div class="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
       <!-- Header -->
       <div class="p-3 border-b border-gray-200 flex-shrink-0">
-        <div class="flex items-center justify-between mb-3">
-          <div>
-            <h1 class="text-base font-semibold text-gray-900">Work Order Memos</h1>
-            <p class="text-xs text-gray-500">Create and manage WO requests</p>
-          </div>
-          <!-- Create new memo button for supervisors -->
-          <button
-            v-if="authStore.isSupervisor"
-            @click="showCreateMemoModal = true"
-            class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <PlusIcon class="h-3 w-3 mr-1" />
-            New Request
-          </button>
+        <div class="mb-3">
+          <h1 class="text-base font-semibold text-gray-900">Work Order Requests</h1>
+          <p class="text-xs text-gray-500">Review and convert supervisor requests</p>
         </div>
 
         <!-- Search -->
@@ -26,7 +15,7 @@
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search memos..."
+            placeholder="Search requests..."
             class="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -85,10 +74,10 @@
               Loading memos...
             </div>
             
-            <div v-else-if="filteredMemos.length === 0" class="p-3 text-center text-gray-500">
-              <FileTextIcon class="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p v-if="authStore.isSupervisor">No memo requests found</p>
-              <p v-else>No memo requests to review</p>
+            <div v-else-if="filteredMemos.length === 0" class="p-4 text-center text-gray-500">
+              <FileTextIcon class="h-10 w-10 mx-auto mb-3 text-gray-400" />
+              <p class="font-medium">No requests to review</p>
+              <p class="text-sm mt-1">Supervisor requests will appear here</p>
             </div>
 
             <div v-else class="divide-y divide-gray-200">
@@ -173,29 +162,20 @@
                 </div>
 
                 <div class="ml-4 flex items-center space-x-2">
-                  <!-- Admin action buttons -->
-                  <div v-if="authStore.isAdmin && selectedMemo.memoData?.status === 'pending'">
-                    <button
-                      @click="convertMemoToWorkOrder(selectedMemo)"
-                      class="inline-flex items-center px-3 py-1.5 border border-green-300 text-sm font-medium rounded text-green-700 bg-white hover:bg-green-50 mr-2"
-                    >
-                      <CheckIcon class="h-4 w-4 mr-1" />
-                      Create Work Order
-                    </button>
-                    
-                    <button
-                      @click="rejectMemo(selectedMemo)"
-                      class="inline-flex items-center px-3 py-1.5 border border-red-300 text-sm font-medium rounded text-red-700 bg-white hover:bg-red-50"
-                    >
-                      <XIcon class="h-4 w-4 mr-1" />
-                      Reject
-                    </button>
-                  </div>
-                  
-                  <!-- Status indicator for non-pending memos -->
-                  <div v-else class="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded text-gray-500 bg-gray-50">
-                    <component :is="getStatusIcon(selectedMemo.memoData?.status || 'pending')" class="h-4 w-4 mr-1" />
-                    {{ selectedMemo.memoData?.status }}
+                  <!-- Admin action button - Convert to Work Order -->
+                  <button
+                    v-if="selectedMemo.memoData?.status === 'pending'"
+                    @click="convertMemoToWorkOrder(selectedMemo)"
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  >
+                    <CheckIcon class="h-4 w-4 mr-1.5" />
+                    Create Work Order
+                  </button>
+
+                  <!-- Status indicator for converted memos -->
+                  <div v-else class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-green-700 bg-green-100">
+                    <CheckIcon class="h-4 w-4 mr-1.5" />
+                    Converted
                   </div>
                 </div>
               </div>
@@ -275,13 +255,6 @@
       </div>
     </div>
 
-    <!-- Create Memo Modal -->
-    <CreateMemoModal
-      v-if="showCreateMemoModal"
-      :show="showCreateMemoModal"
-      @close="showCreateMemoModal = false"
-      @success="handleMemoSuccess"
-    />
   </div>
 </template>
 
@@ -292,16 +265,12 @@ import { useAuthStore } from '@/stores/auth';
 import { useWorkOrderStore } from '@/stores/workorder';
 import type { Message } from '@/types';
 import {
-  Plus as PlusIcon,
   Search as SearchIcon,
   FileText as FileTextIcon,
   Clock as ClockIcon,
   CheckCircle as CheckIcon,
-  X as XIcon,
-  AlertCircle as AlertCircleIcon,
   Inbox as InboxIcon
 } from 'lucide-vue-next';
-import CreateMemoModal from '@/components/memo/CreateMemoModal.vue';
 
 const messageStore = useMessageStore();
 const authStore = useAuthStore();
@@ -310,43 +279,35 @@ const workOrderStore = useWorkOrderStore();
 const searchQuery = ref('');
 const selectedStatus = ref('all');
 const selectedMemo = ref<Message | null>(null);
-const showCreateMemoModal = ref(false);
 
 const isLoading = computed(() => messageStore.isLoading);
 
-// Status filters based on user role
+// Status filters - only pending and converted (no rejected)
 const statusFilters = computed(() => {
-  const baseFilters = [
-    { id: 'all', name: 'All Memos', count: supervisorMemos.value.length },
-    { id: 'pending', name: 'Pending Review', count: supervisorMemos.value.filter(m => m.memoData?.status === 'pending').length },
-    { id: 'converted', name: 'Converted to WO', count: supervisorMemos.value.filter(m => m.memoData?.status === 'converted').length },
-    { id: 'rejected', name: 'Rejected', count: supervisorMemos.value.filter(m => m.memoData?.status === 'rejected').length }
+  return [
+    { id: 'all', name: 'All Requests', count: adminMemos.value.length },
+    { id: 'pending', name: 'Pending Review', count: adminMemos.value.filter(m => m.memoData?.status === 'pending').length },
+    { id: 'converted', name: 'Converted to WO', count: adminMemos.value.filter(m => m.memoData?.status === 'converted').length }
   ];
-  
-  return baseFilters;
 });
 
-// Get all supervisor memos based on user role
-const supervisorMemos = computed(() => {
+// Get memos for admin's terminal(s)
+const adminMemos = computed(() => {
   return messageStore.messages.filter(message => {
     if (message.type !== 'supervisor_memo' || !message.memoData) return false;
-    
-    // Supervisors see their own memos
-    if (authStore.isSupervisor) {
-      return message.senderId === authStore.currentUser?.id;
-    }
-    
+
     // Admins see memos for their terminals
-    if (authStore.isAdmin && authStore.currentUser?.terminalId) {
+    if (authStore.currentUser?.terminalId) {
       return message.memoData.workOrderSpecs.terminalId === authStore.currentUser.terminalId;
     }
-    
-    return false;
+
+    // If no terminal assigned, show all memos (fallback for demo)
+    return true;
   });
 });
 
 const filteredMemos = computed(() => {
-  let memos = supervisorMemos.value;
+  let memos = adminMemos.value;
   
   // Filter by status
   if (selectedStatus.value !== 'all') {
@@ -397,12 +358,11 @@ const getSenderName = (message: Message) => {
 };
 
 const getStatusColor = (status: string) => {
-  const colors = {
-    pending: 'bg-yellow-100 text-yellow-600',
-    converted: 'bg-green-100 text-green-600',
-    rejected: 'bg-red-100 text-red-600'
+  const colors: Record<string, string> = {
+    pending: 'bg-yellow-100 text-yellow-700',
+    converted: 'bg-green-100 text-green-700'
   };
-  return colors[status as keyof typeof colors] || colors.pending;
+  return colors[status] || colors.pending;
 };
 
 const getUrgencyColor = (urgency: string) => {
@@ -415,13 +375,12 @@ const getUrgencyColor = (urgency: string) => {
 };
 
 const getStatusIcon = (status: string) => {
-  const icons = {
+  const icons: Record<string, typeof InboxIcon> = {
     all: InboxIcon,
     pending: ClockIcon,
-    converted: CheckIcon,
-    rejected: XIcon
+    converted: CheckIcon
   };
-  return icons[status as keyof typeof icons] || ClockIcon;
+  return icons[status] || ClockIcon;
 };
 
 const formatTime = (dateString: string) => {
@@ -488,48 +447,4 @@ const convertMemoToWorkOrder = async (memo: Message) => {
   }
 };
 
-const rejectMemo = async (memo: Message) => {
-  if (!memo.memoData) {
-    alert('Invalid memo data');
-    return;
-  }
-  
-  const reason = prompt('Please provide a reason for rejecting this memo request:');
-  if (!reason) return;
-  
-  try {
-    // Update memo status
-    memo.memoData.status = 'rejected';
-    
-    // Send feedback message to supervisor
-    await messageStore.sendSystemMessage({
-      subject: `Memo Request Rejected: ${memo.memoData.workOrderSpecs.title}`,
-      content: `Your work order request has been rejected.\n\nReason: ${reason}\n\nPlease review and submit a revised request.`,
-      type: 'admin_feedback',
-      priority: 'normal',
-      recipientIds: [memo.senderId],
-      relatedEntity: { type: 'memo', id: memo.id }
-    });
-    
-    // Mark original memo as read
-    messageStore.markAsRead([memo.id]);
-    
-    // Refresh the memo to show updated status
-    selectedMemo.value = messageStore.messages.find(m => m.id === memo.id) || null;
-    
-    console.log('📝 Memo rejected and feedback sent to supervisor');
-    alert('Memo rejected and feedback sent to supervisor.');
-    
-  } catch (error) {
-    console.error('Failed to reject memo:', error);
-    alert('Failed to reject memo. Please try again.');
-  }
-};
-
-const handleMemoSuccess = () => {
-  console.log('🎮 Memo submitted successfully!');
-  showCreateMemoModal.value = false;
-  // Refresh memo list
-  messageStore.initializeInbox();
-};
 </script>

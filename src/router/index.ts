@@ -117,14 +117,15 @@ const router = createRouter({
       component: () => import('@/views/inbox/Inbox.vue'),
       meta: { requiresAuth: true }
     },
+    // Supervisor only: Create and track memos (Admin receives memos via Inbox)
     {
-      path: '/memos',
-      name: 'MemoManagement',
-      component: () => import('@/views/memo/MemoManagement.vue'),
-      meta: { 
+      path: '/memos/my-requests',
+      name: 'Memo',
+      component: () => import('@/views/memo/MemoCreate.vue'),
+      meta: {
         requiresAuth: true,
-        requiresRole: ['admin', 'supervisor'],
-        title: 'Work Order Memos'
+        requiresRole: ['supervisor'],
+        title: 'Memo'
       }
     },
     {

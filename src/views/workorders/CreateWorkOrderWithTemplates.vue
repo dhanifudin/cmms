@@ -8,6 +8,17 @@
       </p>
     </div>
 
+    <!-- Memo Source Banner -->
+    <Alert v-if="memoMessage" class="bg-blue-50 border-blue-200">
+      <FileText class="h-4 w-4 text-blue-600" />
+      <AlertTitle class="text-blue-900">Creating from Work Order Request</AlertTitle>
+      <AlertDescription class="text-blue-700">
+        This work order is being created from a memo request by
+        <span class="font-medium">{{ memoMessage.memoData?.workOrderSpecs?.title }}</span>.
+        The form has been pre-filled with the requested details.
+      </AlertDescription>
+    </Alert>
+
     <!-- Creation Method Selection -->
     <Card v-if="!selectedTemplate && creationMethod === null">
       <CardHeader>
@@ -536,12 +547,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useWorkOrderStore } from '@/stores/workorder';
 import { useInventoryStore } from '@/stores/inventory';
 import { useTemplateStore } from '@/stores/template';
 import { useCategoryStore } from '@/stores/category';
+import { useMessageStore } from '@/stores/message';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -569,14 +581,18 @@ import type { CreateWorkOrderForm } from '@/types';
 import type { WorkOrderTemplate, WorkOrderCategory } from '@/types/templates';
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 const workOrderStore = useWorkOrderStore();
 const inventoryStore = useInventoryStore();
 const templateStore = useTemplateStore();
 const categoryStore = useCategoryStore();
+const messageStore = useMessageStore();
 
 // State
 const isSubmitting = ref(false);
+const memoId = ref<string | null>(null);
+const memoMessage = ref<any>(null);
 const creationMethod = ref<'template' | 'custom' | null>(null);
 const selectedTemplateId = ref<string>('');
 const selectedTemplate = ref<WorkOrderTemplate | null>(null);
@@ -760,7 +776,12 @@ const handleSubmit = async () => {
     if (authStore.hasPermission('create_work_orders')) {
       await workOrderStore.updateWorkOrderStatus(workOrder.id, 'pending_approval');
     }
-    
+
+    // If created from memo, update memo status to 'converted'
+    if (memoId.value) {
+      messageStore.updateMemoStatus(memoId.value, 'converted', workOrder.id);
+    }
+
     router.push(`/work-orders/${workOrder.id}`);
   } catch (error) {
     console.error('Failed to create work order:', error);
@@ -781,21 +802,44 @@ onMounted(async () => {
     templateStore.fetchTemplates(),
     categoryStore.fetchCategories()
   ]);
-  
+
   // Set default dates
   const now = new Date();
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  
+
   const nextWeek = new Date(now);
   nextWeek.setDate(nextWeek.getDate() + 7);
-  
+
   form.value.startDate = tomorrow.toISOString().slice(0, 16);
   form.value.dueDate = nextWeek.toISOString().slice(0, 16);
-  
+
   // Set default terminal for terminal admin
   if (authStore.currentUser?.terminalId) {
     form.value.terminalId = authStore.currentUser.terminalId;
+  }
+
+  // Check if creating from memo
+  if (route.query.memoId) {
+    memoId.value = route.query.memoId as string;
+
+    // Find the memo message
+    const memo = messageStore.messages.find(m => m.id === memoId.value);
+    if (memo?.memoData) {
+      memoMessage.value = memo;
+      const specs = memo.memoData.workOrderSpecs;
+
+      // Pre-fill form with memo data
+      form.value.title = specs.title || '';
+      form.value.description = specs.description || '';
+      form.value.priority = specs.priority || 'normal';
+      form.value.terminalId = specs.terminalId || form.value.terminalId;
+      form.value.estimatedDuration = specs.estimatedDuration || 4;
+      form.value.assignedWorkerId = specs.suggestedWorkerId || '';
+
+      // Set to custom creation method since memo provides the details
+      creationMethod.value = 'custom';
+    }
   }
 });
 </script>

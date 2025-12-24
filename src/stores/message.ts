@@ -990,13 +990,6 @@ ${memoData.workOrderSpecs.suggestedWorkerId ? `**Suggested Worker**: ${memoData.
           target: 'convertMemoToWO'
         },
         {
-          id: 'reject_memo',
-          label: 'Request Revision',
-          type: 'secondary',
-          actionType: 'function',
-          target: 'rejectMemo'
-        },
-        {
           id: 'view_memo_details',
           label: 'View Details',
           type: 'secondary',
@@ -1035,13 +1028,7 @@ ${memoData.workOrderSpecs.suggestedWorkerId ? `**Suggested Worker**: ${memoData.
         return { success: true, action: 'convertMemoToWO', messageId };
       }
 
-      if (action.target === 'rejectMemo') {
-        // Update memo status
-        if (message.memoData) {
-          message.memoData.status = 'rejected';
-        }
-        return { success: true, action: 'rejectMemo', messageId };
-      }
+      // Note: rejectMemo action has been removed - memos only have 'pending' and 'converted' status
 
       // Handle different action types
       switch (action.actionType) {
@@ -1066,6 +1053,34 @@ ${memoData.workOrderSpecs.suggestedWorkerId ? `**Suggested Worker**: ${memoData.
     } catch (error) {
       console.error('Failed to execute message action:', error);
       return { success: false, error };
+    }
+  };
+
+  // Get memos created by a specific supervisor
+  const getSupervisorMemos = (supervisorId: string) => {
+    return messages.value.filter(message => {
+      if (message.type !== 'supervisor_memo' || !message.memoData) return false;
+      return message.senderId === supervisorId;
+    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  };
+
+  // Get memos for a specific terminal (for admin)
+  const getAdminMemos = (terminalId: string) => {
+    return messages.value.filter(message => {
+      if (message.type !== 'supervisor_memo' || !message.memoData) return false;
+      return message.memoData.workOrderSpecs.terminalId === terminalId;
+    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  };
+
+  // Update memo status (used when converting to work order)
+  const updateMemoStatus = (messageId: string, status: 'pending' | 'converted', workOrderId?: string) => {
+    const message = messages.value.find(m => m.id === messageId);
+    if (message?.memoData) {
+      message.memoData.status = status;
+      if (workOrderId) {
+        message.memoData.convertedToWorkOrderId = workOrderId;
+      }
+      message.updatedAt = new Date().toISOString();
     }
   };
 
@@ -1096,6 +1111,10 @@ ${memoData.workOrderSpecs.suggestedWorkerId ? `**Suggested Worker**: ${memoData.
     showErrorMessage,
     createSupervisorMemo,
     executeMessageAction,
+    // Memo filtering methods
+    getSupervisorMemos,
+    getAdminMemos,
+    updateMemoStatus,
     // Enhanced v2.0: Pagination
     pagination,
     paginateMessages,

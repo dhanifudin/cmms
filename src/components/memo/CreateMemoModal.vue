@@ -9,10 +9,40 @@
       
       <!-- Form -->
       <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
+        <!-- Template Selection (Optional) -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="text-md font-medium text-gray-900">Template (Optional)</h4>
+            <span class="text-xs text-gray-500">Select a template or create custom request</span>
+          </div>
+
+          <div>
+            <select
+              v-model="selectedTemplateId"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">-- No Template (Custom Request) --</option>
+              <optgroup v-if="preventiveTemplates.length > 0" label="Preventive Maintenance">
+                <option v-for="template in preventiveTemplates" :key="template.id" :value="template.id">
+                  {{ template.name }}
+                </option>
+              </optgroup>
+              <optgroup v-if="correctiveTemplates.length > 0" label="Corrective Maintenance">
+                <option v-for="template in correctiveTemplates" :key="template.id" :value="template.id">
+                  {{ template.name }}
+                </option>
+              </optgroup>
+            </select>
+            <p v-if="selectedTemplateId" class="mt-1 text-xs text-blue-600">
+              Form auto-filled from template. You can modify values below.
+            </p>
+          </div>
+        </div>
+
         <!-- Work Order Specifications -->
         <div class="space-y-4">
           <h4 class="text-md font-medium text-gray-900">Work Order Details</h4>
-          
+
           <!-- Title -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -227,10 +257,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useMessageStore } from '@/stores/message';
 import { useAuthStore } from '@/stores/auth';
 import { useUserStore } from '@/stores/user';
+import { useTemplateStore } from '@/stores/template';
 import { mockTerminals } from '@/mock/terminals';
 import type { MemoData, Priority } from '@/types';
 
@@ -249,8 +280,10 @@ const emit = defineEmits<Emits>();
 const messageStore = useMessageStore();
 const authStore = useAuthStore();
 const userStore = useUserStore();
+const templateStore = useTemplateStore();
 
 const isSubmitting = ref(false);
+const selectedTemplateId = ref<string>('');
 
 // Form data
 const formData = ref<MemoData>({
@@ -300,6 +333,43 @@ const availableWorkers = ref([
   { id: 'worker_003', name: 'Sari Dewi', expertise: 'HVAC Systems' },
   { id: 'worker_004', name: 'Eko Prabowo', expertise: 'Plumbing & Piping' },
 ]);
+
+// Available templates for selection grouped by type
+const availableTemplates = computed(() => {
+  return templateStore.templates.filter(t => t.status === 'active');
+});
+
+const preventiveTemplates = computed(() => {
+  return availableTemplates.value.filter(t => t.type === 'preventive');
+});
+
+const correctiveTemplates = computed(() => {
+  return availableTemplates.value.filter(t => t.type === 'corrective');
+});
+
+// Watch for template selection and auto-fill form
+watch(selectedTemplateId, (templateId) => {
+  if (!templateId) return;
+
+  const template = templateStore.getTemplateById(templateId);
+  if (template) {
+    // Auto-fill form with template data
+    formData.value.workOrderSpecs.title = template.name;
+    formData.value.workOrderSpecs.description = template.description || '';
+    formData.value.workOrderSpecs.category = template.type === 'preventive' ? 'Preventive Maintenance' : 'Corrective Maintenance';
+    formData.value.workOrderSpecs.priority = template.defaultPriority || 'medium';
+    formData.value.workOrderSpecs.estimatedDuration = template.estimatedDuration || 1;
+    formData.value.workOrderSpecs.specialInstructions = template.safetyRequirements?.join('\n') || '';
+
+    // Auto-fill materials from template if available
+    if (template.materials && template.materials.length > 0) {
+      formData.value.workOrderSpecs.requiredMaterials = template.materials.map(m => m.itemName || m.itemId);
+    }
+
+    // Store template ID in form
+    formData.value.templateId = templateId;
+  }
+});
 
 // Get admin users to send memo to
 const adminUsers = computed(() => {
@@ -352,6 +422,7 @@ const handleSubmit = async () => {
 };
 
 const resetForm = () => {
+  selectedTemplateId.value = '';
   formData.value = {
     workOrderSpecs: {
       title: '',
@@ -367,11 +438,15 @@ const resetForm = () => {
     urgencyLevel: 'routine',
     justification: '',
     requestedBy: '',
-    status: 'pending'
+    status: 'pending',
+    templateId: undefined
   };
 };
 
-onMounted(() => {
+onMounted(async () => {
+  // Load templates
+  await templateStore.fetchTemplates();
+
   // Set default terminal if user has one (for admins)
   if (authStore.currentUser?.terminalId) {
     formData.value.workOrderSpecs.terminalId = authStore.currentUser.terminalId;

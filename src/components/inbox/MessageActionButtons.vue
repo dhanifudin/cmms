@@ -42,12 +42,14 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import type { MessageAction } from '@/types';
+import { useMessageStore } from '@/stores/message';
 import {
   Plus as PlusIcon,
   Eye as EyeIcon,
   Calendar as CalendarIcon,
   ExternalLink as ExternalLinkIcon,
-  Zap as ZapIcon
+  Zap as ZapIcon,
+  FileText as FileTextIcon
 } from 'lucide-vue-next';
 
 interface Props {
@@ -67,6 +69,7 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 const router = useRouter();
+const messageStore = useMessageStore();
 
 // Action button styling based on type
 const getActionButtonClass = (type: string) => {
@@ -122,19 +125,33 @@ const handleActionClick = async (action: MessageAction) => {
         // Navigate to specified route
         await router.push(action.target);
         break;
-        
+
       case 'api':
         // Make API call (simulated for now)
         console.log('API call to:', action.target);
         // In real implementation: await fetch(action.target, { method: 'POST' });
         break;
-        
+
       case 'modal':
         // Open modal (emit event for parent to handle)
         console.log('Open modal:', action.target);
         // In real implementation: emit modal open event
         break;
-        
+
+      case 'function':
+        // Handle function-based actions
+        if (action.target === 'convertMemoToWO') {
+          // Navigate to work order creation with memo data
+          await router.push({
+            path: '/work-orders/create',
+            query: { memoId: props.messageId }
+          });
+        } else {
+          console.warn('Unknown function target:', action.target);
+          result = { success: false, error: 'Unknown function target' };
+        }
+        break;
+
       default:
         console.warn('Unknown action type:', action.actionType);
         result = { success: false, error: 'Unknown action type' };

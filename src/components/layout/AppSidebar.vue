@@ -62,13 +62,14 @@
         <SidebarGroupLabel class="sidebar-text-muted-theme">Operations</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            <SidebarMenuItem v-if="authStore.isSupervisor || authStore.isAdmin">
+            <!-- Supervisor only: Create and track memos -->
+            <SidebarMenuItem v-if="authStore.isSupervisor">
               <SidebarMenuButton as-child :is-active="$route.path.startsWith('/memos')">
-                <router-link to="/memos" class="flex items-center">
+                <router-link to="/memos/my-requests" class="flex items-center">
                   <FileText class="size-4 icon-theme-primary" />
-                  <span class="sidebar-text-theme">Work Order Memos</span>
-                  <SidebarMenuBadge v-if="pendingMemoCount > 0" variant="outline">
-                    {{ pendingMemoCount }}
+                  <span class="sidebar-text-theme">Memo</span>
+                  <SidebarMenuBadge v-if="myPendingMemoCount > 0" variant="outline">
+                    {{ myPendingMemoCount }}
                   </SidebarMenuBadge>
                 </router-link>
               </SidebarMenuButton>
@@ -398,28 +399,14 @@ const lowStockCount = computed(() => {
   return 0
 })
 
-const pendingMemoCount = computed(() => {
-  if (authStore.isSupervisor || authStore.isAdmin) {
-    // Count pending memos based on user role
-    const memos = messageStore.messages.filter(message => {
-      if (message.type !== 'supervisor_memo' || !message.memoData) return false;
-      
-      // Supervisors see their own pending memos
-      if (authStore.isSupervisor) {
-        return message.senderId === authStore.currentUser?.id && message.memoData.status === 'pending';
-      }
-      
-      // Admins see pending memos for their terminals
-      if (authStore.isAdmin && authStore.currentUser?.terminalId) {
-        return message.memoData.workOrderSpecs.terminalId === authStore.currentUser.terminalId && message.memoData.status === 'pending';
-      }
-      
-      return false;
-    });
-    
-    return memos.length;
-  }
-  return 0;
+// Supervisor: Count their own pending memos
+const myPendingMemoCount = computed(() => {
+  if (!authStore.isSupervisor) return 0;
+
+  return messageStore.messages.filter(message => {
+    if (message.type !== 'supervisor_memo' || !message.memoData) return false;
+    return message.senderId === authStore.currentUser?.id && message.memoData.status === 'pending';
+  }).length;
 })
 
 // Demo user switching

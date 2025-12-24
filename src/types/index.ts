@@ -404,8 +404,9 @@ export interface MemoData {
   urgencyLevel: 'routine' | 'urgent' | 'emergency';
   justification: string;
   requestedBy: string; // supervisor ID
-  status: 'pending' | 'converted' | 'rejected';
+  status: 'pending' | 'converted';
   convertedToWorkOrderId?: string;
+  templateId?: string; // Optional template used for this request
 }
 
 export interface Message {
