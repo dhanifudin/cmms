@@ -119,20 +119,59 @@
         </SidebarGroupContent>
       </SidebarGroup>
 
+      <!-- Reports Group (Role-Based) -->
+      <SidebarGroup v-if="canViewReports">
+        <SidebarGroupLabel class="sidebar-text-muted-theme">Reports</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <!-- Work Order Status Report (Admin, Supervisor, Leader) -->
+            <SidebarMenuItem v-if="canViewOperationalReports">
+              <SidebarMenuButton as-child :is-active="$route.path.startsWith('/reports/work-orders/status')">
+                <router-link to="/reports/work-orders/status" class="flex items-center">
+                  <PieChart class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Work Order Status</span>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <!-- Overdue Report (Admin, Supervisor, Leader) -->
+            <SidebarMenuItem v-if="canViewOperationalReports">
+              <SidebarMenuButton as-child :is-active="$route.path === '/reports/work-orders/overdue'">
+                <router-link to="/reports/work-orders/overdue" class="flex items-center">
+                  <AlertTriangle class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Overdue Work Orders</span>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <!-- Activity Report (All Roles) -->
+            <SidebarMenuItem v-if="canViewActivityReport">
+              <SidebarMenuButton as-child :is-active="$route.path === '/reports/activity'">
+                <router-link to="/reports/activity" class="flex items-center">
+                  <Activity class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">Activity Report</span>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <!-- All Reports (Admin Only) -->
+            <SidebarMenuItem v-if="authStore.isAdmin">
+              <SidebarMenuButton as-child :is-active="$route.path === '/reports' && !$route.path.includes('/reports/')">
+                <router-link to="/reports" class="flex items-center">
+                  <FileBarChart class="size-4 icon-theme-primary" />
+                  <span class="sidebar-text-theme">All Reports</span>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
       <!-- Administration Group (Admin Only) -->
       <SidebarGroup v-if="authStore.isAdmin">
         <SidebarGroupLabel class="sidebar-text-muted-theme">Administration</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton as-child :is-active="$route.path.startsWith('/reports')">
-                <router-link to="/reports" class="flex items-center">
-                  <FileBarChart class="size-4 icon-theme-primary" />
-                  <span class="sidebar-text-theme">Reports</span>
-                </router-link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-
             <SidebarMenuItem v-if="authStore.hasPermission('manage_users')">
               <SidebarMenuButton as-child :is-active="$route.path.startsWith('/users')">
                 <router-link to="/users" class="flex items-center">
@@ -308,6 +347,9 @@ import {
   FolderTree,
   File,
   Archive,
+  AlertTriangle,
+  Activity,
+  PieChart,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -322,6 +364,23 @@ const currentUser = computed(() => authStore.currentUser)
 const canViewHistory = computed(() => {
   const userRole = authStore.currentUser?.role;
   return ['admin', 'supervisor', 'leader'].includes(userRole || '');
+})
+
+// Role-based report visibility
+const canViewReports = computed(() => {
+  // All roles can view at least some reports
+  return true
+})
+
+const canViewOperationalReports = computed(() => {
+  // Admin, Supervisor, Leader can view operational reports
+  const userRole = authStore.currentUser?.role
+  return ['admin', 'supervisor', 'leader'].includes(userRole || '')
+})
+
+const canViewActivityReport = computed(() => {
+  // All roles can view activity report (workers see only their own activity)
+  return true
 })
 
 // Badge counts

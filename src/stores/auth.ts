@@ -368,7 +368,8 @@ export const useAuthStore = defineStore('auth', () => {
         'view_assigned_work_orders',
         'submit_documentation',
         'complete_work_orders',
-        'access_personal_data'
+        'access_personal_data',
+        'view_own_activity'
       ],
       leader: [
         // TBD - permissions not yet defined

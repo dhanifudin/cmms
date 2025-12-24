@@ -133,6 +133,72 @@ const router = createRouter({
       component: () => import('@/views/reports/Reports.vue'),
       meta: { requiresAuth: true, permission: 'view_reports' }
     },
+    // Work Order Status Report with drill-down
+    {
+      path: '/reports/work-orders/status',
+      name: 'WorkOrderStatusReport',
+      component: () => import('@/views/reports/ReportWorkOrderStatus.vue'),
+      meta: {
+        requiresAuth: true,
+        permission: 'view_reports',
+        reportType: 'operational',
+        title: 'Work Order Status Report'
+      }
+    },
+    {
+      path: '/reports/work-orders/status/:regionId',
+      name: 'WorkOrderStatusReportByRegion',
+      component: () => import('@/views/reports/ReportWorkOrderStatus.vue'),
+      meta: {
+        requiresAuth: true,
+        permission: 'view_reports',
+        drillLevel: 'region'
+      }
+    },
+    {
+      path: '/reports/work-orders/status/:regionId/:terminalId',
+      name: 'WorkOrderStatusReportByTerminal',
+      component: () => import('@/views/reports/ReportWorkOrderStatus.vue'),
+      meta: {
+        requiresAuth: true,
+        permission: 'view_reports',
+        drillLevel: 'terminal'
+      }
+    },
+    {
+      path: '/reports/work-orders/status/:regionId/:terminalId/:workerId',
+      name: 'WorkOrderStatusReportByWorker',
+      component: () => import('@/views/reports/ReportWorkOrderStatus.vue'),
+      meta: {
+        requiresAuth: true,
+        permission: 'view_reports',
+        drillLevel: 'worker'
+      }
+    },
+    // Overdue Work Orders Report
+    {
+      path: '/reports/work-orders/overdue',
+      name: 'OverdueReport',
+      component: () => import('@/views/reports/ReportOverdue.vue'),
+      meta: {
+        requiresAuth: true,
+        permission: 'view_reports',
+        reportType: 'operational',
+        title: 'Overdue Work Orders Report'
+      }
+    },
+    // Activity Report (accessible by all roles - workers see only their own activity)
+    {
+      path: '/reports/activity',
+      name: 'ActivityReport',
+      component: () => import('@/views/reports/ReportActivity.vue'),
+      meta: {
+        requiresAuth: true,
+        permissions: ['view_reports', 'view_own_activity'],
+        reportType: 'operational',
+        title: 'Activity Report'
+      }
+    },
     {
       path: '/settings',
       name: 'Settings',
@@ -209,13 +275,25 @@ router.beforeEach((to, _from, next) => {
     }
   }
   
-  // Check permissions
+  // Check permissions (single permission)
   if (to.meta.permission && !authStore.hasPermission(to.meta.permission as string)) {
     // Redirect to dashboard with error message
     next('/dashboard');
     return;
   }
-  
+
+  // Check permissions (multiple permissions - OR logic: user needs at least one)
+  if (to.meta.permissions) {
+    const requiredPermissions = to.meta.permissions as string[];
+    const hasAnyPermission = requiredPermissions.some(permission =>
+      authStore.hasPermission(permission)
+    );
+    if (!hasAnyPermission) {
+      next('/dashboard');
+      return;
+    }
+  }
+
   next();
 });
 

@@ -2,6 +2,76 @@ import { defineStore } from 'pinia';
 import { ref, computed, readonly } from 'vue';
 import type { PaginationState, ReportPaginationSizes } from '@/types/pagination';
 import { getPaginationConfig } from '@/config/pagination';
+import { useAuthStore } from './auth';
+
+// Drill-down context types
+export type DrillDownLevel = 'all' | 'region' | 'terminal' | 'worker';
+
+export interface BreadcrumbItem {
+  label: string;
+  path: string;
+  level: DrillDownLevel;
+}
+
+export interface DrillDownContext {
+  level: DrillDownLevel;
+  regionId?: string;
+  terminalId?: string;
+  workerId?: string;
+  breadcrumb: BreadcrumbItem[];
+}
+
+// Work Order Status Report types
+export interface WorkOrderStatusSummary {
+  total: number;
+  byStatus: Record<string, number>;
+  byType: Record<string, number>;
+  byPriority: Record<string, number>;
+  completionRate: number;
+  overdueCount: number;
+  avgCompletionTime: number;
+}
+
+export interface WorkOrderStatusRow {
+  id: string;
+  name: string;
+  totalWorkOrders: number;
+  completed: number;
+  inProgress: number;
+  pending: number;
+  overdue: number;
+  completionRate: number;
+  avgCompletionTime: number;
+  isClickable: boolean;
+}
+
+export interface WorkOrderDetailRow {
+  id: string;
+  code: string;
+  title: string;
+  status: string;
+  priority: string;
+  type: string;
+  terminalName: string;
+  workerName: string;
+  dueDate: string;
+  daysOverdue?: number;
+  isClickable: boolean;
+}
+
+// Activity Report types
+export interface ActivityItem {
+  id: string;
+  timestamp: string;
+  type: 'created' | 'started' | 'completed' | 'submitted' | 'approved' | 'rejected' | 'overdue';
+  workOrderId: string;
+  workOrderTitle: string;
+  workOrderCode: string;
+  userId: string;
+  userName: string;
+  terminalName: string;
+  description: string;
+}
 
 export interface ReportMetric {
   id: string;
@@ -673,6 +743,422 @@ export const useReportsStore = defineStore('reports', () => {
     overduePaginationState.value.currentPage = 1;
   };
 
+  // ============================================
+  // DRILL-DOWN REPORT METHODS
+  // ============================================
+
+  // Mock region data
+  const regions = [
+    { id: 'region1', name: 'Region 1 - Sumatera Utara' },
+    { id: 'region2', name: 'Region 2 - Sumatera Selatan' },
+    { id: 'region3', name: 'Region 3 - Jawa Barat' },
+    { id: 'region4', name: 'Region 4 - Jawa Timur' },
+    { id: 'region5', name: 'Region 5 - Kalimantan' },
+    { id: 'region6', name: 'Region 6 - Sulawesi' },
+    { id: 'region7', name: 'Region 7 - Bali & Nusa Tenggara' },
+    { id: 'region8', name: 'Region 8 - Papua & Maluku' }
+  ];
+
+  // Mock terminals data
+  const getTerminalsForRegion = (regionId: string) => {
+    const regionNum = parseInt(regionId.replace('region', ''));
+    const startTerminal = (regionNum - 1) * 15 + 1;
+    const endTerminal = Math.min(regionNum * 15, 116);
+
+    const terminals = [];
+    for (let i = startTerminal; i <= endTerminal; i++) {
+      terminals.push({
+        id: `terminal${i}`,
+        name: `Terminal ${i}`,
+        regionId
+      });
+    }
+    return terminals;
+  };
+
+  // Get region name
+  const getRegionName = (regionId: string): string => {
+    return regions.find(r => r.id === regionId)?.name || regionId;
+  };
+
+  // Get terminal name
+  const getTerminalName = (terminalId: string): string => {
+    const terminalNum = terminalId.replace('terminal', '');
+    return `Terminal ${terminalNum}`;
+  };
+
+  // Get worker name (mock)
+  const getWorkerName = (workerId: string): string => {
+    const workers = baseWorkerPerformance();
+    return workers.find(w => w.workerId === workerId)?.workerName || workerId;
+  };
+
+  // Build breadcrumb for drill-down navigation
+  const buildBreadcrumb = (
+    reportPath: string,
+    level: DrillDownLevel,
+    regionId?: string,
+    terminalId?: string,
+    workerId?: string
+  ): BreadcrumbItem[] => {
+    const breadcrumb: BreadcrumbItem[] = [
+      { label: 'Work Order Status', path: reportPath, level: 'all' }
+    ];
+
+    if (regionId && level !== 'all') {
+      breadcrumb.push({
+        label: getRegionName(regionId),
+        path: `${reportPath}/${regionId}`,
+        level: 'region'
+      });
+    }
+
+    if (terminalId && (level === 'terminal' || level === 'worker')) {
+      breadcrumb.push({
+        label: getTerminalName(terminalId),
+        path: `${reportPath}/${regionId}/${terminalId}`,
+        level: 'terminal'
+      });
+    }
+
+    if (workerId && level === 'worker') {
+      breadcrumb.push({
+        label: getWorkerName(workerId),
+        path: `${reportPath}/${regionId}/${terminalId}/${workerId}`,
+        level: 'worker'
+      });
+    }
+
+    return breadcrumb;
+  };
+
+  // Apply role-based data filtering
+  const applyRoleBasedFilter = (regionIds: string[], terminalIds: string[]): { regionIds: string[], terminalIds: string[] } => {
+    const authStore = useAuthStore();
+    const user = authStore.currentUser;
+
+    if (!user) {
+      return { regionIds: [], terminalIds: [] };
+    }
+
+    // Admin: Own terminal only
+    if (authStore.isAdmin && user.terminalId) {
+      return {
+        regionIds: user.regionId ? [user.regionId] : [],
+        terminalIds: [user.terminalId]
+      };
+    }
+
+    // Supervisor/Leader: Their region's terminals
+    if ((authStore.isSupervisor || authStore.isLeader) && user.regionId) {
+      const regionTerminals = getTerminalsForRegion(user.regionId);
+      return {
+        regionIds: [user.regionId],
+        terminalIds: terminalIds.length > 0
+          ? terminalIds.filter(t => regionTerminals.some(rt => rt.id === t))
+          : regionTerminals.map(t => t.id)
+      };
+    }
+
+    // Worker: Own work only (handled at work order level)
+    if (authStore.isWorker) {
+      return {
+        regionIds: user.regionId ? [user.regionId] : [],
+        terminalIds: user.terminalId ? [user.terminalId] : []
+      };
+    }
+
+    // Default: return as-is (for development/testing)
+    return { regionIds, terminalIds };
+  };
+
+  // Get Work Order Status Report data
+  const getWorkOrderStatusReport = (
+    context: DrillDownContext,
+    filters: { dateStart: string; dateEnd: string; statuses: string[]; }
+  ): { summary: WorkOrderStatusSummary; rows: WorkOrderStatusRow[] } => {
+    // Mock data generation based on drill-down level
+    const summary: WorkOrderStatusSummary = {
+      total: 100,
+      byStatus: {
+        'draft': 5,
+        'pending_approval': 10,
+        'assigned': 15,
+        'in_progress': 25,
+        'submitted_for_review': 12,
+        'completed': 28,
+        'rejected': 3,
+        'revision_required': 2
+      },
+      byType: {
+        'preventive': 65,
+        'corrective': 35
+      },
+      byPriority: {
+        'low': 20,
+        'normal': 45,
+        'high': 25,
+        'urgent': 10
+      },
+      completionRate: 92,
+      overdueCount: 5,
+      avgCompletionTime: 3.2
+    };
+
+    let rows: WorkOrderStatusRow[] = [];
+
+    switch (context.level) {
+      case 'all':
+        // Return aggregated data by region
+        rows = regions.map(region => ({
+          id: region.id,
+          name: region.name,
+          totalWorkOrders: Math.floor(Math.random() * 50) + 10,
+          completed: Math.floor(Math.random() * 30) + 5,
+          inProgress: Math.floor(Math.random() * 15) + 2,
+          pending: Math.floor(Math.random() * 10) + 1,
+          overdue: Math.floor(Math.random() * 5),
+          completionRate: Math.floor(Math.random() * 20) + 80,
+          avgCompletionTime: parseFloat((Math.random() * 3 + 2).toFixed(1)),
+          isClickable: true
+        }));
+        break;
+
+      case 'region':
+        // Return aggregated data by terminal
+        const terminals = getTerminalsForRegion(context.regionId || 'region1');
+        rows = terminals.map(terminal => ({
+          id: terminal.id,
+          name: terminal.name,
+          totalWorkOrders: Math.floor(Math.random() * 20) + 5,
+          completed: Math.floor(Math.random() * 15) + 2,
+          inProgress: Math.floor(Math.random() * 8) + 1,
+          pending: Math.floor(Math.random() * 5),
+          overdue: Math.floor(Math.random() * 3),
+          completionRate: Math.floor(Math.random() * 20) + 80,
+          avgCompletionTime: parseFloat((Math.random() * 3 + 2).toFixed(1)),
+          isClickable: true
+        }));
+        break;
+
+      case 'terminal':
+        // Return aggregated data by worker
+        const workers = baseWorkerPerformance().filter(w =>
+          w.terminalId === context.terminalId
+        );
+        rows = workers.length > 0 ? workers.map(worker => ({
+          id: worker.workerId,
+          name: worker.workerName,
+          totalWorkOrders: worker.completedOrders + worker.overdueCount + Math.floor(Math.random() * 5),
+          completed: worker.completedOrders,
+          inProgress: Math.floor(Math.random() * 5) + 1,
+          pending: Math.floor(Math.random() * 3),
+          overdue: worker.overdueCount,
+          completionRate: worker.qualityScore,
+          avgCompletionTime: worker.avgCompletionTime,
+          isClickable: true
+        })) : [
+          // Fallback mock data
+          {
+            id: 'worker_mock_1',
+            name: 'Mock Worker 1',
+            totalWorkOrders: 15,
+            completed: 10,
+            inProgress: 3,
+            pending: 1,
+            overdue: 1,
+            completionRate: 85,
+            avgCompletionTime: 2.5,
+            isClickable: true
+          }
+        ];
+        break;
+
+      case 'worker':
+        // Worker level doesn't have aggregated rows - use individual work orders instead
+        break;
+    }
+
+    return { summary, rows };
+  };
+
+  // Get individual work orders for worker-level drill-down
+  const getWorkOrdersForWorker = (
+    workerId: string,
+    filters: { dateStart: string; dateEnd: string; statuses: string[]; }
+  ): WorkOrderDetailRow[] => {
+    // Mock work order details for a specific worker
+    const statuses = ['draft', 'pending_approval', 'in_progress', 'completed', 'overdue'];
+    const priorities = ['low', 'normal', 'high', 'urgent'];
+    const types = ['preventive', 'corrective'];
+
+    const mockWorkOrders: WorkOrderDetailRow[] = [];
+    const count = Math.floor(Math.random() * 10) + 5;
+
+    for (let i = 1; i <= count; i++) {
+      const status = statuses[Math.floor(Math.random() * statuses.length)] || 'draft';
+      const isOverdue = status === 'overdue' || (status !== 'completed' && Math.random() > 0.8);
+
+      const dueDate = new Date(Date.now() + (Math.random() * 14 - 7) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      mockWorkOrders.push({
+        id: `wo_${workerId}_${i}`,
+        code: `WO-${workerId.replace('worker', 'W')}-${String(i).padStart(3, '0')}`,
+        title: `Maintenance Task ${i}`,
+        status: isOverdue ? 'overdue' : status,
+        priority: priorities[Math.floor(Math.random() * priorities.length)] || 'normal',
+        type: types[Math.floor(Math.random() * types.length)] || 'preventive',
+        terminalName: getTerminalName(`terminal${Math.floor(Math.random() * 10) + 1}`),
+        workerName: getWorkerName(workerId),
+        dueDate: dueDate || '',
+        daysOverdue: isOverdue ? Math.floor(Math.random() * 7) + 1 : undefined,
+        isClickable: true
+      });
+    }
+
+    return mockWorkOrders;
+  };
+
+  // Get Overdue Report data
+  const getOverdueReportData = (
+    context: DrillDownContext,
+    filters: { dateStart: string; dateEnd: string; }
+  ): { summary: { total: number; totalPenalty: number }; rows: any[] } => {
+    const overdueData = baseOverdueReports();
+
+    const summary = {
+      total: overdueData.length,
+      totalPenalty: overdueData.reduce((sum, item) => sum + item.estimatedPenalty, 0)
+    };
+
+    // Add urgency indicator based on days overdue
+    const rows = overdueData.map(item => ({
+      ...item,
+      urgency: item.daysOverdue <= 2 ? 'low' : item.daysOverdue <= 5 ? 'medium' : 'high',
+      isClickable: true
+    }));
+
+    return { summary, rows };
+  };
+
+  // Get Activity Report data
+  const getActivityReport = (
+    context: DrillDownContext,
+    filters: { dateStart: string; dateEnd: string; },
+    period: 'daily' | 'weekly'
+  ): ActivityItem[] => {
+    const authStore = useAuthStore();
+    const currentUser = authStore.currentUser;
+    const activities: ActivityItem[] = [];
+    const activityTypes: ActivityItem['type'][] = ['created', 'started', 'completed', 'submitted', 'approved', 'rejected'];
+
+    // Generate mock activities for the past 7 or 30 days
+    const daysCount = period === 'daily' ? 7 : 30;
+
+    // For workers, generate activities only for themselves
+    const isWorker = authStore.isWorker;
+
+    for (let day = 0; day < daysCount; day++) {
+      const date = new Date();
+      date.setDate(date.getDate() - day);
+
+      // Generate 2-5 activities per day (fewer for workers)
+      const activitiesPerDay = isWorker
+        ? Math.floor(Math.random() * 2) + 1
+        : Math.floor(Math.random() * 4) + 2;
+
+      for (let i = 0; i < activitiesPerDay; i++) {
+        const type = activityTypes[Math.floor(Math.random() * activityTypes.length)] || 'created';
+        const workers = baseWorkerPerformance();
+
+        // For workers, use their own data; for others, use random worker
+        let worker;
+        if (isWorker && currentUser) {
+          worker = {
+            workerId: currentUser.id,
+            workerName: currentUser.name,
+            terminalId: currentUser.terminalId || 'terminal1'
+          };
+        } else {
+          worker = workers[Math.floor(Math.random() * workers.length)];
+        }
+
+        if (!worker) continue;
+
+        activities.push({
+          id: `activity_${day}_${i}`,
+          timestamp: new Date(date.getTime() - Math.random() * 24 * 60 * 60 * 1000).toISOString(),
+          type,
+          workOrderId: `wo_${Math.floor(Math.random() * 100)}`,
+          workOrderTitle: `Maintenance Task ${Math.floor(Math.random() * 100)}`,
+          workOrderCode: `WO-${String(Math.floor(Math.random() * 1000)).padStart(4, '0')}`,
+          userId: worker.workerId,
+          userName: worker.workerName,
+          terminalName: getTerminalName(worker.terminalId),
+          description: getActivityDescription(type)
+        });
+      }
+    }
+
+    // Sort by timestamp descending
+    activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    return activities;
+  };
+
+  const getActivityDescription = (type: ActivityItem['type']): string => {
+    const descriptions: Record<ActivityItem['type'], string> = {
+      'created': 'Work order created',
+      'started': 'Work started - Before documentation submitted',
+      'completed': 'Work completed - After documentation submitted',
+      'submitted': 'Submitted for supervisor review',
+      'approved': 'Approved by supervisor',
+      'rejected': 'Rejected - Revision required',
+      'overdue': 'Work order became overdue'
+    };
+    return descriptions[type];
+  };
+
+  // Get available terminals for filtering (scoped by role)
+  const getAvailableTerminals = computed(() => {
+    const authStore = useAuthStore();
+    const user = authStore.currentUser;
+
+    if (!user) return [];
+
+    // Admin: Own terminal only
+    if (authStore.isAdmin && user.terminalId) {
+      return [{ id: user.terminalId, name: getTerminalName(user.terminalId) }];
+    }
+
+    // Supervisor/Leader: Their region's terminals
+    if ((authStore.isSupervisor || authStore.isLeader) && user.regionId) {
+      return getTerminalsForRegion(user.regionId);
+    }
+
+    // For development: return all terminals from first few regions
+    const allTerminals: { id: string; name: string }[] = [];
+    for (let i = 1; i <= 3; i++) {
+      allTerminals.push(...getTerminalsForRegion(`region${i}`));
+    }
+    return allTerminals;
+  });
+
+  // Get available regions for filtering (scoped by role)
+  const getAvailableRegions = computed(() => {
+    const authStore = useAuthStore();
+    const user = authStore.currentUser;
+
+    if (!user) return [];
+
+    // Admin/Supervisor/Leader: Their region only
+    if (user.regionId) {
+      return regions.filter(r => r.id === user.regionId);
+    }
+
+    // For development: return all regions
+    return regions;
+  });
+
   return {
     // State
     loading,
@@ -731,6 +1217,21 @@ export const useReportsStore = defineStore('reports', () => {
     updateFilters,
     exportReport,
     refreshReports,
-    clearAllFilters
+    clearAllFilters,
+
+    // Drill-down report methods
+    regions,
+    getRegionName,
+    getTerminalName,
+    getWorkerName,
+    getTerminalsForRegion,
+    buildBreadcrumb,
+    applyRoleBasedFilter,
+    getWorkOrderStatusReport,
+    getWorkOrdersForWorker,
+    getOverdueReportData,
+    getActivityReport,
+    getAvailableTerminals,
+    getAvailableRegions
   };
 });
