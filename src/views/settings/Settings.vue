@@ -29,17 +29,8 @@
 
     <!-- Tab Content -->
     <div class="mt-6">
-      <!-- Notifications Tab (Removed - replaced by inbox system) -->
-      <div v-if="activeTab === 'notifications'" class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-6">Notification Settings</h2>
-        <div class="text-center py-8">
-          <p class="text-gray-500 mb-4">Notification settings have been simplified.</p>
-          <p class="text-sm text-gray-400">All system notifications are now delivered through your <router-link to="/inbox" class="text-blue-600 hover:text-blue-800">Inbox</router-link>.</p>
-        </div>
-      </div>
-
       <!-- Profile Tab -->
-      <div v-else-if="activeTab === 'profile'" class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
+      <div v-if="activeTab === 'profile'" class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-6">Profile Information</h2>
         
         <form class="space-y-4">
@@ -203,7 +194,6 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import {
-  Bell as NotificationIcon,
   User as ProfileIcon,
   Settings as PreferencesIcon,
   Info as AboutIcon
@@ -211,7 +201,7 @@ import {
 
 const authStore = useAuthStore();
 
-const activeTab = ref('notifications');
+const activeTab = ref('profile');
 const preferences = ref({
   theme: 'light',
   language: 'en',
@@ -221,7 +211,6 @@ const preferences = ref({
 const currentUser = computed(() => authStore.currentUser);
 
 const tabs = [
-  { id: 'notifications', name: 'Notifications', icon: NotificationIcon },
   { id: 'profile', name: 'Profile', icon: ProfileIcon },
   { id: 'preferences', name: 'Preferences', icon: PreferencesIcon },
   { id: 'about', name: 'About', icon: AboutIcon }

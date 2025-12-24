@@ -51,18 +51,6 @@
         <Search class="h-4 w-4 icon-theme-primary" />
         <span class="sr-only">Search</span>
       </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        class="relative h-8 w-8"
-        @click="openNotifications"
-      >
-        <Bell class="h-4 w-4 icon-theme-primary" />
-        <span v-if="notificationStore.unreadCount > 0" class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
-          {{ notificationStore.unreadCount > 9 ? '9+' : notificationStore.unreadCount }}
-        </span>
-        <span class="sr-only">Notifications</span>
-      </Button>
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <Button variant="ghost" size="icon" class="h-8 w-8">
@@ -113,9 +101,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Search, Sun, Moon, Monitor, Bell } from 'lucide-vue-next'
+import { Search, Sun, Moon, Monitor } from 'lucide-vue-next'
 import CommandPalette from '@/components/CommandPalette.vue'
-import { useNotificationStore } from '@/stores/notification'
 
 const route = useRoute()
 
@@ -150,18 +137,10 @@ const breadcrumbItems = computed(() => {
   return items
 })
 
-// Notifications
-const notificationStore = useNotificationStore()
-
 // Command palette state
 const commandPaletteOpen = ref(false)
 
 const openCommandPalette = () => {
   commandPaletteOpen.value = true
-}
-
-const openNotifications = () => {
-  // TODO: Open notifications panel/dropdown
-  console.log('Open notifications')
 }
 </script>
