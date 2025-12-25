@@ -2,7 +2,7 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed, readonly } from 'vue';
-import type { 
+import type {
   WorkOrderTemplate,
   CreateTemplateForm,
   ChecklistItemTemplate,
@@ -12,9 +12,10 @@ import type {
 import type { CreateWorkOrderForm, WorkOrder } from '@/types';
 import type { PaginationState, TemplatePaginationSizes } from '@/types/pagination';
 import { getPaginationConfig } from '@/config/pagination';
-import { 
+import {
   mockTemplates
 } from '@/mock/templates';
+import { getCurrentUserId } from '@/utils/auth';
 
 export const useTemplateStore = defineStore('template', () => {
   // State
@@ -325,7 +326,7 @@ export const useTemplateStore = defineStore('template', () => {
         lastUsedAt: undefined,
         
         // Audit trail
-        createdBy: 'current-user', // TODO: Get from auth store
+        createdBy: getCurrentUserId(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         lastUsed: undefined
@@ -1274,7 +1275,7 @@ export const useTemplateStore = defineStore('template', () => {
 
       // Update template status and approval info
       template.status = 'active';
-      template.approvedBy = 'current-user'; // TODO: Get from auth store
+      template.approvedBy = getCurrentUserId();
       template.approvedAt = new Date().toISOString();
       template.updatedAt = new Date().toISOString();
 

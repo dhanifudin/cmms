@@ -261,7 +261,16 @@
             type="submit"
             :disabled="isSubmitting || !canSubmit"
           >
-            {{ isSubmitting ? 'Submitting...' : (isBeforeSubmission ? 'Start Work' : 'Submit for Review') }}
+            <LoaderIcon v-if="isSubmitting" class="h-4 w-4 mr-2 animate-spin" />
+            <template v-if="isUploading">
+              Uploading Photos ({{ uploadProgress }}%)...
+            </template>
+            <template v-else-if="isSubmitting">
+              Submitting...
+            </template>
+            <template v-else>
+              {{ isBeforeSubmission ? 'Start Work' : 'Submit for Review' }}
+            </template>
           </Button>
         </DialogFooter>
       </form>
@@ -272,6 +281,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useInventoryStore } from '@/stores/inventory';
+import { uploadService, type UploadedPhoto } from '@/services/uploadService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -289,7 +299,8 @@ import {
   Camera as CameraIcon,
   Trash2 as TrashIcon,
   Star as StarIcon,
-  AlertCircle
+  AlertCircle,
+  Loader2 as LoaderIcon
 } from 'lucide-vue-next';
 
 interface Props {
@@ -311,11 +322,15 @@ const emit = defineEmits<{
   submit: [data: {
     photos: File[];
     photoCaptions: string[];
+    uploadedPhotos: UploadedPhoto[];
     notes: string;
     checklistValues?: Record<string, any>;
     materialUsage?: Record<string, number>;
   }];
 }>();
+
+const isUploading = ref(false);
+const uploadProgress = ref(0);
 
 const inventoryStore = useInventoryStore();
 
@@ -438,16 +453,18 @@ const getInventoryItemName = (itemId: string) => {
 
 const handleSubmit = async () => {
   if (!canSubmit.value) return;
-  
+
   isSubmitting.value = true;
-  
+  isUploading.value = true;
+  uploadProgress.value = 0;
+
   try {
     // Convert checklist values with proper type handling
     const processedChecklistValues: Record<string, any> = {};
-    
+
     Object.entries(checklistValues.value).forEach(([key, value]) => {
       const checklistItem = props.checklist.find(item => item.id === key);
-      
+
       if (checklistItem) {
         // Handle yes/no type - convert string to boolean
         if (checklistItem.type === 'yes_no') {
@@ -467,18 +484,44 @@ const handleSubmit = async () => {
         }
       }
     });
-    
+
+    // Upload photos to IndexedDB for persistence
+    const uploadedPhotos: UploadedPhoto[] = [];
+    const totalPhotos = selectedPhotos.value.length;
+
+    for (let i = 0; i < selectedPhotos.value.length; i++) {
+      const photo = selectedPhotos.value[i];
+      if (!photo) continue; // Skip if undefined
+
+      try {
+        const uploaded = await uploadService.uploadPhoto(photo.file, {
+          workOrderId: props.workOrderId,
+          submissionType: props.isBeforeSubmission ? 'before' : 'after',
+          caption: photo.caption
+        });
+        uploadedPhotos.push(uploaded);
+        uploadProgress.value = Math.round(((i + 1) / totalPhotos) * 100);
+      } catch (error) {
+        console.error(`Failed to upload photo ${photo.file.name}:`, error);
+        // Continue with other photos
+      }
+    }
+
+    isUploading.value = false;
+
     const submissionData = {
       photos: selectedPhotos.value.map(photo => photo.file),
       photoCaptions: selectedPhotos.value.map(photo => photo.caption),
+      uploadedPhotos,
       notes: notes.value,
       checklistValues: processedChecklistValues,
       materialUsage: !props.isBeforeSubmission ? materialUsage.value : undefined
     };
-    
+
     emit('submit', submissionData);
   } finally {
     isSubmitting.value = false;
+    isUploading.value = false;
   }
 };
 

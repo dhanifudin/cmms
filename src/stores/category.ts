@@ -2,9 +2,9 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed, readonly } from 'vue';
-import type { 
-  WorkOrderCategory, 
-  BulkCategoryOperation, 
+import type {
+  WorkOrderCategory,
+  BulkCategoryOperation,
   BulkOperationResult,
   CategoryExportData,
   CategoryImportResult,
@@ -13,13 +13,14 @@ import type {
 } from '@/types/templates';
 import type { PaginationState, CategoryPaginationSizes } from '@/types/pagination';
 import { getPaginationConfig } from '@/config/pagination';
-import { 
-  mockCategories, 
-  buildCategoryTree, 
-  getCategoryPath, 
-  getDescendantIds, 
-  validateCategoryHierarchy 
+import {
+  mockCategories,
+  buildCategoryTree,
+  getCategoryPath,
+  getDescendantIds,
+  validateCategoryHierarchy
 } from '@/mock/categories';
+import { getCurrentUserId } from '@/utils/auth';
 
 export const useCategoryStore = defineStore('category', () => {
   // State
@@ -307,7 +308,7 @@ export const useCategoryStore = defineStore('category', () => {
         color: categoryData.color,
         isActive: categoryData.isActive,
         sortOrder: categoryData.sortOrder,
-        createdBy: 'current-user', // TODO: Get from auth store
+        createdBy: getCurrentUserId(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -582,7 +583,7 @@ export const useCategoryStore = defineStore('category', () => {
         categories: categories.value,
         templates: [], // TODO: Get from template store
         exportedAt: new Date().toISOString(),
-        exportedBy: 'current-user', // TODO: Get from auth store
+        exportedBy: getCurrentUserId(),
         version: '1.0'
       };
 

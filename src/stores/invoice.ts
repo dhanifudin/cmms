@@ -5,6 +5,7 @@ import type { PaginationState } from '@/types/pagination';
 import type { InvoicePaginationSizes } from '@/types/pagination';
 import { getPaginationConfig } from '@/config/pagination';
 import { useAuthStore } from './auth';
+import { getCurrentUserId } from '@/utils/auth';
 
 export interface PricingRule {
   id: string;
@@ -453,7 +454,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
         status: 'pending',
         generatedAt: new Date().toISOString(),
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-        generatedBy: 'current-user-id' // Should get from auth store
+        generatedBy: getCurrentUserId()
       };
 
       invoices.value.push(invoice);

@@ -278,6 +278,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useTemplateStore } from '@/stores/template';
 import { useToast } from '@/hooks/use-toast';
+import { getCurrentUserId } from '@/utils/auth';
 import type { WorkOrderTemplate } from '@/types/templates';
 
 // Custom Components
@@ -528,7 +529,7 @@ const exportTemplate = () => {
   const exportData = {
     ...props.template,
     exportedAt: new Date().toISOString(),
-    exportedBy: 'current-user'
+    exportedBy: getCurrentUserId()
   };
   
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { 

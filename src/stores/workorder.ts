@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { WorkOrder, CreateWorkOrderForm, WorkOrderStatus, Priority } from '@/types';
+import type { WorkOrder, CreateWorkOrderForm, WorkOrderStatus, Priority, MaterialRequirement } from '@/types';
 import { useAuthStore } from './auth';
+import { useInventoryStore } from './inventory';
+import { getCurrentUserId } from '@/utils/auth';
+import type { UploadedPhoto } from '@/services/uploadService';
 
 export const useWorkOrderStore = defineStore('workorder', () => {
   const workOrders = ref<WorkOrder[]>([]);
@@ -311,12 +314,14 @@ export const useWorkOrderStore = defineStore('workorder', () => {
   };
 
   const submitDocumentation = async (
-    workOrderId: string, 
+    workOrderId: string,
     documentation: {
       type: 'before' | 'after';
       photos: File[];
+      uploadedPhotos?: UploadedPhoto[];
       notes: string;
       checklistData: Record<string, any>;
+      materialUsage?: Record<string, number>;
     }
   ) => {
     if (!authStore.isWorker) {
@@ -335,8 +340,19 @@ export const useWorkOrderStore = defineStore('workorder', () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
 
+      // Store uploaded photo references in Photo format
+      const photoReferences = documentation.uploadedPhotos?.map(photo => ({
+        id: photo.id,
+        url: photo.url,
+        caption: photo.metadata.caption,
+        timestamp: photo.uploadedAt,
+        workOrderId: workOrderId,
+        type: documentation.type
+      })) || [];
+
       if (documentation.type === 'before') {
         workOrder.beforeNotes = documentation.notes;
+        workOrder.beforePhotos = photoReferences as typeof workOrder.beforePhotos;
         workOrder.status = 'in_progress';
         // Update checklist before values
         workOrder.checklist.forEach(item => {
@@ -346,6 +362,7 @@ export const useWorkOrderStore = defineStore('workorder', () => {
         });
       } else {
         workOrder.afterNotes = documentation.notes;
+        workOrder.afterPhotos = photoReferences as typeof workOrder.afterPhotos;
         workOrder.status = 'submitted_for_review';
         // Update checklist after values
         workOrder.checklist.forEach(item => {
@@ -353,6 +370,27 @@ export const useWorkOrderStore = defineStore('workorder', () => {
             item.afterValue = documentation.checklistData[item.id];
           }
         });
+
+        // Consume materials from inventory when submitting 'after' documentation
+        if (documentation.materialUsage && workOrder.materials && workOrder.materials.length > 0) {
+          const inventoryStore = useInventoryStore();
+
+          // Build material requirements with actual usage
+          const materialRequirements: MaterialRequirement[] = workOrder.materials.map(material => ({
+            ...material,
+            actualQuantity: documentation.materialUsage?.[material.itemId] ?? material.plannedQuantity
+          }));
+
+          // Consume materials from inventory
+          try {
+            await inventoryStore.consumeMaterials(materialRequirements, workOrderId);
+            console.log(`Materials consumed for work order ${workOrderId}`);
+          } catch (inventoryError) {
+            console.warn('Failed to consume materials from inventory:', inventoryError);
+            // Continue with work order submission even if inventory update fails
+            // This should be handled by admin later
+          }
+        }
       }
 
       workOrder.updatedAt = new Date().toISOString();

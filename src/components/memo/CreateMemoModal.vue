@@ -156,20 +156,25 @@
             ></textarea>
           </div>
           
-          <!-- Suggested Worker -->
+          <!-- Suggested Worker (Optional) -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              Suggested Worker (Optional)
+              Suggested Worker
+              <span class="text-gray-400 font-normal">(Optional)</span>
             </label>
             <select
               v-model="formData.workOrderSpecs.suggestedWorkerId"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :disabled="!formData.workOrderSpecs.terminalId"
             >
-              <option value="">Let admin choose</option>
+              <option :value="undefined">-- Admin will assign worker --</option>
               <option v-for="worker in availableWorkers" :key="worker.id" :value="worker.id">
                 {{ worker.name }} - {{ worker.expertise }}
               </option>
             </select>
+            <p class="mt-1 text-xs text-gray-500">
+              {{ formData.workOrderSpecs.terminalId ? 'You may suggest a worker or leave it for admin to decide.' : 'Select a terminal first to see available workers.' }}
+            </p>
           </div>
           
           <!-- Required Materials -->
@@ -304,11 +309,21 @@ const formData = ref<MemoData>({
   status: 'pending'
 });
 
-// Terminal data filtered by supervisor's region scope
+// Terminal data filtered by supervisor's terminal/region scope
 const availableTerminals = computed(() => {
   if (!authStore.currentUser) return [];
-  
-  // If user has a specific regionId, filter terminals by that region
+
+  // If supervisor has a specific terminalId, only allow that terminal
+  if (authStore.currentUser?.terminalId) {
+    return mockTerminals
+      .filter(terminal => terminal.id === authStore.currentUser?.terminalId && terminal.active)
+      .map(terminal => ({
+        id: terminal.id,
+        name: `${terminal.name} (${terminal.code})`
+      }));
+  }
+
+  // If supervisor has regionId only, filter terminals by that region
   if (authStore.currentUser?.regionId) {
     return mockTerminals
       .filter(terminal => terminal.regionId === authStore.currentUser?.regionId && terminal.active)
@@ -317,8 +332,8 @@ const availableTerminals = computed(() => {
         name: `${terminal.name} (${terminal.code})`
       }));
   }
-  
-  // Fallback: if no region specified, show all active terminals (shouldn't happen for supervisors)
+
+  // Fallback: if no region/terminal specified, show all active terminals (shouldn't happen for supervisors)
   return mockTerminals
     .filter(terminal => terminal.active)
     .map(terminal => ({
@@ -327,12 +342,19 @@ const availableTerminals = computed(() => {
     }));
 });
 
-const availableWorkers = ref([
-  { id: 'worker_001', name: 'Ahmad Rahman', expertise: 'Electrical Systems' },
-  { id: 'worker_002', name: 'Budi Santoso', expertise: 'Mechanical Maintenance' },
-  { id: 'worker_003', name: 'Sari Dewi', expertise: 'HVAC Systems' },
-  { id: 'worker_004', name: 'Eko Prabowo', expertise: 'Plumbing & Piping' },
-]);
+// Workers filtered by selected terminal
+const availableWorkers = computed(() => {
+  const selectedTerminalId = formData.value.workOrderSpecs.terminalId;
+  if (!selectedTerminalId) return [];
+
+  return userStore.users
+    .filter(user => user.role === 'worker' && user.terminalId === selectedTerminalId && user.status === 'active')
+    .map(worker => ({
+      id: worker.id,
+      name: worker.name,
+      expertise: worker.department || 'General Maintenance'
+    }));
+});
 
 // Available templates for selection grouped by type
 const availableTemplates = computed(() => {
@@ -345,6 +367,12 @@ const preventiveTemplates = computed(() => {
 
 const correctiveTemplates = computed(() => {
   return availableTemplates.value.filter(t => t.type === 'corrective');
+});
+
+// Watch for terminal change to reset suggested worker
+watch(() => formData.value.workOrderSpecs.terminalId, () => {
+  // Clear selected worker when terminal changes since workers are terminal-specific
+  formData.value.workOrderSpecs.suggestedWorkerId = undefined;
 });
 
 // Watch for template selection and auto-fill form
@@ -444,14 +472,17 @@ const resetForm = () => {
 };
 
 onMounted(async () => {
-  // Load templates
-  await templateStore.fetchTemplates();
+  // Load templates and users
+  await Promise.all([
+    templateStore.fetchTemplates(),
+    userStore.fetchUsers()
+  ]);
 
-  // Set default terminal if user has one (for admins)
+  // Set default terminal if user has one (for supervisors with terminal assignment)
   if (authStore.currentUser?.terminalId) {
     formData.value.workOrderSpecs.terminalId = authStore.currentUser.terminalId;
   }
-  // For supervisors, auto-select the first available terminal in their region if only one option
+  // For supervisors with region-only access, auto-select if only one terminal available
   else if (authStore.isSupervisor && availableTerminals.value.length === 1) {
     formData.value.workOrderSpecs.terminalId = availableTerminals.value[0]?.id || '';
   }

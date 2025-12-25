@@ -99,6 +99,19 @@ const router = createRouter({
       component: () => import('@/views/inventory/InventoryItemDetail.vue'),
       meta: { requiresAuth: true }
     },
+    // Asset Management
+    {
+      path: '/assets',
+      name: 'Assets',
+      component: () => import('@/views/assets/AssetList.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/assets/:id',
+      name: 'AssetDetail',
+      component: () => import('@/views/assets/AssetDetail.vue'),
+      meta: { requiresAuth: true }
+    },
     {
       path: '/invoices',
       name: 'Invoices',
